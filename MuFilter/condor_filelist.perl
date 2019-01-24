@@ -137,7 +137,7 @@ while ($i<=$#flist) {
 
     @jobf=();
     for ($j=0; $j<$batch && $i<=$#flist; $j++) {
-        push @jobf,$flist[$i];
+	push @jobf,$flist[$i];
         $i++;
     }
 

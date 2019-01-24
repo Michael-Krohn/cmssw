@@ -33,7 +33,10 @@ process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
+if(options.isMC):
+        process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
+else:
+        process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(

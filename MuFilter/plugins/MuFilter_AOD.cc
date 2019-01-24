@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    MuMu/MuMuFilter_AOD
-// Class:      MuMuFilter_AOD
+// Package:    MuMu/MuFilter_AOD
+// Class:      MuFilter_AOD
 // 
-/**\class MuMuFilter_AOD MuMuFilter_AOD_AOD.cc MuMu/MuMuFilter_AOD/plugins/MuMuFilter_AOD_AOD.cc
+/**\class MuFilter_AOD MuFilter_AOD_AOD.cc MuMu/MuFilter_AOD/plugins/MuFilter_AOD_AOD.cc
 
  Description: [one line class summary]
 
@@ -61,10 +61,10 @@
 // constructor "usesResource("TFileService");"
 // This will improve performance in multithreaded jobs.
 
-class MuMuFilter_AOD : public edm::stream::EDFilter<>  {
+class MuFilter_AOD : public edm::stream::EDFilter<>  {
    public:
-      explicit MuMuFilter_AOD(const edm::ParameterSet&);
-      ~MuMuFilter_AOD();
+      explicit MuFilter_AOD(const edm::ParameterSet&);
+      ~MuFilter_AOD();
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
@@ -98,7 +98,7 @@ class MuMuFilter_AOD : public edm::stream::EDFilter<>  {
 //
 // constructors and destructor
 //
-MuMuFilter_AOD::MuMuFilter_AOD(const edm::ParameterSet& iConfig):
+MuFilter_AOD::MuFilter_AOD(const edm::ParameterSet& iConfig):
   m_recoMuonToken (consumes<std::vector<reco::Muon>> (iConfig.getParameter<edm::InputTag>("recoMuons"))),
   trakCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
@@ -112,7 +112,7 @@ MuMuFilter_AOD::MuMuFilter_AOD(const edm::ParameterSet& iConfig):
 }
 
 
-MuMuFilter_AOD::~MuMuFilter_AOD()
+MuFilter_AOD::~MuFilter_AOD()
 {
  
    // do anything here that needs to be done at desctruction time
@@ -127,7 +127,7 @@ MuMuFilter_AOD::~MuMuFilter_AOD()
 
 // ------------ method called for each event  ------------
 bool
-MuMuFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
+MuFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
    using namespace std;
@@ -266,7 +266,7 @@ MuMuFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   }		
 }
 
-bool MuMuFilter_AOD::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<reco::Track>::const_iterator& Track){
+bool MuFilter_AOD::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<reco::Track>::const_iterator& Track){
 
   edm::Handle<std::vector<reco::GenParticle>> genParticles;
   iEvent.getByToken(m_genParticleToken, genParticles);
@@ -286,19 +286,19 @@ bool MuMuFilter_AOD::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<
 }
 // ------------ method called once each job just before starting event loop  ------------
 void 
-MuMuFilter_AOD::beginStream(edm::StreamID)
+MuFilter_AOD::beginStream(edm::StreamID)
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-MuMuFilter_AOD::endStream() 
+MuFilter_AOD::endStream() 
 {
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
-MuMuFilter_AOD::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+MuFilter_AOD::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -307,4 +307,4 @@ MuMuFilter_AOD::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(MuMuFilter_AOD);
+DEFINE_FWK_MODULE(MuFilter_AOD);
