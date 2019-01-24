@@ -20,7 +20,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #Uncomment when running over condor
 process.source = cms.Source("PoolSource",
     # replace 'myfile.root' with the source file you want to use
-    fileNames = cms.untracked.vstring(
+    fileNames = readFiles
 )
 
 process.DiMuonFilter = cms.EDFilter('MuMuFilter_AOD',
