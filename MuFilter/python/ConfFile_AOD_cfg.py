@@ -7,16 +7,17 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load("Configuration.StandardSequences.MagneticField_cff")
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
-process.GlobalTag.globaltag = cms.string('80X_mcRun2_asymptotic_2016_TrancheIV_v8')
+process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
     limit = cms.untracked.int32(0)
 )
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
+#Uncomment when running over condor
 process.source = cms.Source("PoolSource",
     # replace 'myfile.root' with the source file you want to use
     fileNames = cms.untracked.vstring(
@@ -27,7 +28,7 @@ process.DiMuonFilter = cms.EDFilter('MuMuFilter_AOD',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
-    isMC = cms.untracked.bool(True)
+    isMC = cms.untracked.bool(False)
 )
 
 process.USER = cms.OutputModule("PoolOutputModule",
