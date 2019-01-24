@@ -172,7 +172,6 @@ MuMuAnalyzer_FilteredAOD::~MuMuAnalyzer_FilteredAOD()
 void
 MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-  std::cout << "check #6" << std::endl;
 
 
   using namespace edm;
@@ -190,14 +189,11 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
 
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   cutProgress++;
-  std::cout << "check #6.1" << std::endl;
 
   if(!myEventInfo.passTriggers(iEvent, m_trigResultsToken, m_muonPathsToPass)) return;
   cutProgress++;
-  std::cout << "check #6.2" << std::endl;
 
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  std::cout << "check #6.3" << std::endl;
 
   myTracks.SelectTracks(iEvent, trackCollection_label);
 
@@ -213,14 +209,12 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
    // this wraps tracks with additional methods that are used in vertex-calculation
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
-  std::cout << "check #6.4" << std::endl;
 
   edm::Handle<CSCSegmentCollection> TheCSCSegments;
   iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
 
   edm::ESHandle<CSCGeometry> TheCSCGeometry;
   iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
-  std::cout << "check #6.5" << std::endl;
 
   myCSCs.minTotalImpactParameter = 1000;
   myCSCs.minDR = 1000;
@@ -228,11 +222,9 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
   myCSCs.minDR_Muon = 1000;
 
 //  bool foundMuonTrackPair = false;
-  std::cout << "check #7" << std::endl;
   if(!m_runRandomTrackEfficiency){
 
     if(myMuons.selectedMuons.size() > 0){
-      std::cout << "check #8" << std::endl;
 
       nTracksPairedPerMuon = 0;
 
@@ -289,7 +281,6 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
       myHistograms.m_histogram_TrackerTack_P->Fill(myCSCs.TrackP);
 
     }
-    std::cout << "check #9" << std::endl;
 
     if (nMuonTrackCand > 0){
       myHistograms.h_nMuonTrackCand->Fill(nMuonTrackCand);
@@ -319,7 +310,6 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
       cutProgress--;
     }
 
-    std::cout << "check #1" << std::endl;
     //foundMuonTrackPair = false;
 
     //Looping over Muons and all Tracks to study extrapolating reco Muons to the CSCs.
@@ -327,7 +317,6 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
 
       nTracksPairedPerMuon = 0;
 
-    std::cout << "check #2" << std::endl;
     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack ) {
 
          myTracks.tracksToVertex.clear();
@@ -347,15 +336,11 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
          }else{
            continue;
          }
-         std::cout << "check #3" << std::endl;
-
-//         foundMuonTrackPair = true;
 
          myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedMuon, myTracks.one_momentum, myTracks.two_momentum, myTracks.tracksToVertex);
 
       }
     }
-    std::cout << "check #4" << std::endl;
 
     if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4){
       std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
@@ -384,7 +369,6 @@ MuMuAnalyzer_FilteredAOD::analyze(const edm::Event& iEvent, const edm::EventSetu
     }
     myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
   }
-  std::cout << "check #5" << std::endl;
 
 }
 
