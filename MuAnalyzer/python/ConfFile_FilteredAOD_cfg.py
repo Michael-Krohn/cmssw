@@ -37,7 +37,7 @@ process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
-    limit = cms.untracked.int32(500)
+    limit = cms.untracked.int32(0)
 )
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
