@@ -20,5 +20,5 @@
 <use name="Geometry/CSCGeometry"/>
 <use name="CLHEP"/>
 <use name="root"/>
-<use name="MuMu/MuMuAnalyzer"/>
+<use name="DarkPhoton/MuAnalyzer"/>
 <flags EDM_PLUGIN="1"/>
