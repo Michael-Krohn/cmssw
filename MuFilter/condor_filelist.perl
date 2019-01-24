@@ -42,6 +42,7 @@ if ($#ARGV<1) {
 
 $basecfg=shift @ARGV;
 $filelist=shift @ARGV;
+$cmsRunArguments=shift @ARGV;
 
 if ($jobBase eq "default") {
     my $stub3=$basecfg;
@@ -91,6 +92,7 @@ if ($nosubmit) {
     open(SUBMIT,"|condor_submit");
 }
 print(SUBMIT "Executable = $executable\n");
+print(SUBMIT "arguments = \"$cmsRunArguments \"\n");
 print(SUBMIT "Universe = vanilla\n");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
 print(SUBMIT "Error = $prodSpace/logs/error\n");
