@@ -1,4 +1,4 @@
-#include "MuMu/MuMuAnalyzer/interface/EventInfo.h"
+#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 

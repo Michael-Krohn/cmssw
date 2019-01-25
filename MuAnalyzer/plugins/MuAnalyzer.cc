@@ -66,11 +66,11 @@
 //Triggers
 #include "FWCore/Common/interface/TriggerNames.h"
 
-#include "MuMu/MuMuAnalyzer/interface/Histograms.h"
-#include "MuMu/MuMuAnalyzer/interface/CSC.h"
-#include "MuMu/MuMuAnalyzer/interface/EventInfo.h"
-#include "MuMu/MuMuAnalyzer/interface/Muons.h"
-#include "MuMu/MuMuAnalyzer/interface/Tracks.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/CSC.h"
+#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
+#include "DarkPhoton/MuAnalyzer/interface/Muons.h"
+#include "DarkPhoton/MuAnalyzer/interface/Tracks.h"
 
 
 // class declaration

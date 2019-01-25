@@ -1,4 +1,4 @@
-#include "MuMu/MuMuAnalyzer/interface/CSC.h"
+#include "DarkPhoton/MuAnalyzer/interface/CSC.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -9,7 +9,7 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
-#include "MuMu/MuMuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
 CSC::CSC(){}
