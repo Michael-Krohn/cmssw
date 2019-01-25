@@ -21,16 +21,16 @@ class Histograms{
     void PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR);
 
   public:
-    TH1F* h_eventCount;
-    TH1F* h_cutProgress;
+    TH1F* m_eventCount;
+    TH1F* m_cutProgress;
     
-    TH1F* h_MuonTrackMass;
+    TH1F* m_MuonTrackMass;
     
-    TH1F* h_GENMuonTrackdR;
-    TH1F* h_nMuonTrackCand;
-    TH1F* h_nTracksPairedPerMuon;
-    TH1F* h_nMuonsPairedPerEvent;
-    TH1F* h_nTracksNoMuon;
+    TH1F* m_GENMuonTrackdR;
+    TH1F* m_nMuonTrackCand;
+    TH1F* m_nTracksPairedPerMuon;
+    TH1F* m_nMuonsPairedPerEvent;
+    TH1F* m_nTracksNoMuon;
 
     TH1F* m_histogram_TrackerTack_P;
     TH1F* m_histogram_MuonTrack_P;

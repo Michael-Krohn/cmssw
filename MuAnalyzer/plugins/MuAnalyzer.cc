@@ -184,7 +184,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Tracks myTracks;
   CSC myCSCs;
 
-  myHistograms.h_eventCount->Fill(0.5);
+  myHistograms.m_eventCount->Fill(0.5);
   int cutProgress = 0;
 
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
@@ -258,7 +258,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
           nMuonTrackCand++;
 
-	  myHistograms.h_MuonTrackMass->Fill(myTracks.MuonTrackMass);
+	  myHistograms.m_MuonTrackMass->Fill(myTracks.MuonTrackMass);
 
 //	  foundMuonTrackPair = true;
 
@@ -268,11 +268,11 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
 
       }
-      myHistograms.h_nTracksPairedPerMuon->Fill(nTracksPairedPerMuon);
+      myHistograms.m_nTracksPairedPerMuon->Fill(nTracksPairedPerMuon);
       if (nTracksPairedPerMuon > 0)nMuonsPairedPerEvent++;
     }
 
-    myHistograms.h_nMuonsPairedPerEvent->Fill(nMuonsPairedPerEvent);
+    myHistograms.m_nMuonsPairedPerEvent->Fill(nMuonsPairedPerEvent);
 
     if(nMuonTrackCand > 0){
 
@@ -283,8 +283,8 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
 
     if (nMuonTrackCand > 0){
-      myHistograms.h_nMuonTrackCand->Fill(nMuonTrackCand);
-      myHistograms.h_nTracksNoMuon->Fill(nTracksNoMuon);
+      myHistograms.m_nMuonTrackCand->Fill(nMuonTrackCand);
+      myHistograms.m_nTracksNoMuon->Fill(nTracksNoMuon);
       std::cout <<"PASSES"<<std::endl;
     }else{
       std::cout << "FAILS"<<std::endl;
@@ -306,7 +306,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
     while(cutProgress > 0){
-      myHistograms.h_cutProgress->Fill(cutProgress);
+      myHistograms.m_cutProgress->Fill(cutProgress);
       cutProgress--;
     }
 
@@ -383,7 +383,7 @@ bool MuAnalyzer::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<cons
      if(std::abs(iGENparticle->pdgId()) != 13) continue;
 
      if(deltaR((*Track)->eta(), (*Track)->phi(), iGENparticle->eta(), iGENparticle->phi()) > 0.1) continue;
-     myHistograms.h_GENMuonTrackdR->Fill(deltaR((*Track)->eta(), (*Track)->phi(), iGENparticle->eta(), iGENparticle->phi()));
+     myHistograms.m_GENMuonTrackdR->Fill(deltaR((*Track)->eta(), (*Track)->phi(), iGENparticle->eta(), iGENparticle->phi()));
      matched = true;
   }
   return matched;
