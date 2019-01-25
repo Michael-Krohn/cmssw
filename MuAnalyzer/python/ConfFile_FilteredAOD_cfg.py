@@ -42,7 +42,9 @@ process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
     limit = cms.untracked.int32(0)
 )
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+
+if(options.runLocally):
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 if(options.runLocally):
 	import FWCore.Utilities.FileUtils as FileUtils
