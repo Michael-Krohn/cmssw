@@ -42,7 +42,7 @@ if not(options.isMC):
         process.source.lumisToProcess = LumiList.LumiList(filename = 'Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON_MuonPhys.txt').getVLuminosityBlockRange()
 
 
-process.DiMuonFilter = cms.EDFilter('MuMuFilter_AOD',
+process.DiMuonFilter = cms.EDFilter('MuFilter_AOD',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),

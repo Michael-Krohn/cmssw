@@ -61,7 +61,7 @@ process.source = cms.Source("PoolSource",
     fileNames = readFiles
 )
 
-process.demo = cms.EDAnalyzer('MuMuAnalyzer_FilteredAOD',
+process.demo = cms.EDAnalyzer('MuAnalyzer',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
