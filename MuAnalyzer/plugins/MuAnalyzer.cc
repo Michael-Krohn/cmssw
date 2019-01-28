@@ -63,6 +63,15 @@
 #include "DataFormats/DetId/interface/DetId.h"
 #include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 
+//for HCAL info
+#include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
+#include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/Common/interface/SortedCollection.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+
 //Triggers
 #include "FWCore/Common/interface/TriggerNames.h"
 
@@ -71,6 +80,7 @@
 #include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
 #include "DarkPhoton/MuAnalyzer/interface/Muons.h"
 #include "DarkPhoton/MuAnalyzer/interface/Tracks.h"
+#include "DarkPhoton/MuAnalyzer/interface/HCAL.h"
 
 
 // class declaration
@@ -106,6 +116,7 @@ class MuAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label;
     edm::EDGetToken m_trigResultsToken;
     std::vector<std::string> m_muonPathsToPass;
+    edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
 
     bool m_isMC;
     bool m_runRandomTrackEfficiency;
@@ -130,6 +141,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
+  HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
   m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false))
 {
@@ -144,12 +156,6 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   edm::Service<TFileService> fs;
 
   myHistograms.book(fs);
-
-/*  Muons myMuons;
-  Histograms myHistograms;
-  EventInfo myEventInfo;
-  Tracks myTracks;
-  CSC myCSCs;*/
 
 
 }
@@ -183,6 +189,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   EventInfo myEventInfo;
   Tracks myTracks;
   CSC myCSCs;
+  HCAL myHCAL;
 
   myHistograms.m_eventCount->Fill(0.5);
   int cutProgress = 0;
@@ -209,12 +216,6 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    // this wraps tracks with additional methods that are used in vertex-calculation
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
-
-  edm::Handle<CSCSegmentCollection> TheCSCSegments;
-  iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
-
-  edm::ESHandle<CSCGeometry> TheCSCGeometry;
-  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
 
   myCSCs.minTotalImpactParameter = 1000;
   myCSCs.minDR = 1000;
@@ -276,7 +277,19 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     if(nMuonTrackCand > 0){
 
+      if(fabs(myCSCs.TrackEta) > 2.3 && myCSCs.minTotalImpactParameter < 5){
+	std::cout << "PASSING TRACK ON EDGE OF DETECTOR" << std::endl;
+	std::cout << "myCSCs.TrackEta: " << myCSCs.TrackEta << " myCSCs.TrackPhi: " << myCSCs.TrackPhi << std::endl;
+	std::cout << "myCSCs.TrackEta_dR: " << myCSCs.TrackEta_dR << " myCSCs.TrackPhi_dR: " << myCSCs.TrackPhi_dR << std::endl;
+	std::cout << "myCSCs.minTotalImpactParameter: " << myCSCs.minTotalImpactParameter << " myCSCs.minDR: " << myCSCs.minDR << std::endl;
+      }
+
       myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
+
+      if(myCSCs.minDR < 3.5){
+	myHCAL.CheckHCAL(iEvent, iSetup, HBHERecHit_Label);
+
+      }
   
       myHistograms.m_histogram_TrackerTack_P->Fill(myCSCs.TrackP);
 
@@ -347,10 +360,18 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
+
+      if(myCSCs.minDR_Muon < 3.5){
+	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
+	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
+	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
+	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
+      }
     }
   }else{
     //Making efficiencies for random tracks
     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack ) {
+
        if (!(*iTrack)->quality(Track::highPurity)) continue;
 
        for(std::vector<const reco::Track*>::const_iterator iTrack_2nd = myTracks.selectedTracks.begin(); iTrack_2nd != myTracks.selectedTracks.end(); ++iTrack_2nd ) {
