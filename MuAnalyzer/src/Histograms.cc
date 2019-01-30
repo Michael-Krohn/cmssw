@@ -69,11 +69,11 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP2", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP2", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-    m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = fs->make<TH2F>("TrackerTrack_dRMatched_EtaPhi_negEta", "", 100, -1.63, -2.4, 100, -3.2, 3.2);
+    m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = fs->make<TH2F>("TrackerTrack_dRMatched_EtaPhi_negEta", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
     m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta = fs->make<TH2F>("TrackerTrack_dRMatched_EtaPhi_posEta", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
   m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p35 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p35", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p35", "", 100, -1.63, -2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p35", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
 
 }
 
@@ -109,7 +109,7 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
     m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf->Fill(TrackEta, TrackPhi);
   }
 
-  if(minDR > 0.35){
+  if(minDR > 0.2){
     TrackDissapears_dR0p35 = true;
   }else{
     TrackDissapears_dR0p35 = false;
