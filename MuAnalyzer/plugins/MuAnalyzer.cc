@@ -263,7 +263,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 //	  foundMuonTrackPair = true;
 
-	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.two_momentum, myTracks.tracksToVertex);
+	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex);
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
@@ -330,7 +330,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       nTracksPairedPerMuon = 0;
 
-    for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack ) {
+      for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack ) {
 
          myTracks.tracksToVertex.clear();
 
@@ -350,7 +350,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
            continue;
          }
 
-         myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedMuon, myTracks.one_momentum, myTracks.two_momentum, myTracks.tracksToVertex);
+         myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedMuon, myTracks.two_momentum, myTracks.tracksToVertex);
 
       }
     }
@@ -369,26 +369,33 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
   }else{
+    bool useFirstTrackToPair = false;
     //Making efficiencies for random tracks
     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack ) {
+
+       if (useFirstTrackToPair) continue;
 
        if (!(*iTrack)->quality(Track::highPurity)) continue;
 
        for(std::vector<const reco::Track*>::const_iterator iTrack_2nd = myTracks.selectedTracks.begin(); iTrack_2nd != myTracks.selectedTracks.end(); ++iTrack_2nd ) {
+	  myCSCs.minDR = 1000;
+	  myCSCs.minTotalImpactParameter = 1000;
 
           myTracks.tracksToVertex.clear();
 
 	  if (!(*iTrack_2nd)->quality(Track::highPurity)) continue;
 
-	  if(!myTracks.PairTrackerTracks(iTrack, iTrack_2nd, transientTrackBuilder)) continue;
+	  if(!myTracks.PairTrackerTracks(iTrack_2nd, iTrack, transientTrackBuilder)) continue;
 
-	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.two_momentum, myTracks.tracksToVertex);
+	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack_2nd, myTracks.one_momentum, myTracks.tracksToVertex);
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
           myHistograms.m_MinDR->Fill(myCSCs.minDR);
+
+	  myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
        }
+       useFirstTrackToPair = true;
     }
-    myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
   }
 
 }
