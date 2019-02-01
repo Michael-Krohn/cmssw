@@ -21,16 +21,16 @@ Histograms::Histograms(){}
 
 void Histograms::book(edm::Service<TFileService> fs){
 
-  h_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
-  h_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
+  m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
+  m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
 
-  h_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
+  m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
 
-  h_GENMuonTrackdR = fs->make<TH1F>("DeltaR_GENMuonTrack", ";DeltaR(GENMuon,Track) ;Events", 30,  0.  , 0.2  );
-  h_nMuonTrackCand = fs->make<TH1F>("nMuonTrackCand", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  h_nTracksPairedPerMuon = fs->make<TH1F>("nTracksPairedPerMuon", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  h_nMuonsPairedPerEvent = fs->make<TH1F>("nMuonsPairedPerEvent", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  h_nTracksNoMuon = fs->make<TH1F>("nTrackNoMuon", "; # of TrackerTrackMatched Candidates ;Events", 8, -0.5  , 7.5  );
+  m_GENMuonTrackdR = fs->make<TH1F>("DeltaR_GENMuonTrack", ";DeltaR(GENMuon,Track) ;Events", 30,  0.  , 0.2  );
+  m_nMuonTrackCand = fs->make<TH1F>("nMuonTrackCand", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
+  m_nTracksPairedPerMuon = fs->make<TH1F>("nTracksPairedPerMuon", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
+  m_nMuonsPairedPerEvent = fs->make<TH1F>("nMuonsPairedPerEvent", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
+  m_nTracksNoMuon = fs->make<TH1F>("nTrackNoMuon", "; # of TrackerTrackMatched Candidates ;Events", 8, -0.5  , 7.5  );
   
   m_histogram_TrackerTack_P = fs->make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
   m_histogram_MuonTrack_P = fs->make<TH1F>("MuonTrack_P", "", 140, 0, 700);
@@ -97,10 +97,12 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
   bool TrackDissapears_IP2;
 
   std::cout << "Plotting TrackEta: " << TrackEta << " and TrackPhi: " << TrackPhi << std::endl;
+  std::cout << "minTotalImpactParameter: " << minTotalImpactParameter << std::endl;
   m_histogram_TrackerTrack_EtaPhi_negEta->Fill(TrackEta, TrackPhi);
   m_histogram_TrackerTrack_EtaPhi_posEta->Fill(TrackEta, TrackPhi);
 
   std::cout << "Plotting TrackEta_dR: " << TrackEta_dR << " and TrackPhi_dR: " << TrackPhi_dR << std::endl;
+  std::cout << "minDR: " << minDR << std::endl;
   m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta->Fill(TrackEta_dR, TrackPhi_dR);
   m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta->Fill(TrackEta_dR, TrackPhi_dR);
 
