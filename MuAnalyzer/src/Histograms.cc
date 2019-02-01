@@ -1,11 +1,19 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
-#include "MuMu/MuMuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/EventSetup.h"
+#include "Geometry/Records/interface/MuonGeometryRecord.h"
+#include "Geometry/CSCGeometry/interface/CSCGeometry.h"
+#include "Geometry/CSCGeometry/interface/CSCChamber.h"
+#include "DataFormats/MuonDetId/interface/CSCDetId.h"
+#include "Geometry/CSCGeometry/interface/CSCLayer.h"
+#include "Geometry/CSCGeometry/interface/CSCLayerGeometry.h"
 #include "TH2F.h"
 #include <iostream>
 
@@ -49,6 +57,8 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrack_EtaPhi_posEta_pT100to150 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
   m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
+  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
+
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
@@ -69,17 +79,17 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP2", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP2", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p35", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p35", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p35 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p35", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p35", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
 
 }
 
 void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR){
 
-  bool TrackDissapears_dR0p35;
+  bool TrackDissapears_dR0p1;
   bool TrackDissapears_IP15;
   bool TrackDissapears_IP10;
   bool TrackDissapears_IP5;
@@ -109,15 +119,15 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
     m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf->Fill(TrackEta, TrackPhi);
   }
 
-  if(minDR > 0.35){
-    TrackDissapears_dR0p35 = true;
+  if(minDR > 0.1){
+    TrackDissapears_dR0p1 = true;
   }else{
-    TrackDissapears_dR0p35 = false;
+    TrackDissapears_dR0p1 = false;
   }
 
-  if(TrackDissapears_dR0p35 == false){
-    m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35->Fill(TrackEta_dR, TrackPhi_dR);
-    m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p35->Fill(TrackEta_dR, TrackPhi_dR);
+  if(TrackDissapears_dR0p1 == false){
+    m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1->Fill(TrackEta_dR, TrackPhi_dR);
+    m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1->Fill(TrackEta_dR, TrackPhi_dR);
   }
 
   if(minTotalImpactParameter > 15){
@@ -189,4 +199,36 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
   }
 			      
 
+}
+
+void Histograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label)
+{
+
+  edm::Handle<CSCSegmentCollection> TheCSCSegments;
+  iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
+
+  edm::ESHandle<CSCGeometry> TheCSCGeometry;
+  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
+
+  if (TheCSCSegments.isValid())
+  {
+     for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++)
+     {
+        CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
+	if(iDetId.station() != 1) continue;
+        DetId TheDetUnitId(iSegment->cscDetId());
+	const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+	m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());
+     }
+  }
+	
+}
+
+void Histograms::Normalize()
+{
+ /* if(m_histogram_CSCHits_EtaPhi->Integral()!=0)
+  {
+     double norm = 1/m_histogram_CSCHits_EtaPhi->Integral();
+     m_histogram_CSCHits_EtaPhi->Scale(norm);
+  }*/
 }

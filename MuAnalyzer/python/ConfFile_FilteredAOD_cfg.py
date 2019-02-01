@@ -42,11 +42,11 @@ process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
     limit = cms.untracked.int32(0)
 )
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 if(options.runLocally):
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 	import FWCore.Utilities.FileUtils as FileUtils
-	mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_temp.txt')
+	mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -59,7 +59,7 @@ process.source = cms.Source("PoolSource",
     fileNames = readFiles
 )
 
-process.demo = cms.EDAnalyzer('MuMuAnalyzer_FilteredAOD',
+process.demo = cms.EDAnalyzer('MuAnalyzer',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),

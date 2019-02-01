@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    MuMu/MuAnalyzer
+// Package:    DarkPhoton/MuAnalyzer
 // Class:      MuAnalyzer
 // 
-/**\class MuAnalyzer MuAnalyzer_AOD.cc MuMu/MuAnalyzer/plugins/MuAnalyzer_AOD.cc
+/**\class MuAnalyzer MuAnalyzer_AOD.cc DarkPhoton/MuAnalyzer/plugins/MuAnalyzer_AOD.cc
 
  Description: [one line class summary]
 
@@ -66,11 +66,11 @@
 //Triggers
 #include "FWCore/Common/interface/TriggerNames.h"
 
-#include "MuMu/MuMuAnalyzer/interface/Histograms.h"
-#include "MuMu/MuMuAnalyzer/interface/CSC.h"
-#include "MuMu/MuMuAnalyzer/interface/EventInfo.h"
-#include "MuMu/MuMuAnalyzer/interface/Muons.h"
-#include "MuMu/MuMuAnalyzer/interface/Tracks.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/CSC.h"
+#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
+#include "DarkPhoton/MuAnalyzer/interface/Muons.h"
+#include "DarkPhoton/MuAnalyzer/interface/Tracks.h"
 
 
 // class declaration
@@ -235,7 +235,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  //Track and Muon have opposite charge
           if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
           if (!((*iTrack)->quality(Track::highPurity))) continue;
-
+          if ((*iTrack)->eta()<-1.5 && (*iTrack)->phi()<-0.2 && (*iTrack)->phi()>-0.7) continue;
 
 	  //Using the highest pT track that pairs with a muon
 //	  if (foundMuonTrackPair) continue;
@@ -324,7 +324,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          //Track and Muon have opposite charge
          if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
          if (!((*iTrack)->quality(Track::highPurity))) continue;
-
+         if (myMuons.highPtSelectedMuon->eta()<-1.5 && myMuons.highPtSelectedMuon->phi()<-0.2 && myMuons.highPtSelectedMuon->phi()>-0.7) continue;
          //Using the highest pT track that pairs with a muon
 //         if (foundMuonTrackPair) continue;
 
@@ -342,7 +342,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
 
-    if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4){
+    if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4 ){
       std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
@@ -369,6 +369,8 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
   }
+
+  myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
 
 }
 
@@ -399,6 +401,7 @@ MuAnalyzer::beginJob()
 void 
 MuAnalyzer::endJob() 
 {
+   myHistograms.Normalize();  
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------

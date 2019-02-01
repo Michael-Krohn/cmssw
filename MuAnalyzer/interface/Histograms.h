@@ -8,7 +8,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
-
+#include "DataFormats/CSCRecHit/interface/CSCSegmentCollection.h"
 
 class TH1F;
 class TH2F;
@@ -19,6 +19,8 @@ class Histograms{
 
     void book(edm::Service<TFileService> fs);
     void PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR);
+    void PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label);
+    void Normalize();
 
   public:
     TH1F* h_eventCount;
@@ -82,8 +84,11 @@ class Histograms{
     TH2F* m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta;
     TH2F* m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta;
 
-    TH2F* m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p35;
-    TH2F* m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35;
+    TH2F* m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1;
+    TH2F* m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1;
+
+    //CSC Segment Location
+    TH2F* m_histogram_CSCHits_EtaPhi;
 
 };
 

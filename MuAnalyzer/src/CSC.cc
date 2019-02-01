@@ -1,4 +1,4 @@
-#include "MuMu/MuMuAnalyzer/interface/CSC.h"
+#include "DarkPhoton/MuAnalyzer/interface/CSC.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -9,7 +9,7 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
-#include "MuMu/MuMuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
 CSC::CSC(){}
@@ -39,16 +39,16 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
        double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
        if(dPhi > ROOT::Math::Pi()) dPhi -= ROOT::Math::Pi();
 
-       if(minDR > sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)))){
-         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
+       LocalPoint TheLocalPosition = iSegment->localPosition();
+       const BoundPlane& TheSurface = TheUnit->surface();
+       GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+
+       if(minDR > sqrt(( pow((one_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)))){
+         minDR = sqrt(( pow((one_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)));
 	 TrackEta_dR = one_momentum.eta();
 	 TrackPhi_dR = one_momentum.phi();
 	 TrackP_dR = sqrt(pow(one_momentum.x(), 2) + pow(one_momentum.y(), 2) + pow(one_momentum.z(), 2));
        }
-
-       LocalPoint TheLocalPosition = iSegment->localPosition();
-       const BoundPlane& TheSurface = TheUnit->surface();
-       GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
 
        TrajectoryStateClosestToPoint  traj = tracksToVertex[0].trajectoryStateClosestToPoint(TheGlobalPosition);
 
@@ -98,10 +98,10 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
            MuonPhi = iMuon->phi();
            MuonP = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
          }
-         double dPhi_Muon = fabs(two_momentum.phi() - TheUnit->position().phi());
+         double dPhi_Muon = fabs(two_momentum.phi() - TheGlobalPosition.phi());
          if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= ROOT::Math::Pi();
-         if (minDR_Muon > sqrt(( pow((two_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi_Muon, 2.0)))){
-            minDR_Muon = sqrt(( pow((two_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi_Muon, 2.0)));
+         if (minDR_Muon > sqrt(( pow((two_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi_Muon, 2.0)))){
+            minDR_Muon = sqrt(( pow((two_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi_Muon, 2.0)));
 	    MuonEta_dR = iMuon->eta();
             MuonPhi_dR = iMuon->phi();
             MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
