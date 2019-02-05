@@ -4,7 +4,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -44,11 +44,14 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200) )
 
 if(options.runLocally):
 	import FWCore.Utilities.FileUtils as FileUtils
-	mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_temp.txt')
+        #mylist = FileUtils.loadListFromFile ('file_temp_RECO.txt')
+	mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco_temp.txt')
+	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
+	#mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_temp.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -69,7 +72,8 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
-    HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    HBHERecHits = cms.InputTag("hbhereco"),
+    #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),
     runRandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
