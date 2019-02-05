@@ -32,7 +32,7 @@ def setStyle():
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option('-d','--dir',dest="outDir",default="DoubleB_Efficiencies",type="string",
+    parser.add_option('-d','--dir',dest="outDir",default="plots",type="string",
                   help="Output directory to store results")
     parser.add_option('-l','--lumi',dest="lumi", default=300.,type="float",
                   help="integrated luminosity in pb^-1")

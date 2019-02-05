@@ -143,7 +143,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
-  m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false))
+  m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",true))
 {
    //now do what ever initialization is needed
   if (m_isMC){
@@ -236,7 +236,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  //Track and Muon have opposite charge
           if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
           if (!((*iTrack)->quality(Track::highPurity))) continue;
-          if ((*iTrack)->eta()<-1.5 && (*iTrack)->phi()<-0.2 && (*iTrack)->phi()>-0.7) continue;
+//          if ((*iTrack)->eta()<-1.5 && (*iTrack)->phi()<-0.2 && (*iTrack)->phi()>-0.7) continue;
 
 	  //Using the highest pT track that pairs with a muon
 //	  if (foundMuonTrackPair) continue;
@@ -267,6 +267,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
+	  if (myCSCs.minDR > 0.5) {std::cout << "eta: " << (*iTrack)->eta() << " phi:" << (*iTrack)->phi() << "\n";} 
 
       }
       myHistograms.m_nTracksPairedPerMuon->Fill(nTracksPairedPerMuon);
@@ -298,9 +299,9 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if (nMuonTrackCand > 0){
       myHistograms.m_nMuonTrackCand->Fill(nMuonTrackCand);
       myHistograms.m_nTracksNoMuon->Fill(nTracksNoMuon);
-      std::cout <<"PASSES"<<std::endl;
+//      std::cout <<"PASSES"<<std::endl;
     }else{
-      std::cout << "FAILS"<<std::endl;
+//      std::cout << "FAILS"<<std::endl;
     }	
 
 
@@ -337,7 +338,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          //Track and Muon have opposite charge
          if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
          if (!((*iTrack)->quality(Track::highPurity))) continue;
-         if (myMuons.highPtSelectedMuon->eta()<-1.5 && myMuons.highPtSelectedMuon->phi()<-0.2 && myMuons.highPtSelectedMuon->phi()>-0.7) continue;
+//         if (myMuons.highPtSelectedMuon->eta()<-1.5 && myMuons.highPtSelectedMuon->phi()<-0.2 && myMuons.highPtSelectedMuon->phi()>-0.7) continue;
          //Using the highest pT track that pairs with a muon
 //         if (foundMuonTrackPair) continue;
 
@@ -356,21 +357,22 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
 
     if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4 ){
-      std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
+//      std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
 
       if(myCSCs.minDR_Muon < 0.35){
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
-	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
-	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
-	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
+//	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
+//	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
+//	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
       }
     }
   }else{
     bool useFirstTrackToPair = false;
     //Making efficiencies for random tracks
+    cout << "Making random tracks!!\n";
     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack ) {
 
        if (useFirstTrackToPair) continue;

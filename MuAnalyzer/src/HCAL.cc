@@ -25,23 +25,23 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   const CaloGeometry* caloGeom = TheCALOGeometry.product(); 
 
   if(!hcalRecHits.isValid()){
-    std::cout << "Could not find HCAL RecHits" << std::endl;
+//    std::cout << "Could not find HCAL RecHits" << std::endl;
   }else{
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
       HcalDetId id(hbherechit->detid());
 
       const CaloCellGeometry *hbhe_cell = caloGeom->getGeometry(hbherechit->id());
-      Global3DPoint hbhe_position = hbhe_cell->getPosition();
+ //     Global3DPoint hbhe_position = hbhe_cell->getPosition();
 
-      std::cout << "hbherechit->energy(): " << hbherechit->energy() << std::endl;
+/*      std::cout << "hbherechit->energy(): " << hbherechit->energy() << std::endl;
        std::cout << "hbherechit->time(): " << hbherechit->time() << std::endl;
 
        std::cout << "id.depth(): " << id.depth() << std::endl;
        std::cout << "id.subdet(): " << id.subdet() <<  std::endl;
        std::cout << "hbhe_position.eta(): " << hbhe_position.eta() << std::endl;
        std::cout << "hbhe_position.phi(): " << hbhe_position.phi() << std::endl;
-
+*/
     }
   }
 }

@@ -96,13 +96,13 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
   bool TrackDissapears_IP3;
   bool TrackDissapears_IP2;
 
-  std::cout << "Plotting TrackEta: " << TrackEta << " and TrackPhi: " << TrackPhi << std::endl;
-  std::cout << "minTotalImpactParameter: " << minTotalImpactParameter << std::endl;
+//  std::cout << "Plotting TrackEta: " << TrackEta << " and TrackPhi: " << TrackPhi << std::endl;
+//  std::cout << "minTotalImpactParameter: " << minTotalImpactParameter << std::endl;
   m_histogram_TrackerTrack_EtaPhi_negEta->Fill(TrackEta, TrackPhi);
   m_histogram_TrackerTrack_EtaPhi_posEta->Fill(TrackEta, TrackPhi);
 
-  std::cout << "Plotting TrackEta_dR: " << TrackEta_dR << " and TrackPhi_dR: " << TrackPhi_dR << std::endl;
-  std::cout << "minDR: " << minDR << std::endl;
+//  std::cout << "Plotting TrackEta_dR: " << TrackEta_dR << " and TrackPhi_dR: " << TrackPhi_dR << std::endl;
+//  std::cout << "minDR: " << minDR << std::endl;
   m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta->Fill(TrackEta_dR, TrackPhi_dR);
   m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta->Fill(TrackEta_dR, TrackPhi_dR);
 
@@ -216,8 +216,8 @@ void Histograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iS
   {
      for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++)
      {
-        CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
-	if(iDetId.station() != 1) continue;
+        //CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
+	//if(iDetId.station() != 1) continue;
         DetId TheDetUnitId(iSegment->cscDetId());
 	const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 	m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());

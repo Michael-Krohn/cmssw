@@ -31,7 +31,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 
        //Only using 1st layer of CSCs
-       if(iDetId.station() != 1) continue;
+//       if(iDetId.station() != 1) continue;
 
        DetId TheDetUnitId(iSegment->cscDetId());
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
@@ -81,7 +81,7 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
        CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
 
        //Only using 1st layer of CSCs
-       if(iDetId.station() != 1) continue;
+//       if(iDetId.station() != 1) continue;
        
        if(iMuon->eta() < 0 && iDetId.endcap() == 1) continue;
        if(iMuon->eta() > 0 && iDetId.endcap() == 2) continue;

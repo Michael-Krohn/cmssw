@@ -10,7 +10,7 @@ options.register( 'isMC',
 				  "True if is MC dataset")
 
 options.register( 'runRandomTrack',
-                                  False,
+                                  True,
                                   VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is studying random track efficiency")
@@ -44,7 +44,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )
 	import FWCore.Utilities.FileUtils as FileUtils
 	mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	readFiles = cms.untracked.vstring( *mylist)
