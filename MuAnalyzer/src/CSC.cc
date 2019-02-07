@@ -31,14 +31,14 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 
        //Only using 1st layer of CSCs
-       if(iDetId.station() != 1) continue;
+//       if(iDetId.station() != 1) continue;
 
        DetId TheDetUnitId(iSegment->cscDetId());
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 
        double dPhi = fabs(one_momentum.phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
        //double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
-       if(dPhi > ROOT::Math::Pi()) dPhi -= ROOT::Math::Pi();
+       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
        if(minDR > sqrt(( pow((one_momentum.eta() - TheUnit->toGlobal(iSegment->localPosition()).eta()),2.0) + pow(dPhi, 2.0)))){
          minDR = sqrt(( pow((one_momentum.eta() - TheUnit->toGlobal(iSegment->localPosition()).eta()),2.0) + pow(dPhi, 2.0)));
@@ -82,7 +82,7 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
        CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
 
        //Only using 1st layer of CSCs
-       if(iDetId.station() != 1) continue;
+//       if(iDetId.station() != 1) continue;
        
        if(iMuon->eta() < 0 && iDetId.endcap() == 1) continue;
        if(iMuon->eta() > 0 && iDetId.endcap() == 2) continue;
@@ -104,7 +104,7 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
            MuonP = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
          }
          double dPhi_Muon = fabs(two_momentum.phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
-         if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= ROOT::Math::Pi();
+         if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= 2*ROOT::Math::Pi();
          if (minDR_Muon > sqrt(( pow((two_momentum.eta() - TheUnit->toGlobal(iSegment->localPosition()).eta()),2.0) + pow(dPhi_Muon, 2.0)))){
             minDR_Muon = sqrt(( pow((two_momentum.eta() - TheUnit->toGlobal(iSegment->localPosition()).eta()),2.0) + pow(dPhi_Muon, 2.0)));
 	    MuonEta_dR = iMuon->eta();

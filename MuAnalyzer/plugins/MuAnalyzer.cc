@@ -366,6 +366,8 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
 	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
 	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
+	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
+	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
       }
     }
   }else{
