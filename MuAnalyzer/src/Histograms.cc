@@ -85,6 +85,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
 
+  m_MinDR_MuonHCAL = fs->make<TH1F>("MinDR_MuonHCAL", "; Min #Delta R; Events", 140, 0, 7);
+  m_HitEnergy_MinDR_MuonHCAL = fs->make<TH1F>("HitEnergy_MinDR_MuonHCAL", "; Energy; Events", 200, 0, 20);
+
 }
 
 void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR){

@@ -90,6 +90,9 @@ class Histograms{
     //CSC Segment Location
     TH2F* m_histogram_CSCHits_EtaPhi;
 
+    TH1F* m_MinDR_MuonHCAL;
+    TH1F* m_HitEnergy_MinDR_MuonHCAL;
+
 };
 
 #endif

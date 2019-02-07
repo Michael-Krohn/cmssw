@@ -38,7 +38,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
        double dPhi = fabs(one_momentum.phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
        //double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
-       if(dPhi > ROOT::Math::Pi()) dPhi -= ROOT::Math::Pi();
+       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
        LocalPoint TheLocalPosition = iSegment->localPosition();
        const BoundPlane& TheSurface = TheUnit->surface();
