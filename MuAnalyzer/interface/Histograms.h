@@ -85,6 +85,9 @@ class Histograms{
     TH2F* m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p35;
     TH2F* m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p35;
 
+    TH1F* m_MinDR_MuonHCAL;
+    TH1F* m_HitEnergy_MinDR_MuonHCAL;
+
 };
 
 #endif

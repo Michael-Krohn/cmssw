@@ -44,12 +44,10 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
-
-if(options.runLocally):
 	import FWCore.Utilities.FileUtils as FileUtils
         mylist = FileUtils.loadListFromFile ('file_temp_RECO.txt')
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco.txt')
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200) )
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_temp.txt')
 	readFiles = cms.untracked.vstring( *mylist)

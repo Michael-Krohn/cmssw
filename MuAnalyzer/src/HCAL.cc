@@ -83,7 +83,7 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        std::cout << "check 7" << std::endl;
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
-       if(dPhi > ROOT::Math::Pi()) dPhi -= ROOT::Math::Pi();
+       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
        if(minHCALdR > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)))){
 	 minHCALdR = sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)));

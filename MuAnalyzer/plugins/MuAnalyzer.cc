@@ -363,14 +363,13 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << "check 1" << std::endl;
 
       if(myCSCs.minDR_Muon < 0.1){
-        std::cout << "check 2" << std::endl;
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
 	std::cout << "check 3" << std::endl;
 	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
 	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
 	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
-        myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
+	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
       }
     }
   }else{
