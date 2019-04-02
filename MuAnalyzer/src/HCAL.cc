@@ -17,6 +17,8 @@ HCAL::HCAL(){}
 
 void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label){
 
+  std::cout << "Inside CheckHCAL" << std::endl;
+
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
 
@@ -50,24 +52,31 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi){
 
   double minHCALdR = 1000;
+  std::cout << "inside MuonMindR" << std::endl;
 
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
 
+  std::cout << "check 3" << std::endl;
+
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
+  std::cout << "check 4" << std::endl;
 
   if(!hcalRecHits.isValid()){
     std::cout << "Could not find HCAL RecHits" << std::endl;
   }else{
+    std::cout << "check 5" << std::endl;
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
        HcalDetId id(hbherechit->detid());
+       std::cout << "check 6" << std::endl;
 
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+//       const CaloCellGeometry *hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+//       Global3DPoint hbhe_position = caloGeom->getGeometry(hbherechit->id())->getPosition();
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
-
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
        if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
@@ -75,9 +84,8 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
 	 minHCALdR = sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)));
 	 MuonHitEnergy = hbherechit->energy();
        }
-
+//       hbhe_cell->reset();
     }
   }
-
   return minHCALdR;
 }

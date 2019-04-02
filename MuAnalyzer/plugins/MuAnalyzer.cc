@@ -287,7 +287,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
 
-      if(myCSCs.minDR < 0.35){
+      if(myCSCs.minDR < 0.1){
 	myHCAL.CheckHCAL(iEvent, iSetup, HBHERecHit_Label);
 
       }
@@ -361,9 +361,11 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
+      std::cout << "check 1" << std::endl;
 
       if(myCSCs.minDR_Muon < 0.1){
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
+	std::cout << "check 3" << std::endl;
 	std::cout << "myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << std::endl;
 	std::cout << "minDR_MuonHCAL: " << minDR_MuonHCAL <<  std::endl;
 	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;

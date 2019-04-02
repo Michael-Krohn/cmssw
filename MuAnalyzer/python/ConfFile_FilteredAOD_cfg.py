@@ -60,7 +60,8 @@ process.options = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    fileNames = readFiles
+    fileNames = cms.untracked.vstring("file:RECOdata_Test.root")
+    #fileNames = readFiles
 )
 
 process.demo = cms.EDAnalyzer('MuAnalyzer',
