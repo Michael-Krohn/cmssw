@@ -9,6 +9,10 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/CSCRecHit/interface/CSCSegmentCollection.h"
+#include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
+#include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/Common/interface/SortedCollection.h"
 
 class TH1F;
 class TH2F;
@@ -20,6 +24,7 @@ class Histograms{
     void book(edm::Service<TFileService> fs);
     void PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR);
     void PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label);
+    void PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
     void Normalize();
 
   public:
@@ -89,6 +94,9 @@ class Histograms{
 
     //CSC Segment Location
     TH2F* m_histogram_CSCHits_EtaPhi;
+
+    //HCAL hits histogram
+    TH2F* m_histogram_HCALHits_EtaPhi;
 
     TH1F* m_MinDR_MuonHCAL;
     TH1F* m_HitEnergy_MinDR_MuonHCAL;

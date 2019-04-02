@@ -142,8 +142,8 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
-  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
-  m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",true))
+  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false)),
+  m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false))
 {
    //now do what ever initialization is needed
   if (m_isMC){
@@ -369,6 +369,9 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	std::cout << "myHCAL.MuonHitEnergy: " << myHCAL.MuonHitEnergy << std::endl;
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
 	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
+        myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
+        myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
+
       }
     }
   }else{
@@ -401,8 +404,9 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        useFirstTrackToPair = true;
     }
   }
-
-  myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
+  
+//  myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
+//  myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
 
 }
 

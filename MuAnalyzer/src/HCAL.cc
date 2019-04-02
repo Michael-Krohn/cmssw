@@ -31,7 +31,7 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
       HcalDetId id(hbherechit->detid());
 
-      const CaloCellGeometry *hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+      std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
  //     Global3DPoint hbhe_position = hbhe_cell->getPosition();
 
 /*      std::cout << "hbherechit->energy(): " << hbherechit->energy() << std::endl;
@@ -65,7 +65,7 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
        HcalDetId id(hbherechit->detid());
 
-       const CaloCellGeometry *hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+       std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
 
        double dPhi = fabs(MuonPhi - hbhe_position.phi());

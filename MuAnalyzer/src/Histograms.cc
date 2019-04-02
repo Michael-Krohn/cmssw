@@ -14,6 +14,10 @@
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
 #include "Geometry/CSCGeometry/interface/CSCLayer.h"
 #include "Geometry/CSCGeometry/interface/CSCLayerGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "TH2F.h"
 #include <iostream>
 
@@ -58,6 +62,7 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
   m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
+  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
 
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
@@ -215,7 +220,7 @@ void Histograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iS
   edm::ESHandle<CSCGeometry> TheCSCGeometry;
   iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
 
-  if (TheCSCSegments.isValid())
+  if ((TheCSCSegments.isValid())&&(m_histogram_CSCHits_EtaPhi->GetEntries()==0))
   {
      for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++)
      {
@@ -224,6 +229,36 @@ void Histograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iS
         DetId TheDetUnitId(iSegment->cscDetId());
 	const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 	m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());
+     }
+  }
+	
+}
+
+void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label)
+{
+
+  edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
+  iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
+
+  edm::ESHandle<CaloGeometry> TheCALOGeometry;
+  iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+  const CaloGeometry* caloGeom = TheCALOGeometry.product();
+
+  if ((hcalRecHits.isValid())&&(m_histogram_HCALHits_EtaPhi->GetEntries()==0))
+  {
+     const HBHERecHitCollection *hbhe = hcalRecHits.product();
+     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
+     {
+        //CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
+	//if(iDetId.station() != 1) continue;
+	HcalDetId id(hbherechit->detid());
+
+        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+	Global3DPoint hbhe_position = hbhe_cell->getPosition();
+        m_histogram_HCALHits_EtaPhi->Fill(hbhe_position.eta(),hbhe_position.phi());
+
+	//const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+	//m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());
      }
   }
 	
