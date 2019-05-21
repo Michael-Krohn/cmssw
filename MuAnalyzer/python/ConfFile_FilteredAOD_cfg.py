@@ -44,7 +44,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 	import FWCore.Utilities.FileUtils as FileUtils
         #mylist = FileUtils.loadListFromFile ('file_temp_RECO.txt')
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco_temp.txt')
@@ -60,8 +60,8 @@ process.options = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring("file:RECOdata_Test.root")
-    #fileNames = readFiles
+    #fileNames = cms.untracked.vstring("file:RECOdata_Test.root")
+    fileNames = readFiles
 )
 
 process.demo = cms.EDAnalyzer('MuAnalyzer',

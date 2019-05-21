@@ -97,10 +97,32 @@ class Histograms{
 
     //HCAL hits histogram
     TH2F* m_histogram_HCALHits_EtaPhi;
+    TH2F* m_histogram_BlankHCALHits_EtaPhi;
 
     TH1F* m_MinDR_MuonHCAL;
+    TH1F* m_MinDR_RandomHCAL;
     TH1F* m_HitEnergy_MinDR_MuonHCAL;
-
+    TH1F* m_HitEnergy_RandomHCAL;
+    TH1F* m_HitDepth_MuonHCAL;
+    TH1F* m_HitDepth_RandomHCAL;
+    TH1F* m_ConeHits;
+    TH1F* m_ConeEnergy;
+    TH1F* m_RandomConeHits;
+    TH1F* m_RandomConeEnergy;   
+    TH1F* m_Layer_Spectra[7];
+    TH1F* m_RLayer_Spectra[7];
+    TH2F* m_Layer_Eta[7];
+    TH2F* m_RLayer_Eta[7];
+    TH1F* m_MissingHits;
+    TH1F* m_RMissingHits;
+    TH2F* m_MissingHitsMap;
+    TH2F* m_RMissingHitsMap;
+    TH1F* m_MissingHitsEnergy;
+    TH1F* m_MissingHitsDR;
+    TH1F* m_FirstFound_Spectra;
+    TH1F* m_FirstMissing_Spectra;
+    TH1F* m_DeepestFound_Spectra;
+    TH1F* m_DeepestMissing_Spectra;   
 };
 
 #endif

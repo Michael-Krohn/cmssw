@@ -11,15 +11,21 @@
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
+#include "TH1F.h"
+#include "TH2F.h"
 
 class HCAL{
   public:
     HCAL();
     void CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
     double MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi);
-
+    double* HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, double ConeSize, Histograms myHistograms);
     double MuonHitEnergy;
+    int    MuonHitDepth;
 
+  private:
+    const double Hit_Thresholds[7] = {200,0.2,0.2,0.2,0.2,0.2,0.25};
 };
 
 #endif
