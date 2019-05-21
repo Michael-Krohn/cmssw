@@ -2,12 +2,12 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8_RECO.root -s RAW2DIGI,RECO --mc --datatier RECO --conditions 100X_upgrade2018_realistic_v10 --eventcontent AODSIM --filein file:ZMM14TeV_pythia8.root --python_filename ZMM14TeV_pythia8_GEN-SIM-RAW-RECO_cfg.py --no_exec -n 50
+# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8_RECO.root -s RAW2DIGI,RECO --mc --datatier RECO --conditions 100X_upgrade2018_realistic_v10 --era Run2_2018 --eventcontent AODSIM --filein file:ZMM14TeV_pythia8.root --python_filename ZMM14TeV_pythia8_GEN-SIM-RAW-RECO_cfg.py --no_exec -n 50
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process('RECO')
+process = cms.Process('RECO',eras.Run2_2018)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')

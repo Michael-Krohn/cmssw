@@ -2,12 +2,12 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8.root -s GEN,SIM,DIGI,L1,DIGI2RAW,HLT --mc --datatier GEN-SIM-RAW --conditions 100X_upgrade2018_realistic_v10 --era Run2_2018 --eventcontent RAWSIM --python_filename ZMM14TeV_pythia8_GEN-SIM_cfg.py --no_exec -n 50
+# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8.root -s GEN,SIM,DIGI,L1,DIGI2RAW,HLT --mc --datatier GEN-SIM-RAW --conditions 100X_upgrade2018_realistic_v10 --eventcontent RAWSIM --python_filename ZMM14TeV_pythia8_GEN-SIM_cfg.py --no_exec -n 50
 import FWCore.ParameterSet.Config as cms
 
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process('HLT',eras.Run2_2018)
+process = cms.Process('HLT')
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -54,7 +54,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
         SelectEvents = cms.vstring('generation_step')
     ),
     compressionAlgorithm = cms.untracked.string('LZMA'),
-    compressionLevel = cms.untracked.int32(1),
+    compressionLevel = cms.untracked.int32(9),
     dataset = cms.untracked.PSet(
         dataTier = cms.untracked.string('GEN-SIM-RAW'),
         filterName = cms.untracked.string('')
