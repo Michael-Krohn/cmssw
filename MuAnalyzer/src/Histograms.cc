@@ -278,7 +278,7 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
 
-  if ((hcalRecHits.isValid())&&(m_histogram_HCALHits_EtaPhi->GetEntries()==0))
+  if ((hcalRecHits.isValid()))
   {
      const HBHERecHitCollection *hbhe = hcalRecHits.product();
      for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
@@ -287,7 +287,7 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
 	HcalDetId id(hbherechit->detid());
         std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
 	Global3DPoint hbhe_position = hbhe_cell->getPosition();
-	if(id.depth()<4) {continue;}
+	if(abs(hbhe_position.eta())>2.4){continue;}
 	m_histogram_HCALHits_EtaPhi->Fill(hbhe_position.eta(),hbhe_position.phi());
         
 	//const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);

@@ -15,7 +15,13 @@ options.register( 'is2017',
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if using 2017 dataset")
-																	
+											
+options.register( 'fileName',
+				  '',
+				  VarParsing.multiplicity.singleton,
+				  VarParsing.varType.string,
+				  "File name to fiter")
+
 options.parseArguments()
 																	
 
@@ -29,7 +35,7 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
+        process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v15')
 else:
     if(options.is2017):
         process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
@@ -102,7 +108,8 @@ process.source = cms.Source("PoolSource",
 #					  'keep *_hbhereco_*_*'),
 
     # replace 'myfile.root' with the source file you want to use
-    fileNames = readFiles
+    fileNames = cms.untracked.vstring("file:"+options.fileName)
+    #fileNames = cms.untracked.vstring("file:/local/cms/user/revering/dphoton/CMSSW_10_2_11_patch1/src/DarkPhoton/MuGenerator/test.root")
 )
 
 if not(options.isMC):

@@ -123,12 +123,13 @@ double* HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup,
     std::deque < std::tuple <double, double, double> >  MuonHits[7];
     
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
-    {   
+    {  
        HcalDetId id(hbherechit->detid());
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
+       if(abs(hbhe_position.eta()<1.653)||abs(hbhe_position.eta()>2.4)){continue;}
        if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
        if((ConeSize > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0))))&&(hbherechit->energy()!=0))

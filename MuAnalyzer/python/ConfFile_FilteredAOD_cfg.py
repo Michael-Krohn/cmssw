@@ -34,7 +34,7 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('94X_mc2017_realistic_v10')
+        process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v15')
 else:
         process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
 
@@ -70,8 +70,8 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
-    trigResults = cms.InputTag("TriggerResults","","HLT"),
-    muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
+    #trigResults = cms.InputTag("TriggerResults","","HLT"),
+    #muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),

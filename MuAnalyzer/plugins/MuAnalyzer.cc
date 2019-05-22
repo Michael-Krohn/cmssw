@@ -149,9 +149,11 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
   }
-  m_trigResultsToken = consumes<edm::TriggerResults> (iConfig.getParameter<edm::InputTag>("trigResults"));
-  m_muonPathsToPass   = iConfig.getParameter<std::vector<std::string> >("muonPathsToPass");
-
+  else
+  {
+     m_trigResultsToken = consumes<edm::TriggerResults> (iConfig.getParameter<edm::InputTag>("trigResults"));
+     m_muonPathsToPass   = iConfig.getParameter<std::vector<std::string> >("muonPathsToPass");
+  }
   usesResource("TFileService");
   edm::Service<TFileService> fs;
 
@@ -196,8 +198,10 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   cutProgress++;
-
-  if(!myEventInfo.passTriggers(iEvent, m_trigResultsToken, m_muonPathsToPass)) return;
+  if(!m_isMC)
+  {
+     if(!myEventInfo.passTriggers(iEvent, m_trigResultsToken, m_muonPathsToPass)) return;
+  }
   cutProgress++;
 
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
