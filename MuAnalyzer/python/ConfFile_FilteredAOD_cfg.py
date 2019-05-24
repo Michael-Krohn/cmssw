@@ -4,13 +4,13 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  False,
+                                  True,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
 
 options.register( 'runRandomTrack',
-                                  True,
+                                  False,
                                   VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is studying random track efficiency")
@@ -34,7 +34,7 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v15')
+        process.GlobalTag.globaltag = cms.string('100X_upgrade2018_realistic_v10')
 else:
         process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
 
@@ -60,6 +60,7 @@ process.options = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
+    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     #fileNames = cms.untracked.vstring("file:RECOdata_Test.root")
     fileNames = readFiles
 )

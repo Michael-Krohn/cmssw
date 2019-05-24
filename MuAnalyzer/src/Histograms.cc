@@ -61,9 +61,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrack_EtaPhi_posEta_pT100to150 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
   m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
-  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
-  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "", 100, -2.4, 2.4, 100, -3.2, 3.2);
+  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
+  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
+  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
 
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);

@@ -129,7 +129,7 @@ double* HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
-       if(abs(hbhe_position.eta()<1.653)||abs(hbhe_position.eta()>2.4)){continue;}
+       if((abs(hbhe_position.eta())<1.653)||(abs(hbhe_position.eta())>2.4)){continue;}
        if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
        if((ConeSize > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0))))&&(hbherechit->energy()!=0))

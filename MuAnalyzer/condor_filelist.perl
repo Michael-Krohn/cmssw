@@ -48,7 +48,7 @@ $cmsRunArguments=shift @ARGV;
 $cmsRunArguments2nd=shift @ARGV;
 $cmsRunArguments3rd=shift @ARGV;
 
-print "cmsRun Arguments: $cmsRunArguments and $cmsRunArguments2nd\n";
+print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, and $cmsRunArguments3rd\n";
 
 if ($jobBase eq "default") {
     my $stub3=$basecfg;

@@ -2,12 +2,13 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8.root -s GEN,SIM,DIGI,L1,DIGI2RAW,HLT --mc --datatier GEN-SIM-RAW --conditions 100X_upgrade2018_realistic_v10 --eventcontent RAWSIM --python_filename ZMM14TeV_pythia8_GEN-SIM_cfg.py --no_exec -n 50
+# with command line options: Configuration/Generator/python/ZMM_14TeV_TuneCUETP8M1_cfi.py --fileout file:ZMM14TeV_pythia8_RAW.root -s GEN,SIM,DIGI,L1,DIGI2RAW,HLT --mc --datatier RECO --conditions 100X_upgrade2018_realistic_v10 --era Run2_2018 --eventcontent RAWSIM --python_filename ZMM14TeV_pythia8_RAW_cfg.py --no_exec -n 50
 import FWCore.ParameterSet.Config as cms
+import sys
 
 from Configuration.StandardSequences.Eras import eras
 
-process = cms.Process('HLT')
+process = cms.Process('HLT',eras.Run2_2018)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -30,8 +31,10 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(50)
+    input = cms.untracked.int32(300)
 )
+
+process.RandomNumberGeneratorService.generator.initialSeed = int(sys.argv[2])
 
 # Input source
 process.source = cms.Source("EmptySource")
@@ -56,11 +59,11 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     compressionAlgorithm = cms.untracked.string('LZMA'),
     compressionLevel = cms.untracked.int32(9),
     dataset = cms.untracked.PSet(
-        dataTier = cms.untracked.string('GEN-SIM-RAW'),
+        dataTier = cms.untracked.string('RECO'),
         filterName = cms.untracked.string('')
     ),
     eventAutoFlushCompressedSize = cms.untracked.int32(20971520),
-    fileName = cms.untracked.string('file:ZMM14TeV_pythia8.root'),
+    fileName = cms.untracked.string('file:ZMM14TeV_RAW_'+str(sys.argv[2])+'.root'),
     outputCommands = process.RAWSIMEventContent.outputCommands,
     splitLevel = cms.untracked.int32(0)
 )
@@ -113,9 +116,9 @@ process.generator = cms.EDFilter("Pythia8GeneratorFilter",
 
 
 process.mumugenfilter = cms.EDFilter("MCParticlePairFilter",
-    MaxEta = cms.untracked.vdouble(4.0, 4.0),
-    MinEta = cms.untracked.vdouble(-4.0, -4.0),
-    MinPt = cms.untracked.vdouble(2.5, 2.5),
+    MaxEta = cms.untracked.vdouble(2.6, 2.6),
+    MinEta = cms.untracked.vdouble(-2.6, -2.6),
+    MinPt = cms.untracked.vdouble(10.0, 10.0),
     ParticleCharge = cms.untracked.int32(-1),
     ParticleID1 = cms.untracked.vint32(13),
     ParticleID2 = cms.untracked.vint32(13),

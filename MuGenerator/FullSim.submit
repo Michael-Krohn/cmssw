@@ -1,0 +1,14 @@
+Executable           = /usr/bin/python2
+Universe             = vanilla
+Requirements =  Arch=="X86_64" && (Machine != "zebra01.spa.umn.edu") && (Machine != "zebra02.spa.umn.edu") && (Machine != "zebra03.spa.umn.edu") && (Machine != "zebra04.spa.umn.edu")
++CondorGroup = "cmsfarm"
+getenv = True
+request_memory=2000
+nice_user=True
+
+InitialDir           = /local/cms/user/revering/dphoton/CMSSW_10_0_2/src/DarkPhoton/MuGenerator
+Arguments            = /local/cms/user/revering/dphoton/CMSSW_10_0_2/src/DarkPhoton/MuGenerator/FullSim_Submit_Script.py $(process)
+output               = log/$(Process).out
+error                = log/$(Process).err
+Log                  = log/$(Process).log
+Queue 3000
