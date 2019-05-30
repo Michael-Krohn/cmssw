@@ -102,7 +102,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   double RandPhi = MuonPhi + 1.5; 
   if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
   if(MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
-
   static double Hits[4];
   Hits[0] = 0;
   Hits[1] = 0;
@@ -119,8 +118,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   MuoniPhi = ClosestCell.iphi();
   int RandiPhi = MuoniPhi + 20;
   if (RandiPhi>72) RandiPhi -= 72;
-  printf("Cell-Muon delta phi: %f\n",caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta);
-  printf("Muon iEta: %d, Muon iPhi: %d",MuoniEta,MuoniPhi);
+  if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
+
   if(!hcalRecHits.isValid())
   {
     std::cout << "Could not find HCAL RecHits" << std::endl;
