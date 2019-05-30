@@ -95,7 +95,7 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
   return minHCALdR;
 }
 
-double* HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms){ //TH1F* Spectra[7], TH2F* layer_eta[7], TH1F* missinghits, TH1F* missinghitseta){
+void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms){ //TH1F* Spectra[7], TH2F* layer_eta[7], TH1F* missinghits, TH1F* missinghitseta){
 
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
@@ -168,6 +168,13 @@ double* HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 
 //       hbhe_cell->reset();
     }
+    
+    myHistograms.m_ConeHits->Fill(Hits[0]);
+    if(Hits[0]==0){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);}
+    myHistograms.m_ConeEnergy->Fill(Hits[1]);
+    myHistograms.m_RandomConeHits->Fill(Hits[2]);
+    myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
+
     for(int j=1; j<5; j++)
     {
        for(auto muonhit = MuonHits[j].begin(); muonhit != MuonHits[j].end(); muonhit++)
@@ -244,7 +251,7 @@ double* HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        }
     }
   }
-  return Hits;
+  return;
 }
 
 

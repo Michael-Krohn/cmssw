@@ -369,18 +369,12 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
       if(myCSCs.minDR_Muon < 0.1){
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
-        double * Hits;
-        Hits = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
+        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
 	myHistograms.m_HitDepth_MuonHCAL->Fill(myHCAL.MuonHitDepth);
 	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
-        myHistograms.m_ConeHits->Fill(Hits[0]);
-	if(Hits[0]==0){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(myCSCs.MuonEta,myCSCs.MuonPhi);}
-	myHistograms.m_ConeEnergy->Fill(Hits[1]);
         myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
         myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
-	myHistograms.m_RandomConeHits->Fill(Hits[2]);
-	myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
         double RandPhi = myCSCs.MuonPhi + 1.5;
         if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
         if(myCSCs.MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
