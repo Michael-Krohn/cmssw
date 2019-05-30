@@ -61,9 +61,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTrack_EtaPhi_posEta_pT100to150 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
   m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
-  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
-  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
+  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
+  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
+  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5);
 
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
@@ -101,7 +101,6 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
   m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,0,50);
   m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
-//  m_Layer1_Spectra = fs->make<TH1F>("Layer1Spectrum", "; Hit Energy (GeV); Events",150,0,10);
   for(int i=0; i<7; i++)
   {
      std::string name = "Layer"+std::to_string(i+1)+"Spectra";
@@ -118,8 +117,8 @@ void Histograms::book(edm::Service<TFileService> fs){
   }
   m_MissingHits = fs->make<TH1F>("MissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
   m_RMissingHits = fs->make<TH1F>("RMissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
-  m_MissingHitsMap = fs->make<TH2F>("MissingHitsMap", "; #eta; #phi; Events", 100, -2.4, 2.4, 100, -3.2, 3.2); 
-  m_RMissingHitsMap = fs->make<TH2F>("RMissingHitsMap", "; #eta; #phi; Events", 100, -2.4, 2.4, 100, -3.2, 3.2);
+  m_MissingHitsMap = fs->make<TH2F>("MissingHitsMap", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5); 
+  m_RMissingHitsMap = fs->make<TH2F>("RMissingHitsMap", ";i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5);
   m_MissingHitsEnergy = fs->make<TH1F>("MissingHitsEnergy", "; Hit Energy (GeV); Events", 50,0,0.2);
   m_MissingHitsDR = fs->make<TH1F>("MinDR_MissingHits", "; Min #Delta R; Events", 70, 0, 0.2);
   m_FirstFound_Spectra = fs->make<TH1F>("First_Found", "; Hit Energy (GeV); Events", 150,0,10);
@@ -285,10 +284,9 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
      {
         
 	HcalDetId id(hbherechit->detid());
-        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
-	Global3DPoint hbhe_position = hbhe_cell->getPosition();
-	if(abs(hbhe_position.eta())>2.4){continue;}
-	m_histogram_HCALHits_EtaPhi->Fill(hbhe_position.eta(),hbhe_position.phi());
+        //std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+	//Global3DPoint hbhe_position = hbhe_cell->getPosition();
+	m_histogram_HCALHits_EtaPhi->Fill(id.ieta(),id.iphi());
         
 	//const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 	//m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());

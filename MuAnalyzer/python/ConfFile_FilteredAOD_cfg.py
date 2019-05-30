@@ -50,7 +50,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco_temp.txt')
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
-	mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_temp.txt')
+	mylist = FileUtils.loadListFromFile ('temp.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -71,8 +71,8 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
-    #trigResults = cms.InputTag("TriggerResults","","HLT"),
-    #muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
+    trigResults = cms.InputTag("TriggerResults","","HLT"),
+    muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),

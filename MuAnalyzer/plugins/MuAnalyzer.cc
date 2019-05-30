@@ -370,7 +370,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(myCSCs.minDR_Muon < 0.1){
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
         double * Hits;
-        Hits = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR, 0.1, myHistograms);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
+        Hits = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
 	myHistograms.m_HitDepth_MuonHCAL->Fill(myHCAL.MuonHitDepth);
 	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
