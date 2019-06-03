@@ -119,6 +119,9 @@ class Histograms{
     TH2F* m_RMissingHitsMap;
     TH1F* m_MissingHitsEnergy;
     TH1F* m_MissingHitsDR;
+    TH1F* m_BlankHitsDR;
+    TH1F* m_TrackHCALDR_SixHit;
+    TH1F* m_TrackHCALDR_BlankHits;
     TH1F* m_FirstFound_Spectra;
     TH1F* m_FirstMissing_Spectra;
     TH1F* m_DeepestFound_Spectra;

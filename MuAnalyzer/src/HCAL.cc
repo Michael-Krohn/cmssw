@@ -1,18 +1,25 @@
 #include "DarkPhoton/MuAnalyzer/interface/HCAL.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/ESHandle.h"
+#include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/EventSetup.h"
-#include "Geometry/Records/interface/CaloGeometryRecord.h"
-#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
-#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
+#include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/Records/interface/HcalRecNumberingRecord.h"
+#include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
+#include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
+
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "TH1F.h"
 
+#include <algorithm>
 #include <iostream>
 
 HCAL::HCAL(){}
@@ -50,7 +57,7 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   }
 }
 
-double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi){
+double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint){
 
   double minHCALdR = 1000;
   std::cout << "inside MuonMindR" << std::endl;
@@ -58,35 +65,31 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
 
-//  std::cout << "check 3" << std::endl;
 
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
-//  std::cout << "check 4" << std::endl;
 
   if(!hcalRecHits.isValid()){
     std::cout << "Could not find HCAL RecHits" << std::endl;
   }else{
-//    std::cout << "check 5" << std::endl;
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
        HcalDetId id(hbherechit->detid());
-//       std::cout << "check 6" << std::endl;
-
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
-//       const CaloCellGeometry *hbhe_cell = caloGeom->getGeometry(hbherechit->id());
-//       Global3DPoint hbhe_position = caloGeom->getGeometry(hbherechit->id())->getPosition();
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
-       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
+       if(dPhi > 2*ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
+       if(fabs(id.ieta())<18){continue;}
 
        if(minHCALdR > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)))){
 	 if(hbherechit->energy()!=0)
 	 {
 	    minHCALdR = sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)));
+	    MuonMinDr = minHCALdR;
 	    MuonHitEnergy = hbherechit->energy();
 	    MuonHitDepth = id.depth();
+	    minHCALDetId = id;
 	 }
        }
 //       hbhe_cell->reset();
@@ -95,7 +98,7 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
   return minHCALdR;
 }
 
-void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms){ //TH1F* Spectra[7], TH2F* layer_eta[7], TH1F* missinghits, TH1F* missinghitseta){
+void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms, double CSCMuonMinDr){ 
 
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
@@ -110,12 +113,51 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+  
+  edm::ESHandle<HcalTopology> htopo;
+  iSetup.get<HcalRecNumberingRecord>().get(htopo);
+  const HcalTopology* theHBHETopology = htopo.product();
+  
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
   int MuoniEta,MuoniPhi;
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
+  const int Ndepths = 7;
+  int startdepth = ClosestCell.depth();
+  HcalDetId MuonAlignedCells[7*Ndepths];
+  HcalDetId IteratingId = ClosestCell;
+  for(int i=startdepth;i>0;i--)
+  {
+     MuonAlignedCells[i*Ndepths-1]=IteratingId;
+     theHBHETopology->decrementDepth(IteratingId);
+  }
+  IteratingId = ClosestCell;
+  for(int i=startdepth+1;i<Ndepths;i++)
+  {
+     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
+     MuonAlignedCells[i*Ndepths-1]=IteratingId;
+     theHBHETopology->incrementDepth(IteratingId);
+  }
+  for(int i=0;i<Ndepths;i++)
+  {
+     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
+     HcalDetId incIEta[2];
+     HcalDetId decIEta[2];
+     theHBHETopology->incIEta(MuonAlignedCells[Ndepths*i-1],incIEta);
+     theHBHETopology->decIEta(MuonAlignedCells[Ndepths*i-1],decIEta);
+     HcalDetId incIPhi;
+     HcalDetId decIPhi;
+     if(theHBHETopology->incIPhi(MuonAlignedCells[Ndepths*i-1],incIPhi)){MuonAlignedCells[Ndepths*i+4]=incIPhi;} 
+     if(theHBHETopology->decIPhi(MuonAlignedCells[Ndepths*i-1],decIPhi)){MuonAlignedCells[Ndepths*i+5]=decIPhi;}
+     MuonAlignedCells[Ndepths*i]=incIEta[0];
+     MuonAlignedCells[Ndepths*i+1]=incIEta[1];
+     MuonAlignedCells[Ndepths*i+2]=decIEta[0];
+     MuonAlignedCells[Ndepths*i+3]=decIEta[1];
+  }
+
   MuoniEta = ClosestCell.ieta();
   MuoniPhi = ClosestCell.iphi();
+
   int RandiPhi = MuoniPhi + 20;
   if (RandiPhi>72) RandiPhi -= 72;
   if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
@@ -134,28 +176,21 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        HcalDetId id(hbherechit->detid());
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
+       
+       HcalDetId *match = std::find(std::begin(MuonAlignedCells), std::end(MuonAlignedCells), id); 
        int HitiEta = id.ieta();
        int HitiPhi = id.iphi();
-       
-       //double dPhi = fabs(MuonPhi - hbhe_position.phi());
-       if((abs(hbhe_position.eta())<1.653)||(abs(hbhe_position.eta())>2.4)){continue;}
-       //if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
-
-       //if((ConeSize > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0))))&&(hbherechit->energy()!=0))
-       if(HitiEta==MuoniEta&&HitiPhi==MuoniPhi&&hbherechit->energy()!=0)
+        
+       if(fabs(HitiEta)<18){continue;}
+       if(hbherechit->energy()!=0&&(match!=std::end(MuonAlignedCells)))
        {	 
 	 Hits[0]++;
 	 Hits[1] += hbherechit->energy();
          if(id.depth()<8&&hbherechit->energy()!=0) {myHistograms.m_Layer_Spectra[id.depth()-1]->Fill(hbherechit->energy());}
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
-         //if(hbherechit->energy()>Hit_Thresholds[id.depth()-1]){MuonHits[id.depth()-1].push_back(std::make_tuple(hbhe_position.eta(),hbhe_position.phi(),hbherechit->energy()));}
          MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));
        }
        
-       //double RdPhi = fabs(RandPhi - hbhe_position.phi());
-       //if(RdPhi > ROOT::Math::Pi()) RdPhi -= 2*ROOT::Math::Pi();
-
-       //if((ConeSize > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(RdPhi, 2.0))))&&(hbherechit->energy()!=0))
        if(HitiEta==MuoniEta&&HitiPhi==RandiPhi&&hbherechit->energy()!=0)
        {
 	 Hits[2]++;
@@ -169,11 +204,19 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     }
     
     myHistograms.m_ConeHits->Fill(Hits[0]);
-    if(Hits[0]==0){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);}
+    if(Hits[0]==0)
+    {
+       myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);
+       double bdphi = caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi;
+       if(bdphi>2*ROOT::Math::Pi()) bdphi -= 2*ROOT::Math::Pi();
+       myHistograms.m_BlankHitsDR->Fill(sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(bdphi,2.0)));
+       myHistograms.m_TrackHCALDR_BlankHits->Fill(CSCMuonMinDr);
+    }
+    if(Hits[0]==6){myHistograms.m_TrackHCALDR_SixHit->Fill(MuonMinDr);}
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
     myHistograms.m_RandomConeHits->Fill(Hits[2]);
     myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
-
+    
     for(int j=1; j<5; j++)
     {
        for(auto muonhit = MuonHits[j].begin(); muonhit != MuonHits[j].end(); muonhit++)
@@ -217,8 +260,10 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   	        //if(Muondphi > ROOT::Math::Pi()) Muondphi -= 2*ROOT::Math::Pi();
                 //double MuonDR = sqrt( pow(std::get<0>(*muonhit)-MuonEta,2.0) + pow(Muondphi, 2.0));
   	        //if(MuonDR<ConeSize)
-		double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi,2.0));
-  	        if(std::get<1>(*muonhit)==MuoniPhi)
+                double mdphi = caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi;
+                if(mdphi>2*ROOT::Math::Pi()) mdphi -= 2*ROOT::Math::Pi();
+		double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(mdphi,2.0));
+  	        if(MuonDR<0.3)
 		{
                    if(missinghit) 
                    {	

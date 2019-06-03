@@ -70,6 +70,9 @@
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
+#include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
+#include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
+#include "Geometry/CaloTopology/interface/HcalTopology.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
 //Triggers
@@ -368,20 +371,20 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
 
       if(myCSCs.minDR_Muon < 0.1){
-	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR);
-        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
+	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint);
+        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms, myCSCs.minDR_Muon);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
 	myHistograms.m_HitDepth_MuonHCAL->Fill(myHCAL.MuonHitDepth);
 	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
         myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
         myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
-        double RandPhi = myCSCs.MuonPhi + 1.5;
-        if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
-        if(myCSCs.MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
-	double minDR_RandomHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, RandPhi); 
-	myHistograms.m_MinDR_RandomHCAL->Fill(minDR_RandomHCAL);
-	myHistograms.m_HitDepth_RandomHCAL->Fill(myHCAL.MuonHitDepth);
-	myHistograms.m_HitEnergy_RandomHCAL->Fill(myHCAL.MuonHitEnergy);
+        //double RandPhi = myCSCs.MuonPhi + 1.5;
+        //if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
+        //if(myCSCs.MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
+	//double minDR_RandomHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, RandPhi); 
+	//myHistograms.m_MinDR_RandomHCAL->Fill(minDR_RandomHCAL);
+	//myHistograms.m_HitDepth_RandomHCAL->Fill(myHCAL.MuonHitDepth);
+	//myHistograms.m_HitEnergy_RandomHCAL->Fill(myHCAL.MuonHitEnergy);
 
       }
     }

@@ -97,9 +97,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_HitEnergy_RandomHCAL = fs->make<TH1F>("HitEnergy_MinDR_RandomHCAL", "; Energy; Events", 200, 0, 20);
   m_HitDepth_MuonHCAL = fs->make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
   m_HitDepth_RandomHCAL = fs->make<TH1F>("HitDepth_RandomHCAL", "; Depth; Events", 40,0,20);
-  m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 8,-0.5,7.5);
+  m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 20,-0.5,19.5);
   m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
-  m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,0,50);
+  m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 20,-0.5,19.5);
   m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
   for(int i=0; i<7; i++)
   {
@@ -121,6 +121,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_RMissingHitsMap = fs->make<TH2F>("RMissingHitsMap", ";i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5);
   m_MissingHitsEnergy = fs->make<TH1F>("MissingHitsEnergy", "; Hit Energy (GeV); Events", 50,0,0.2);
   m_MissingHitsDR = fs->make<TH1F>("MinDR_MissingHits", "; Min #Delta R; Events", 70, 0, 0.2);
+  m_BlankHitsDR = fs->make<TH1F>("MinDR_BlankHits", "; #Delta R; Events", 70, 0, 0.2);
+  m_TrackHCALDR_BlankHits = fs->make<TH1F>("MinDRTrack_BlankHits", "; #Delta R; Events", 70, 0, 0.2);
+  m_TrackHCALDR_SixHit = fs->make<TH1F>("MinDRTrack_OneHit", "; #Delta R; Events", 70, 0, 0.2);
   m_FirstFound_Spectra = fs->make<TH1F>("First_Found", "; Hit Energy (GeV); Events", 150,0,10);
   m_FirstMissing_Spectra = fs->make<TH1F>("First_Missing", "; Hit Energy (GeV); Events", 150,0,10);
   m_DeepestFound_Spectra = fs->make<TH1F>("Deepest_Found", "; Hit Energy (GeV); Events", 150,0,10);
