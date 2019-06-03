@@ -274,7 +274,6 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
-	  if (myCSCs.minDR > 0.5) {std::cout << "eta: " << (*iTrack)->eta() << " phi:" << (*iTrack)->phi() << "\n";} 
 
       }
       myHistograms.m_nTracksPairedPerMuon->Fill(nTracksPairedPerMuon);
