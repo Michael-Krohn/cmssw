@@ -98,37 +98,37 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
   return minHCALdR;
 }
 
-void HCAL::GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths){ 
+void HCAL::GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths, const int CellsPerDepth){ 
 
   int startdepth = ClosestCell.depth();
   HcalDetId IteratingId = ClosestCell;
   for(int i=startdepth;i>0;i--)
   {
-     MuonAlignedCells[i*Ndepths-1]=IteratingId;
+     MuonAlignedCells[(i-1)*CellsPerDepth]=IteratingId;
      theHBHETopology->decrementDepth(IteratingId);
   }
   IteratingId = ClosestCell;
   for(int i=startdepth+1;i<Ndepths;i++)
   {
-     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
-     MuonAlignedCells[i*Ndepths-1]=IteratingId;
+     if(!theHBHETopology->validHcal(MuonAlignedCells[CellsPerDepth*(i-2)])){continue;}
+     MuonAlignedCells[(i-1)*CellsPerDepth]=IteratingId;
      theHBHETopology->incrementDepth(IteratingId);
   }
-  for(int i=0;i<Ndepths;i++)
+  for(int i=1;i<=Ndepths;i++)
   {
-     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
+     if(!theHBHETopology->validHcal(MuonAlignedCells[CellsPerDepth*(i-1)])){continue;}
      HcalDetId incIEta[2];
      HcalDetId decIEta[2];
-     theHBHETopology->incIEta(MuonAlignedCells[Ndepths*i-1],incIEta);
-     theHBHETopology->decIEta(MuonAlignedCells[Ndepths*i-1],decIEta);
+     theHBHETopology->incIEta(MuonAlignedCells[CellsPerDepth*(i-1)],incIEta);
+     theHBHETopology->decIEta(MuonAlignedCells[CellsPerDepth*(i-1)],decIEta);
      HcalDetId incIPhi;
      HcalDetId decIPhi;
-     if(theHBHETopology->incIPhi(MuonAlignedCells[Ndepths*i-1],incIPhi)){MuonAlignedCells[Ndepths*i+4]=incIPhi;} 
-     if(theHBHETopology->decIPhi(MuonAlignedCells[Ndepths*i-1],decIPhi)){MuonAlignedCells[Ndepths*i+5]=decIPhi;}
-     MuonAlignedCells[Ndepths*i]=incIEta[0];
-     MuonAlignedCells[Ndepths*i+1]=incIEta[1];
-     MuonAlignedCells[Ndepths*i+2]=decIEta[0];
-     MuonAlignedCells[Ndepths*i+3]=decIEta[1];
+     if(theHBHETopology->incIPhi(MuonAlignedCells[CellsPerDepth*(i-1)],incIPhi)){MuonAlignedCells[CellsPerDepth*(i-1)+5]=incIPhi;} 
+     if(theHBHETopology->decIPhi(MuonAlignedCells[CellsPerDepth*(i-1)],decIPhi)){MuonAlignedCells[CellsPerDepth*(i-1)+6]=decIPhi;}
+     MuonAlignedCells[CellsPerDepth*(i-1)+1]=incIEta[0];
+     MuonAlignedCells[CellsPerDepth*(i-1)+2]=incIEta[1];
+     MuonAlignedCells[CellsPerDepth*(i-1)+3]=decIEta[0];
+     MuonAlignedCells[CellsPerDepth*(i-1)+4]=decIEta[1];
   }
   return;
 }
@@ -159,8 +159,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   int MuoniEta,MuoniPhi;
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
   const int Ndepths = 7;
-  HcalDetId MuonAlignedCells[7*Ndepths];
-  GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths);
+  const int CellsPerDepth = 7;
+  HcalDetId MuonAlignedCells[CellsPerDepth*Ndepths];
+  GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
   MuoniEta = ClosestCell.ieta();
   MuoniPhi = ClosestCell.iphi();
 
@@ -168,8 +169,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   if (RandiPhi>72) RandiPhi -= 72;
   if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
   HcalDetId RandClosestCell(HcalEndcap,MuoniEta,RandiPhi,1);
-  HcalDetId RandAlignedCells[7*Ndepths];
-  GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths);
+  HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
+  GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
 
   if(!hcalRecHits.isValid())
   {
@@ -222,8 +223,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     }
     for(int i=0;i<7;i++) 
     {
-       myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);
-       myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
+       if(layerenergies[i]!=0){myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);}
+       if(rlayerenergies[i]!=0){myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);}
     }   
     myHistograms.m_ConeHits->Fill(Hits[0]);
     if(Hits[0]==0)

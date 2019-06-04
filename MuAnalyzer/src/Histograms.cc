@@ -99,7 +99,7 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_HitDepth_RandomHCAL = fs->make<TH1F>("HitDepth_RandomHCAL", "; Depth; Events", 40,0,20);
   m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
   m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
-  m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 20,-0.5,19.5);
+  m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
   m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
   for(int i=0; i<7; i++)
   {
