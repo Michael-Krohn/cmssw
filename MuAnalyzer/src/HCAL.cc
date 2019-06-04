@@ -161,37 +161,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   const int Ndepths = 7;
   HcalDetId MuonAlignedCells[7*Ndepths];
   GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths);
-/*  int startdepth = ClosestCell.depth();
-  HcalDetId IteratingId = ClosestCell;
-  for(int i=startdepth;i>0;i--)
-  {
-     MuonAlignedCells[i*Ndepths-1]=IteratingId;
-     theHBHETopology->decrementDepth(IteratingId);
-  }
-  IteratingId = ClosestCell;
-  for(int i=startdepth+1;i<Ndepths;i++)
-  {
-     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
-     MuonAlignedCells[i*Ndepths-1]=IteratingId;
-     theHBHETopology->incrementDepth(IteratingId);
-  }
-  for(int i=0;i<Ndepths;i++)
-  {
-     if(!theHBHETopology->validHcal(MuonAlignedCells[Ndepths*i-1])){continue;}
-     HcalDetId incIEta[2];
-     HcalDetId decIEta[2];
-     theHBHETopology->incIEta(MuonAlignedCells[Ndepths*i-1],incIEta);
-     theHBHETopology->decIEta(MuonAlignedCells[Ndepths*i-1],decIEta);
-     HcalDetId incIPhi;
-     HcalDetId decIPhi;
-     if(theHBHETopology->incIPhi(MuonAlignedCells[Ndepths*i-1],incIPhi)){MuonAlignedCells[Ndepths*i+4]=incIPhi;} 
-     if(theHBHETopology->decIPhi(MuonAlignedCells[Ndepths*i-1],decIPhi)){MuonAlignedCells[Ndepths*i+5]=decIPhi;}
-     MuonAlignedCells[Ndepths*i]=incIEta[0];
-     MuonAlignedCells[Ndepths*i+1]=incIEta[1];
-     MuonAlignedCells[Ndepths*i+2]=decIEta[0];
-     MuonAlignedCells[Ndepths*i+3]=decIEta[1];
-  }
-*/
   MuoniEta = ClosestCell.ieta();
   MuoniPhi = ClosestCell.iphi();
 
@@ -210,7 +179,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   {
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     std::deque < std::tuple <int, int, double> >  MuonHits[7];
-    
+    double layerenergies[7],rlayerenergies[7]; 
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
     {  
        HcalDetId id(hbherechit->detid());
@@ -226,7 +195,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        {	 
 	 Hits[0]++;
 	 Hits[1] += hbherechit->energy();
-         if(id.depth()<8&&hbherechit->energy()!=0) {myHistograms.m_Layer_Spectra[id.depth()-1]->Fill(hbherechit->energy());}
+         if(id.depth()<8&&hbherechit->energy()!=0) 
+	 {
+	    //myHistograms.m_Layer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
+	    layerenergies[id.depth()-1]+=hbherechit->energy();
+	 }
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
          MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));
        }
@@ -236,14 +209,22 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        {
 	 Hits[2]++;
 	 Hits[3] += hbherechit->energy();
-         if(id.depth()<8) {myHistograms.m_RLayer_Spectra[id.depth()-1]->Fill(hbherechit->energy());}
+         if(id.depth()<8) 
+	 {
+	    //myHistograms.m_RLayer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
+	    rlayerenergies[id.depth()-1]+=hbherechit->energy();
+	 }
 	 myHistograms.m_RLayer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
          if(hbherechit->energy()>Hit_Thresholds[id.depth()-1]){MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));}
        }
 
 //       hbhe_cell->reset();
     }
-    
+    for(int i=0;i<7;i++) 
+    {
+       myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);
+       myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
+    }   
     myHistograms.m_ConeHits->Fill(Hits[0]);
     if(Hits[0]==0)
     {
