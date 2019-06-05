@@ -79,7 +79,7 @@ double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, 
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        double dPhi = fabs(MuonPhi - hbhe_position.phi());
-       if(dPhi > 2*ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
+       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
        if(fabs(id.ieta())<18){continue;}
 
        if(minHCALdR > sqrt(( pow((MuonEta - hbhe_position.eta()),2.0) + pow(dPhi, 2.0)))){
@@ -245,8 +245,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     if(Hits[0]==0)
     {
        myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);
-       double bdphi = caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi;
-       if(bdphi>2*ROOT::Math::Pi()) bdphi -= 2*ROOT::Math::Pi();
+       double bdphi = fabs(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi);
+       if(bdphi>ROOT::Math::Pi()) bdphi -= 2*ROOT::Math::Pi();
        myHistograms.m_BlankHitsDR->Fill(sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(bdphi,2.0)));
        myHistograms.m_TrackHCALDR_BlankHits->Fill(CSCMuonMinDr);
     }
@@ -298,10 +298,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   	        //if(Muondphi > ROOT::Math::Pi()) Muondphi -= 2*ROOT::Math::Pi();
                 //double MuonDR = sqrt( pow(std::get<0>(*muonhit)-MuonEta,2.0) + pow(Muondphi, 2.0));
   	        //if(MuonDR<ConeSize)
-                double mdphi = caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi;
-                if(mdphi>2*ROOT::Math::Pi()) mdphi -= 2*ROOT::Math::Pi();
-		double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(mdphi,2.0));
-  	        if(MuonDR<0.3)
+                //double mdphi = fabs(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi);
+                //if(mdphi>ROOT::Math::Pi()) mdphi -= 2*ROOT::Math::Pi();
+		//double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(mdphi,2.0));
+  	        //if(MuonDR<0.3)
+		if(std::get<1>(*muonhit)==MuoniPhi)
 		{
                    if(missinghit) 
                    {	
