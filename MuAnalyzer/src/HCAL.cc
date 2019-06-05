@@ -202,6 +202,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 	    layerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
+	 myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
          MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));
        }
        
@@ -210,6 +211,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        {
 	 Hits[2]++;
 	 Hits[3] += hbherechit->energy();
+	 myHistograms.m_HitDepth_RandomHCAL->Fill(id.depth());
          if(id.depth()<8) 
 	 {
 	    //myHistograms.m_RLayer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
