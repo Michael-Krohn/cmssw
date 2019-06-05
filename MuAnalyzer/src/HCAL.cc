@@ -180,7 +180,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   {
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     std::deque < std::tuple <int, int, double> >  MuonHits[7];
-    double layerenergies[7],rlayerenergies[7]; 
+    double layerenergies[7],rlayerenergies[7];
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
     {  
        HcalDetId id(hbherechit->detid());
@@ -224,6 +224,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 
 //       hbhe_cell->reset();
     }
+    int hitsoverthresh=0;
     for(int i=0;i<7;i++) 
     {
        if(layerenergies[i]!=0)
@@ -235,8 +236,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        {
           myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
           MuonHits[i].push_back(std::make_tuple(MuoniEta,RandiPhi,rlayerenergies[i]));
+          if(rlayerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
        }
     }   
+    myHistograms.m_HitsOverThreshold->Fill(hitsoverthresh);
+
     myHistograms.m_ConeHits->Fill(Hits[0]);
     if(Hits[0]==0)
     {
