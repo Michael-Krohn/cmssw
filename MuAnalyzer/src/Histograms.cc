@@ -115,6 +115,7 @@ void Histograms::book(edm::Service<TFileService> fs){
      m_Layer_Eta[i] = fs->make<TH2F>(name.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
      m_RLayer_Eta[i] = fs->make<TH2F>(rname.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
   }
+  m_HitsOverThreshold = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
   m_MissingHits = fs->make<TH1F>("MissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
   m_RMissingHits = fs->make<TH1F>("RMissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
   m_MissingHitsMap = fs->make<TH2F>("MissingHitsMap", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5); 
