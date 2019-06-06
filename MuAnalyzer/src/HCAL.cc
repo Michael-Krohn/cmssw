@@ -111,8 +111,8 @@ void HCAL::GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAligne
   for(int i=startdepth+1;i<=Ndepths;i++)
   {
      if(!theHBHETopology->validHcal(MuonAlignedCells[CellsPerDepth*(i-2)])){continue;}
-     MuonAlignedCells[(i-1)*CellsPerDepth]=IteratingId;
      theHBHETopology->incrementDepth(IteratingId);
+     MuonAlignedCells[(i-1)*CellsPerDepth]=IteratingId;
   }
   for(int i=1;i<=Ndepths;i++)
   {
@@ -167,6 +167,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 
   int RandiPhi = MuoniPhi + 20;
   if (RandiPhi>72) RandiPhi -= 72;
+  if (MuoniEta<-16&&RandiPhi>53&&RandiPhi<63) RandiPhi = MuoniPhi-20;
   if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
   HcalDetId RandClosestCell(HcalEndcap,MuoniEta,RandiPhi,1);
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
@@ -229,16 +230,17 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     int hitsoverthresh=0;
     for(int i=0;i<7;i++) 
     {
+       myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);
        if(layerenergies[i]!=0)
        {
-          myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);
           MuonHits[i].push_back(std::make_tuple(MuoniEta,MuoniPhi,layerenergies[i]));
        }
+       
+       myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
+       if(rlayerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
        if(rlayerenergies[i]!=0)
        {
-          myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
           MuonHits[i].push_back(std::make_tuple(MuoniEta,RandiPhi,rlayerenergies[i]));
-          if(rlayerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
        }
     }   
     myHistograms.m_HitsOverThreshold->Fill(hitsoverthresh);
@@ -300,9 +302,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   	        //if(Muondphi > ROOT::Math::Pi()) Muondphi -= 2*ROOT::Math::Pi();
                 //double MuonDR = sqrt( pow(std::get<0>(*muonhit)-MuonEta,2.0) + pow(Muondphi, 2.0));
   	        //if(MuonDR<ConeSize)
-                //double mdphi = fabs(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi);
-                //if(mdphi>ROOT::Math::Pi()) mdphi -= 2*ROOT::Math::Pi();
-		//double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(mdphi,2.0));
+                double mdphi = fabs(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi);
+                if(mdphi>ROOT::Math::Pi()) mdphi -= 2*ROOT::Math::Pi();
+		double MuonDR = sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(mdphi,2.0));
   	        //if(MuonDR<0.3)
 		if(std::get<1>(*muonhit)==MuoniPhi)
 		{

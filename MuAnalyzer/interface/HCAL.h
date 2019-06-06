@@ -29,7 +29,7 @@ class HCAL{
     HcalDetId minHCALDetId;
 
   private:
-    const double Hit_Thresholds[7] = {200,0.2,0.2,0.2,0.2,0.2,0.25};
+    const double Hit_Thresholds[7] = {0.2,0.2,0.2,0.2,0.2,0.2,200};
     void GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths, const int CellsPerDepth);
 };
 
