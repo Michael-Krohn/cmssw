@@ -182,6 +182,12 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     std::deque < std::tuple <int, int, double> >  MuonHits[7];
     double layerenergies[7],rlayerenergies[7];
+    for(int i=0;i<7;i++)
+    {
+       layerenergies[i]=0;
+       rlayerenergies[i]=0;
+    }
+
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
     {  
        HcalDetId id(hbherechit->detid());
@@ -200,8 +206,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
          if(id.depth()<8&&hbherechit->energy()!=0) 
 	 {
 	    //myHistograms.m_Layer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
-	    //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
-	    layerenergies[id.depth()-1]+=hbherechit->energy();
+	    if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
+	    //layerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
 	 myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
@@ -217,10 +223,10 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
          if(id.depth()<8) 
 	 {
 	    //myHistograms.m_RLayer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
-	    //if(hbherechit->energy()>rlayerenergies[id.depth()-1]){rlayerenergies[id.depth()-1]=hbherechit->energy();}
-	    rlayerenergies[id.depth()-1]+=hbherechit->energy();
+	    if(hbherechit->energy()>rlayerenergies[id.depth()-1]){rlayerenergies[id.depth()-1]=hbherechit->energy();}
+	    //rlayerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
-
+         if(hbherechit->energy()<0){printf("Negative energy. Energy is: %f\n",hbherechit->energy());}
 	 myHistograms.m_RLayer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
          //if(hbherechit->energy()>Hit_Thresholds[id.depth()-1]){MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));}
        }
