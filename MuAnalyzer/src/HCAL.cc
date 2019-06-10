@@ -205,13 +205,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 	 Hits[1] += hbherechit->energy();
          if(id.depth()<8&&hbherechit->energy()!=0) 
 	 {
-	    //myHistograms.m_Layer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
 	    if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
 	    //layerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
 	 myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
-         //MuonHits[id.depth()-1].push_back(std::make_tuple(MuoniEta,MuoniPhi,hbherechit->energy()));
        }
        
        HcalDetId *randmatch = std::find(std::begin(RandAlignedCells), std::end(RandAlignedCells), id); 
@@ -222,13 +220,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 	 myHistograms.m_HitDepth_RandomHCAL->Fill(id.depth());
          if(id.depth()<8) 
 	 {
-	    //myHistograms.m_RLayer_Spectra[id.depth()-1]->Fill(hbherechit->energy());
 	    if(hbherechit->energy()>rlayerenergies[id.depth()-1]){rlayerenergies[id.depth()-1]=hbherechit->energy();}
 	    //rlayerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
          if(hbherechit->energy()<0){printf("Negative energy. Energy is: %f\n",hbherechit->energy());}
 	 myHistograms.m_RLayer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
-         //if(hbherechit->energy()>Hit_Thresholds[id.depth()-1]){MuonHits[id.depth()-1].push_back(std::make_tuple(HitiEta,HitiPhi,hbherechit->energy()));}
        }
 
 //       hbhe_cell->reset();
