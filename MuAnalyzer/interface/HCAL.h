@@ -31,6 +31,7 @@ class HCAL{
   private:
     const double Hit_Thresholds[7] = {0.2,0.2,0.2,0.2,0.2,0.2,200};
     void GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths, const int CellsPerDepth);
+    void GetCornerIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths);
 };
 
 #endif

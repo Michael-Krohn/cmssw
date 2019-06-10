@@ -133,6 +133,49 @@ void HCAL::GetConeIDs(const HcalTopology* theHBHETopology, HcalDetId *MuonAligne
   return;
 }
 
+void HCAL::GetCornerIDs(const HcalTopology* theHBHETopology, HcalDetId *CornerCells, HcalDetId ClosestCell, const int Ndepths){ 
+  const int CellsPerDepth = 8;
+  int startdepth = ClosestCell.depth();
+  HcalDetId IteratingId = ClosestCell;
+  HcalDetId CenterIds[Ndepths];
+  for(int i=startdepth;i>0;i--)
+  {
+     CenterIds[i-1]=IteratingId;
+     theHBHETopology->decrementDepth(IteratingId);
+  }
+  IteratingId = ClosestCell;
+  for(int i=startdepth+1;i<=Ndepths;i++)
+  {
+     if(!theHBHETopology->validHcal(CenterIds[i-2])){continue;}
+     theHBHETopology->incrementDepth(IteratingId);
+     CenterIds[i-1]=IteratingId;
+  }
+  for(int i=1;i<=Ndepths;i++)
+  {
+     if(!theHBHETopology->validHcal(CenterIds[i-1])){continue;}
+     HcalDetId incIPhi;
+     HcalDetId decIPhi;
+     theHBHETopology->incIPhi(CenterIds[i-1],incIPhi);
+     theHBHETopology->decIPhi(CenterIds[i-1],decIPhi);
+     HcalDetId incIEtaincIPhi[2];
+     HcalDetId decIEtadecIPhi[2];
+     HcalDetId incIEtadecIPhi[2];
+     HcalDetId decIEtaincIPhi[2];
+     theHBHETopology->incIEta(incIPhi,incIEtaincIPhi);
+     theHBHETopology->decIEta(incIPhi,decIEtaincIPhi);
+     theHBHETopology->incIEta(decIPhi,incIEtadecIPhi);
+     theHBHETopology->decIEta(decIPhi,decIEtadecIPhi);
+     CornerCells[CellsPerDepth*(i-1)]=incIEtaincIPhi[0];
+     CornerCells[CellsPerDepth*(i-1)+1]=incIEtaincIPhi[1];
+     CornerCells[CellsPerDepth*(i-1)+2]=decIEtaincIPhi[0];
+     CornerCells[CellsPerDepth*(i-1)+3]=decIEtaincIPhi[1];
+     CornerCells[CellsPerDepth*(i-1)+4]=incIEtadecIPhi[0];
+     CornerCells[CellsPerDepth*(i-1)+5]=incIEtadecIPhi[1];
+     CornerCells[CellsPerDepth*(i-1)+6]=decIEtadecIPhi[0];
+     CornerCells[CellsPerDepth*(i-1)+7]=decIEtadecIPhi[1];
+  }
+  return;
+}
 
 void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms, double CSCMuonMinDr){ 
 
@@ -162,6 +205,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   const int CellsPerDepth = 7;
   HcalDetId MuonAlignedCells[CellsPerDepth*Ndepths];
   GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
+  HcalDetId CornerAlignedCells[8*Ndepths];
+  GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
   MuoniEta = ClosestCell.ieta();
   MuoniPhi = ClosestCell.iphi();
 
@@ -195,18 +240,19 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        Global3DPoint hbhe_position = hbhe_cell->getPosition();
        
        HcalDetId *match = std::find(std::begin(MuonAlignedCells), std::end(MuonAlignedCells), id); 
+       HcalDetId *cornermatch = std::find(std::begin(CornerAlignedCells), std::end(CornerAlignedCells), id);       
        int HitiEta = id.ieta();
        //int HitiPhi = id.iphi();
         
        if(fabs(HitiEta)<18){continue;}
-       if(hbherechit->energy()!=0&&(match!=std::end(MuonAlignedCells)))
+       if(hbherechit->energy()!=0&&((match!=std::end(MuonAlignedCells))||(cornermatch!=std::end(CornerAlignedCells))))
        {	 
 	 Hits[0]++;
 	 Hits[1] += hbherechit->energy();
          if(id.depth()<8&&hbherechit->energy()!=0) 
 	 {
-	    if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
-	    //layerenergies[id.depth()-1]+=hbherechit->energy();
+	    //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
+	    layerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
 	 myHistograms.m_Layer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
 	 myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
@@ -220,8 +266,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 	 myHistograms.m_HitDepth_RandomHCAL->Fill(id.depth());
          if(id.depth()<8) 
 	 {
-	    if(hbherechit->energy()>rlayerenergies[id.depth()-1]){rlayerenergies[id.depth()-1]=hbherechit->energy();}
-	    //rlayerenergies[id.depth()-1]+=hbherechit->energy();
+	    //if(hbherechit->energy()>rlayerenergies[id.depth()-1]){rlayerenergies[id.depth()-1]=hbherechit->energy();}
+	    rlayerenergies[id.depth()-1]+=hbherechit->energy();
 	 }
          if(hbherechit->energy()<0){printf("Negative energy. Energy is: %f\n",hbherechit->energy());}
 	 myHistograms.m_RLayer_Eta[id.depth()-1]->Fill(hbherechit->energy(),hbhe_position.eta());
