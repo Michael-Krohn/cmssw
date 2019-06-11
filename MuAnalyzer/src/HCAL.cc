@@ -216,6 +216,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
   HcalDetId RandClosestCell(HcalEndcap,MuoniEta,RandiPhi,1);
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
+  HcalDetId RandCornerAlignedCells[8*Ndepths];
+  GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
+
   GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
 
   if(!hcalRecHits.isValid())
@@ -246,6 +249,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
         
        if(fabs(HitiEta)<18){continue;}
        if(hbherechit->energy()!=0&&((match!=std::end(MuonAlignedCells))||(cornermatch!=std::end(CornerAlignedCells))))
+       //if(hbherechit->energy()!=0&&(match!=std::end(MuonAlignedCells)))
        {	 
 	 Hits[0]++;
 	 Hits[1] += hbherechit->energy();
@@ -259,7 +263,8 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        }
        
        HcalDetId *randmatch = std::find(std::begin(RandAlignedCells), std::end(RandAlignedCells), id); 
-       if(hbherechit->energy()!=0&&(randmatch!=std::end(RandAlignedCells)))
+       HcalDetId *randcornermatch = std::find(std::begin(RandCornerAlignedCells), std::end(RandCornerAlignedCells), id);       
+       if(hbherechit->energy()!=0&&((randmatch!=std::end(RandAlignedCells))||(randcornermatch!=std::end(RandCornerAlignedCells))))
        {
 	 Hits[2]++;
 	 Hits[3] += hbherechit->energy();
