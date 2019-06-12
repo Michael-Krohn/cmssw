@@ -207,6 +207,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
   HcalDetId CornerAlignedCells[8*Ndepths];
   GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
+  int ValidIdCount = 0;
+  for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(MuonAlignedCells[i])){ValidIdCount++;}}
+  myHistograms.m_ValidIDs->Fill(ValidIdCount);
   MuoniEta = ClosestCell.ieta();
   MuoniPhi = ClosestCell.iphi();
 

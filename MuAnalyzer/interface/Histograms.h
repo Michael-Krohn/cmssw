@@ -113,6 +113,7 @@ class Histograms{
     TH1F* m_RLayer_Spectra[7];
     TH2F* m_Layer_Eta[7];
     TH2F* m_RLayer_Eta[7];
+    TH1F* m_ValidIDs;
     TH1F* m_HitsOverThreshold;
     TH1F* m_MissingHits;
     TH1F* m_RMissingHits;
