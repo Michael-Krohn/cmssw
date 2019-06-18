@@ -250,7 +250,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        int HitiEta = id.ieta();
        //int HitiPhi = id.iphi();
         
-       if(fabs(HitiEta)<18){continue;}
+       if(fabs(HitiEta)<19){continue;}
        if(hbherechit->energy()!=0&&((match!=std::end(MuonAlignedCells))||(cornermatch!=std::end(CornerAlignedCells))))
        //if(hbherechit->energy()!=0&&(match!=std::end(MuonAlignedCells)))
        {	 
