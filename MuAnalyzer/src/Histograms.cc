@@ -105,6 +105,7 @@ void Histograms::book(edm::Service<TFileService> fs){
   {
      std::string name = "Layer"+std::to_string(i+1)+"Spectra";
      std::string rname = "R"+name;
+     std::string bname = "B"+name;
      m_Layer_Spectra[i] = fs->make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 150,0,10);
      m_RLayer_Spectra[i] = fs->make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 150,0,10);
   }
@@ -130,6 +131,9 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_FirstMissing_Spectra = fs->make<TH1F>("First_Missing", "; Hit Energy (GeV); Events", 150,0,10);
   m_DeepestFound_Spectra = fs->make<TH1F>("Deepest_Found", "; Hit Energy (GeV); Events", 150,0,10);
   m_DeepestMissing_Spectra = fs->make<TH1F>("Deepest_Missing", "; Hit Energy (GeV); Events", 150,0,10);
+  m_BlankDepth = fs->make<TH1F>("Blank_Depth", "; Hit Depth; Events", 7,0.5,7.5);
+  m_4BlankDepth = fs->make<TH1F>("TwoMiss_Depth", "; Hit Depth; Events", 7,0.5,7.5);
+
 
 }
 

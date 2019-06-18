@@ -57,8 +57,10 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   }
 }
 
-double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint){
+double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint){
 
+  double MuonEta = MuonGlobalPoint.eta();
+  double MuonPhi = MuonGlobalPoint.phi();
   double minHCALdR = 1000;
   std::cout << "inside MuonMindR" << std::endl;
 
@@ -177,13 +179,12 @@ void HCAL::GetCornerIDs(const HcalTopology* theHBHETopology, HcalDetId *CornerCe
   return;
 }
 
-void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, double MuonEta, double MuonPhi, GlobalPoint MuonGlobalPoint,double ConeSize, Histograms myHistograms, double CSCMuonMinDr){ 
+void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint, GlobalPoint RandGlobalPoint, bool GoodRand, Histograms myHistograms, double CSCMuonMinDr){ 
 
+  double MuonEta = MuonGlobalPoint.eta();
+  double MuonPhi = MuonGlobalPoint.phi();
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
-  double RandPhi = MuonPhi + 1.5; 
-  if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
-  if(MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
   static double Hits[4];
   Hits[0] = 0;
   Hits[1] = 0;
@@ -201,6 +202,11 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
   int MuoniEta,MuoniPhi;
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
+  MuoniEta = ClosestCell.ieta();
+  MuoniPhi = ClosestCell.iphi();
+  if(fabs(MuoniEta)<20){return;}
+  if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
+
   const int Ndepths = 7;
   const int CellsPerDepth = 7;
   HcalDetId MuonAlignedCells[CellsPerDepth*Ndepths];
@@ -210,14 +216,13 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   int ValidIdCount = 0;
   for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(MuonAlignedCells[i])){ValidIdCount++;}}
   myHistograms.m_ValidIDs->Fill(ValidIdCount);
-  MuoniEta = ClosestCell.ieta();
-  MuoniPhi = ClosestCell.iphi();
 
-  int RandiPhi = MuoniPhi + 20;
-  if (RandiPhi>72) RandiPhi -= 72;
-  if (MuoniEta<-16&&RandiPhi>53&&RandiPhi<63) RandiPhi = MuoniPhi-20;
-  if(MuoniEta<-16&&MuoniPhi>53&&MuoniPhi<63){return;}
-  HcalDetId RandClosestCell(HcalEndcap,MuoniEta,RandiPhi,1);
+  HcalDetId RandClosestCell = (HcalDetId)HEGeom->getClosestCell(RandGlobalPoint);
+  //int RandiPhi = MuoniPhi + 20;
+  //if (RandiPhi>72) RandiPhi -= 72;
+  //if (MuoniEta<-16&&RandiPhi>53&&RandiPhi<63) RandiPhi = MuoniPhi-20;
+  //HcalDetId RandClosestCell(HcalEndcap,MuoniEta,RandiPhi,1);
+  int RandiPhi = RandClosestCell.iphi();
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
   HcalDetId RandCornerAlignedCells[8*Ndepths];
   GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
@@ -254,7 +259,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        if(hbherechit->energy()!=0&&((match!=std::end(MuonAlignedCells))||(cornermatch!=std::end(CornerAlignedCells))))
        //if(hbherechit->energy()!=0&&(match!=std::end(MuonAlignedCells)))
        {	 
-	 Hits[0]++;
+	 //Hits[0]++;
 	 Hits[1] += hbherechit->energy();
          if(id.depth()<8&&hbherechit->energy()!=0) 
 	 {
@@ -267,7 +272,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        
        HcalDetId *randmatch = std::find(std::begin(RandAlignedCells), std::end(RandAlignedCells), id); 
        HcalDetId *randcornermatch = std::find(std::begin(RandCornerAlignedCells), std::end(RandCornerAlignedCells), id);       
-       if(hbherechit->energy()!=0&&((randmatch!=std::end(RandAlignedCells))||(randcornermatch!=std::end(RandCornerAlignedCells))))
+       if(hbherechit->energy()!=0&&((randmatch!=std::end(RandAlignedCells))||(randcornermatch!=std::end(RandCornerAlignedCells)))&&GoodRand)
        {
 	 Hits[2]++;
 	 Hits[3] += hbherechit->energy();
@@ -289,32 +294,49 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        myHistograms.m_Layer_Spectra[i]->Fill(layerenergies[i]);
        if(layerenergies[i]!=0)
        {
+          if(i<6){Hits[0]++;}
           MuonHits[i].push_back(std::make_tuple(MuoniEta,MuoniPhi,layerenergies[i]));
        }
-       
-       myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
-       if(rlayerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
-       if(rlayerenergies[i]!=0)
+       if(GoodRand)
        {
-          MuonHits[i].push_back(std::make_tuple(MuoniEta,RandiPhi,rlayerenergies[i]));
+          myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
+          if(rlayerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
+          if(rlayerenergies[i]!=0)
+          {
+             MuonHits[i].push_back(std::make_tuple(MuoniEta,RandiPhi,rlayerenergies[i]));
+          }
        }
     }   
-    myHistograms.m_HitsOverThreshold->Fill(hitsoverthresh);
+    for(int i=0;i<7;i++)
+    {
+       if(layerenergies[i]==0)
+       {
+          if(i<6)
+	  {
+	     if(Hits[0]==4){myHistograms.m_4BlankDepth->Fill(i+1);}
+             if(Hits[0]==5){myHistograms.m_BlankDepth->Fill(i+1);}
+          }
+       }
+    }
+    if(GoodRand){myHistograms.m_HitsOverThreshold->Fill(hitsoverthresh);}
 
     myHistograms.m_ConeHits->Fill(Hits[0]);
     if(Hits[0]==0)
     {
-       myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);
+       //myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);
        double bdphi = fabs(caloGeom->getGeometry(ClosestCell)->phiPos()-MuonPhi);
        if(bdphi>ROOT::Math::Pi()) bdphi -= 2*ROOT::Math::Pi();
        myHistograms.m_BlankHitsDR->Fill(sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(bdphi,2.0)));
        myHistograms.m_TrackHCALDR_BlankHits->Fill(CSCMuonMinDr);
     }
+    if(Hits[0]==4){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);}
     if(Hits[0]==6){myHistograms.m_TrackHCALDR_SixHit->Fill(MuonMinDr);}
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
-    myHistograms.m_RandomConeHits->Fill(Hits[2]);
-    myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
-    
+    if(GoodRand)
+    {
+       myHistograms.m_RandomConeHits->Fill(Hits[2]);
+       myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
+    }
     for(int j=1; j<5; j++)
     {
        for(auto muonhit = MuonHits[j].begin(); muonhit != MuonHits[j].end(); muonhit++)
@@ -380,7 +402,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 		      myHistograms.m_DeepestFound_Spectra->Fill(deepE);
   	           }
   	        }
-  	        else
+  	        else if(GoodRand)
   	        {
                    if(missinghit) 
                    {	

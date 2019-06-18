@@ -128,6 +128,8 @@ class Histograms{
     TH1F* m_FirstMissing_Spectra;
     TH1F* m_DeepestFound_Spectra;
     TH1F* m_DeepestMissing_Spectra;   
+    TH1F* m_BlankDepth;
+    TH1F* m_4BlankDepth;
 };
 
 #endif

@@ -26,6 +26,24 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
   }
 }
 
+double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, double vetopt)
+{
+   double Isolation = -vetopt;
+   //double Isolation = 0;
+   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
+   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
+
+   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack)
+   {
+      double dphi = fabs(phi-iTrack->phi());
+      if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
+      double Dr = sqrt( pow(eta-iTrack->eta(),2.0) + pow(dphi,2.0));
+      if(Dr>conesize){continue;}
+       Isolation += iTrack->pt();
+   }
+   return Isolation;
+}
+
 bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
 
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));
