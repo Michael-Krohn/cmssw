@@ -344,6 +344,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          //Track and Muon have opposite charge
          if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
          if (!((*iTrack)->quality(Track::highPurity))) continue;
+	 //printf("Track isolation is %f.\n",myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt()));
 //         if (myMuons.highPtSelectedMuon->eta()<-1.5 && myMuons.highPtSelectedMuon->phi()<-0.2 && myMuons.highPtSelectedMuon->phi()>-0.7) continue;
          //Using the highest pT track that pairs with a muon
 //         if (foundMuonTrackPair) continue;
@@ -356,22 +357,31 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          }else{
            continue;
          }
+         if(myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt())>3.0){continue;}
+         //printf("Track isolation is %f.\n",myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt()));
 
          myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedMuon, myTracks.two_momentum, myTracks.tracksToVertex);
+	 //printf("Muon pt is: %f.\n",myMuons.highPtSelectedMuon->pt());
 
       }
     }
-    bool HitInHCALGap = false;
-    if(myCSCs.MuonEta<0&&myCSCs.MuonPhi<-0.9&&myCSCs.MuonPhi>-1.6){HitInHCALGap=true;}
-    if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4 && !HitInHCALGap){
+    //bool HitInHCALGap = false;
+    //if(myCSCs.MuonEta<0&&myCSCs.MuonPhi<-0.9&&myCSCs.MuonPhi>-1.6){HitInHCALGap=true;}
+    if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4) {
 //      std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
 
       if(myCSCs.minDR_Muon < 0.1){
-	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint);
-        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, myCSCs.MuonPhi_dR,myCSCs.MuonGlobalPoint, 0.1, myHistograms, myCSCs.minDR_Muon);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
+        double randphi = myCSCs.MuonGlobalPoint.phi()+2.0;
+	if(randphi>ROOT::Math::Pi()){randphi-=2*ROOT::Math::Pi();}
+	if(myCSCs.MuonGlobalPoint.eta()<0&&randphi<-0.9&&randphi>-1.6){randphi=randphi-4.0+2*ROOT::Math::Pi();}
+	GlobalPoint RandGlobalPoint(GlobalPoint::Polar(myCSCs.MuonGlobalPoint.theta(),randphi,myCSCs.MuonGlobalPoint.mag()));
+	bool GoodRand=true;
+	//if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
+	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint);
+        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, myCSCs.minDR_Muon);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
 	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
         myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
