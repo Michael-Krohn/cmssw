@@ -379,7 +379,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if(myCSCs.MuonGlobalPoint.eta()<0&&randphi<-0.9&&randphi>-1.6){randphi=randphi-4.0+2*ROOT::Math::Pi();}
 	GlobalPoint RandGlobalPoint(GlobalPoint::Polar(myCSCs.MuonGlobalPoint.theta(),randphi,myCSCs.MuonGlobalPoint.mag()));
 	bool GoodRand=true;
-	//if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
+	if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
 	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint);
         myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, myCSCs.minDR_Muon);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
 	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);

@@ -210,9 +210,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   const int Ndepths = 7;
   const int CellsPerDepth = 7;
   HcalDetId MuonAlignedCells[CellsPerDepth*Ndepths];
-  GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
+  //GetConeIDs(theHBHETopology,MuonAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
   HcalDetId CornerAlignedCells[8*Ndepths];
-  GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
+  //GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
   int ValidIdCount = 0;
   for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(MuonAlignedCells[i])){ValidIdCount++;}}
   myHistograms.m_ValidIDs->Fill(ValidIdCount);
@@ -225,9 +225,9 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   int RandiPhi = RandClosestCell.iphi();
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
   HcalDetId RandCornerAlignedCells[8*Ndepths];
-  GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
+  //GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
 
-  GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
+  //GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
 
   if(!hcalRecHits.isValid())
   {
@@ -330,7 +330,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        myHistograms.m_TrackHCALDR_BlankHits->Fill(CSCMuonMinDr);
     }
     if(Hits[0]==4){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);}
-    if(Hits[0]==6){myHistograms.m_TrackHCALDR_SixHit->Fill(MuonMinDr);}
+    if(Hits[0]<6){myHistograms.m_TrackHCALDR_SixHit->Fill(MuonMinDr);}
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
     if(GoodRand)
     {
