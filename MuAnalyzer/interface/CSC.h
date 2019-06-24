@@ -24,6 +24,7 @@ class CSC{
     void ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Muon* iMuon, GlobalVector two_momentum, std::vector<reco::TransientTrack> tracksToVertex);
 
     GlobalPoint MuonGlobalPoint;
+    GlobalPoint TrackGlobalPoint;
     double MuonEta;
     double MuonPhi;
     double MuonP;

@@ -122,14 +122,12 @@ class Histograms{
     TH1F* m_MissingHitsEnergy;
     TH1F* m_MissingHitsDR;
     TH1F* m_BlankHitsDR;
-    TH1F* m_TrackHCALDR_SixHit;
-    TH1F* m_TrackHCALDR_BlankHits;
-    TH1F* m_FirstFound_Spectra;
-    TH1F* m_FirstMissing_Spectra;
-    TH1F* m_DeepestFound_Spectra;
-    TH1F* m_DeepestMissing_Spectra;   
+    TH1F* m_TrackHCALDR_MissHit;
+    TH1F* m_TrackHCALDR_GoodHits;
     TH1F* m_BlankDepth;
     TH1F* m_4BlankDepth;
+    TH2F* m_BlankCellDetaDphi;
+    TH2F* m_BlankCellSmallDetaDphi;
 };
 
 #endif

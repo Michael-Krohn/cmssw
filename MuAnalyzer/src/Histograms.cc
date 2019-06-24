@@ -125,15 +125,12 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_MissingHitsEnergy = fs->make<TH1F>("MissingHitsEnergy", "; Hit Energy (GeV); Events", 50,0,0.2);
   m_MissingHitsDR = fs->make<TH1F>("MinDR_MissingHits", "; Min #Delta R; Events", 70, 0, 0.2);
   m_BlankHitsDR = fs->make<TH1F>("MinDR_BlankHits", "; #Delta R; Events", 70, 0, 0.2);
-  m_TrackHCALDR_BlankHits = fs->make<TH1F>("MinDRTrack_BlankHits", "; #Delta R; Events", 70, 0, 0.2);
-  m_TrackHCALDR_SixHit = fs->make<TH1F>("MinDRTrack_OneHit", "; #Delta R; Events", 70, 0, 0.2);
-  m_FirstFound_Spectra = fs->make<TH1F>("First_Found", "; Hit Energy (GeV); Events", 150,0,10);
-  m_FirstMissing_Spectra = fs->make<TH1F>("First_Missing", "; Hit Energy (GeV); Events", 150,0,10);
-  m_DeepestFound_Spectra = fs->make<TH1F>("Deepest_Found", "; Hit Energy (GeV); Events", 150,0,10);
-  m_DeepestMissing_Spectra = fs->make<TH1F>("Deepest_Missing", "; Hit Energy (GeV); Events", 150,0,10);
+  m_TrackHCALDR_GoodHits = fs->make<TH1F>("MinDRTrack_GoodHits", "; #Delta R; Events", 70, 0, 0.2);
+  m_TrackHCALDR_MissHit = fs->make<TH1F>("MinDRTrack_MissHit", "; #Delta R; Events", 70, 0, 0.2);
   m_BlankDepth = fs->make<TH1F>("Blank_Depth", "; Hit Depth; Events", 7,0.5,7.5);
   m_4BlankDepth = fs->make<TH1F>("TwoMiss_Depth", "; Hit Depth; Events", 7,0.5,7.5);
-
+  m_BlankCellDetaDphi = fs->make<TH2F>("LostHitsDetaDphi", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BlankCellSmallDetaDphi = fs->make<TH2F>("SmallLostHitsDetaDphi", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
 
 }
 
