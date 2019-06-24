@@ -102,6 +102,8 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
            MuonPhi = iMuon->phi();
            MuonP = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
 	   MuonGlobalPoint = TheGlobalPosition;
+	   TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),MuonGlobalPoint.mag()));
+	   
          }
          double dPhi_Muon = fabs(two_momentum.phi() - TheGlobalPosition.phi());
          if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= ROOT::Math::Pi();
@@ -110,8 +112,10 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
 	    MuonEta_dR = iMuon->eta();
             MuonPhi_dR = iMuon->phi();
 	    MuonGlobalPoint = TheGlobalPosition;
+	    TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),MuonGlobalPoint.mag()));
             MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
-         }
+         
+	 }
        }
     }
   }
