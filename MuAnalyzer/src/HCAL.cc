@@ -295,7 +295,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   int RandiPhi = RandClosestCell.iphi();
   int RandiEta = RandClosestCell.ieta();
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
-  HcalDetId RandCornerAlignedCells[CellsPerDepth*Ndepths];
   //GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
   GetCenterCells(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
   double Rdphi = RandGlobalPoint.phi()-caloGeom->getGeometry(RandClosestCell)->phiPos();
@@ -306,7 +305,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   bool rphiedge = (fabs(Rdphi)>phithresh);
   if(!retaedge){Rdeta=10;}
   if(!rphiedge){Rdphi=10;}
-  GetAdjacentCells(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths,RandiEta,Rdeta,Rdphi,CellsPerDepth);
+  GetAdjacentCells(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,RandiEta,Rdeta,Rdphi,CellsPerDepth);
 
   //GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
 
@@ -350,8 +349,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        }
        
        HcalDetId *randmatch = std::find(std::begin(RandAlignedCells), std::end(RandAlignedCells), id); 
-       HcalDetId *randcornermatch = std::find(std::begin(RandCornerAlignedCells), std::end(RandCornerAlignedCells), id);       
-       if(hbherechit->energy()!=0&&((randmatch!=std::end(RandAlignedCells))||(randcornermatch!=std::end(RandCornerAlignedCells)))&&GoodRand)
+       if(hbherechit->energy()!=0&&randmatch!=std::end(RandAlignedCells)&&GoodRand)
        {
 	 Hits[2]++;
 	 Hits[3] += hbherechit->energy();
