@@ -295,10 +295,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   int RandiPhi = RandClosestCell.iphi();
   int RandiEta = RandClosestCell.ieta();
   HcalDetId RandAlignedCells[CellsPerDepth*Ndepths];
-<<<<<<< HEAD
-  HcalDetId RandCornerAlignedCells[8*Ndepths];
-  //GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
-=======
   //GetCornerIDs(theHBHETopology,RandCornerAlignedCells,RandClosestCell,Ndepths);
   GetCenterCells(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
   double Rdphi = RandGlobalPoint.phi()-caloGeom->getGeometry(RandClosestCell)->phiPos();
@@ -310,7 +306,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   if(!retaedge){Rdeta=10;}
   if(!rphiedge){Rdphi=10;}
   GetAdjacentCells(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,RandiEta,Rdeta,Rdphi,CellsPerDepth);
->>>>>>> 1b7c18441c6136ce450116cc5d8ef669a916a92b
 
   //GetConeIDs(theHBHETopology,RandAlignedCells,RandClosestCell,Ndepths,CellsPerDepth);
 
@@ -410,10 +405,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
        if(bdphi>ROOT::Math::Pi()) bdphi -= 2*ROOT::Math::Pi();
        myHistograms.m_BlankHitsDR->Fill(sqrt( pow(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,2.0) + pow(bdphi,2.0)));
     }
-<<<<<<< HEAD
-    if(Hits[0]==4){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(MuoniEta,MuoniPhi);}
-    if(Hits[0]<6){myHistograms.m_TrackHCALDR_SixHit->Fill(MuonMinDr);}
-=======
     if(Hits[0]==4){myHistograms.m_histogram_BlankHCALHits_EtaPhi->Fill(TrackiEta,TrackiPhi);}
     double Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
     if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
@@ -427,7 +418,6 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     if(Hits[0]<6&&fabs(TrackiEta)<21){myHistograms.m_BlankCellSmallDetaDphi->Fill(caloGeom->getGeometry(ClosestCell)->etaPos()-MuonEta,Tdphi);}
 
     if(Hits[0]==6&&layerenergies[6]==0){myHistograms.m_TrackHCALDR_GoodHits->Fill(TrackMinDr);}
->>>>>>> 1b7c18441c6136ce450116cc5d8ef669a916a92b
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
     if(GoodRand)
     {
