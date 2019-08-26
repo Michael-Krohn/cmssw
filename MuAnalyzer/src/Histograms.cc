@@ -39,8 +39,11 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_histogram_TrackerTack_P = fs->make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
   m_histogram_MuonTrack_P = fs->make<TH1F>("MuonTrack_P", "", 140, 0, 700);
     
-  m_histogram_differenceVertex_xy = fs->make<TH2F>("differenceVertex_xy", "", 300, -3., 3., 300, -3., 3.);
-  m_histogram_differenceVertex_z = fs->make<TH1F>("differenceVertex_z", "", 60, -10., 10.);
+  m_histogram_differenceVertex_xy = fs->make<TH2F>("differenceVertex_xy", "", 300, -1., 1., 300, -1., 1.);
+  m_histogram_misshitVertex_xy = fs->make<TH2F>("misshitVertex_xy", "", 300, -1., 1., 300, -1., 1.);
+  m_histogram_differenceVertex_z = fs->make<TH1F>("differenceVertex_z", "", 60, -20., 20.);
+  m_histogram_misshitVertex_z = fs->make<TH1F>("misshitVertex_z", "", 60, -20., 20.);
+  m_adjacentfailvertex_z = fs->make<TH1F>("adjacentfailvertex_z", "", 60, -20., 20.);
 
   m_MinTransverseImpactParameter = fs->make<TH1F>("MinTransverseImpactParameter", "", 300, -50, 50);
   m_MinLongiudinalImpactParameter = fs->make<TH1F>("MinLongiudinalImpactParameter", "", 300, -50, 50);
@@ -63,7 +66,7 @@ void Histograms::book(edm::Service<TFileService> fs){
 
   m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
   m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
-  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5);
+  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
 
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
@@ -98,18 +101,27 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_HitDepth_MuonHCAL = fs->make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
   m_HitDepth_RandomHCAL = fs->make<TH1F>("HitDepth_RandomHCAL", "; Depth; Events", 40,0,20);
   m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
-  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
+  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
+  m_MissThreshConeEnergy = fs->make<TH1F>("MissConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
   m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
   m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
+  m_HitsOverThresh = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
   for(int i=0; i<7; i++)
   {
      std::string name = "Layer"+std::to_string(i+1)+"Spectra";
      std::string rname = "R"+name;
-     std::string bname = "B"+name;
-     m_Layer_Spectra[i] = fs->make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 150,0,10);
-     m_RLayer_Spectra[i] = fs->make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 150,0,10);
+     std::string pairname = "DepthPairSpectra_"+std::to_string(i+1)+std::to_string(i+2);
+     std::string rpairname = "R"+pairname;
+     std::string pairaxis = "; Depth " + std::to_string(i+1)+" Hit Energy (GeV); Depth "+std::to_string(i+2)+" Hit Energy (GeV); Events";
+     m_Layer_Spectra[i] = fs->make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
+     m_RLayer_Spectra[i] = fs->make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
+     if(i<6)
+     {
+        m_DepthPairSpectra[i] = fs->make<TH2F>(pairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
+        m_RDepthPairSpectra[i] = fs->make<TH2F>(rpairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
+     }
   }
- for(int i=0; i<7; i++)
+  for(int i=0; i<7; i++)
   {
      std::string name = "Layer"+std::to_string(i+1)+"Eta";
      std::string rname = "R"+name;
@@ -117,7 +129,7 @@ void Histograms::book(edm::Service<TFileService> fs){
      m_RLayer_Eta[i] = fs->make<TH2F>(rname.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
   }
   m_ValidIDs = fs->make<TH1F>("ValidCellIds", "; Valid Cell Ids; Events", 101,-0.5,100.5);
-  m_HitsOverThreshold = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_Missing_ValidIDs = fs->make<TH1F>("MissingHitValidCellIds", "; Valid Cell Ids; Events", 101, -0.5, 100.5);
   m_MissingHits = fs->make<TH1F>("MissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
   m_RMissingHits = fs->make<TH1F>("RMissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
   m_MissingHitsMap = fs->make<TH2F>("MissingHitsMap", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5); 
@@ -129,9 +141,13 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_TrackHCALDR_MissHit = fs->make<TH1F>("MinDRTrack_MissHit", "; #Delta R; Events", 70, 0, 0.2);
   m_BlankDepth = fs->make<TH1F>("Blank_Depth", "; Hit Depth; Events", 7,0.5,7.5);
   m_4BlankDepth = fs->make<TH1F>("TwoMiss_Depth", "; Hit Depth; Events", 7,0.5,7.5);
-  m_BlankCellDetaDphi = fs->make<TH2F>("LostHitsDetaDphi", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BlankCellSmallDetaDphi = fs->make<TH2F>("SmallLostHitsDetaDphi", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-
+  m_BlankCellDetaDphiPosEta = fs->make<TH2F>("LostHitsDetaDphiPosEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BlankCellSmallDetaDphiPosEta = fs->make<TH2F>("SmallLostHitsDetaDphiPosEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BlankCellDetaDphiNegEta = fs->make<TH2F>("LostHitsDetaDphiNegEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BlankCellSmallDetaDphiNegEta = fs->make<TH2F>("SmallLostHitsDetaDphiNegEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_MuonEtaDist = fs->make<TH1F>("MuonEtaDist",";#eta; Events", 100,-10,10);
+  m_TrackPt = fs->make<TH1F>("SelectedTrackPt",";#Pt (GeV); Events", 200, 0, 100);
+  m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
 }
 
 void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR){

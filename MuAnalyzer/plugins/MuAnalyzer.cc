@@ -162,18 +162,14 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
 
   myHistograms.book(fs);
 
-
 }
 
 
 MuAnalyzer::~MuAnalyzer()
 {
- 
    // do anything here that needs to be done at desctruction time
    // (e.g. close files, deallocate resources etc.)
-
 }
-
 
 //
 // member functions
@@ -183,8 +179,6 @@ MuAnalyzer::~MuAnalyzer()
 void
 MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-
-
   using namespace edm;
   using namespace std;
   using namespace reco;
@@ -243,12 +237,13 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  //Track and Muon have opposite charge
           if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
           if (!((*iTrack)->quality(Track::highPurity))) continue;
-//          if ((*iTrack)->eta()<-1.5 && (*iTrack)->phi()<-0.2 && (*iTrack)->phi()>-0.7) continue;
 
 	  //Using the highest pT track that pairs with a muon
 //	  if (foundMuonTrackPair) continue;
 
 	  // make a pair of TransientTracks to feed the vertexer
+	  myHistograms.m_MuonEtaDist->Fill(myMuons.highPtSelectedMuon->eta());
+
 	  if(myMuons.highPtSelectedMuon->isGlobalMuon()){
 	    if(!myTracks.PairTracks(iTrack, myMuons.highPtSelectedMuon->globalTrack(), transientTrackBuilder)) continue;
 	  }else if(myMuons.highPtSelectedMuon->isTrackerMuon()){
@@ -268,9 +263,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  myHistograms.m_MuonTrackMass->Fill(myTracks.MuonTrackMass);
 
-//	  foundMuonTrackPair = true;
-
-	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex);
+	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
@@ -283,33 +276,19 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     myHistograms.m_nMuonsPairedPerEvent->Fill(nMuonsPairedPerEvent);
 
     if(nMuonTrackCand > 0){
-
-      if(fabs(myCSCs.TrackEta) > 2.3 && myCSCs.minTotalImpactParameter < 5){
+      cutProgress++;
+/*      if(fabs(myCSCs.TrackEta) > 2.3 && myCSCs.minTotalImpactParameter < 5){
 	std::cout << "PASSING TRACK ON EDGE OF DETECTOR" << std::endl;
 	std::cout << "myCSCs.TrackEta: " << myCSCs.TrackEta << " myCSCs.TrackPhi: " << myCSCs.TrackPhi << std::endl;
 	std::cout << "myCSCs.TrackEta_dR: " << myCSCs.TrackEta_dR << " myCSCs.TrackPhi_dR: " << myCSCs.TrackPhi_dR << std::endl;
 	std::cout << "myCSCs.minTotalImpactParameter: " << myCSCs.minTotalImpactParameter << " myCSCs.minDR: " << myCSCs.minDR << std::endl;
-      }
-
+      }*/
       myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
-
-      if(myCSCs.minDR < 0.1){
-	myHCAL.CheckHCAL(iEvent, iSetup, HBHERecHit_Label);
-
-      }
-  
+      if(myCSCs.minDR < 0.1){myHCAL.CheckHCAL(iEvent, iSetup, HBHERecHit_Label);}
       myHistograms.m_histogram_TrackerTack_P->Fill(myCSCs.TrackP);
-
-    }
-
-    if (nMuonTrackCand > 0){
       myHistograms.m_nMuonTrackCand->Fill(nMuonTrackCand);
       myHistograms.m_nTracksNoMuon->Fill(nTracksNoMuon);
-//      std::cout <<"PASSES"<<std::endl;
-    }else{
-//      std::cout << "FAILS"<<std::endl;
     }	
-
 
     if(anyMuonPass > 0){
       cutProgress++;
@@ -324,78 +303,78 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
 
-
-    while(cutProgress > 0){
-      myHistograms.m_cutProgress->Fill(cutProgress);
-      cutProgress--;
-    }
-
-    //foundMuonTrackPair = false;
-
     //Looping over Muons and all Tracks to study extrapolating reco Muons to the CSCs.
-    if(myMuons.selectedMuons.size() > 0){
+    if(myMuons.selectedEndcapMuons.size() > 0){
 
       nTracksPairedPerMuon = 0;
-
       for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack ) {
 
          myTracks.tracksToVertex.clear();
 
          //Track and Muon have opposite charge
-         if (myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
+         if (myMuons.highPtSelectedEndcapMuon->charge()==(*iTrack)->charge()) continue;
          if (!((*iTrack)->quality(Track::highPurity))) continue;
-	 //printf("Track isolation is %f.\n",myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt()));
-//         if (myMuons.highPtSelectedMuon->eta()<-1.5 && myMuons.highPtSelectedMuon->phi()<-0.2 && myMuons.highPtSelectedMuon->phi()>-0.7) continue;
          //Using the highest pT track that pairs with a muon
-//         if (foundMuonTrackPair) continue;
-
          // make a pair of TransientTracks to feed the vertexer
-         if(myMuons.highPtSelectedMuon->isGlobalMuon()){
-           if(!myTracks.PairTracks(iTrack, myMuons.highPtSelectedMuon->globalTrack(), transientTrackBuilder)) continue;
-         }else if(myMuons.highPtSelectedMuon->isTrackerMuon()){
-           if(!myTracks.PairTracks(iTrack, myMuons.highPtSelectedMuon->innerTrack(), transientTrackBuilder)) continue;
+	 continue;
+         if(myMuons.highPtSelectedEndcapMuon->isGlobalMuon()){
+           if(!myTracks.PairTracks(iTrack, myMuons.highPtSelectedEndcapMuon->innerTrack(), transientTrackBuilder)) continue;
+         }else if(myMuons.highPtSelectedEndcapMuon->isTrackerMuon()){
+           if(!myTracks.PairTracks(iTrack, myMuons.highPtSelectedEndcapMuon->innerTrack(), transientTrackBuilder)) continue;
          }else{
            continue;
          }
-         if(myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt())>3.0){continue;}
-         //printf("Track isolation is %f.\n",myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->eta(),(*iTrack)->phi(),0.3,(*iTrack)->pt()));
-
-         myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedMuon, myTracks.two_momentum, myTracks.tracksToVertex);
-	 //printf("Muon pt is: %f.\n",myMuons.highPtSelectedMuon->pt());
-
+         if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.two_momentum.eta(),myTracks.two_momentum.phi(),0.3,myTracks.two_momentum.perp())>3.0){continue;}
+         myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedEndcapMuon, myTracks.two_momentum, myTracks.tracksToVertex);
       }
     }
-    //bool HitInHCALGap = false;
-    //if(myCSCs.MuonEta<0&&myCSCs.MuonPhi<-0.9&&myCSCs.MuonPhi>-1.6){HitInHCALGap=true;}
-    if(fabs(myCSCs.MuonEta) > 1.653 && fabs(myCSCs.MuonEta) < 2.4) {
-//      std::cout << "Plotting myCSCs.minDR_Muon: " << myCSCs.minDR_Muon << " myCSCs.minTotalImpactParameter_Muon: " << myCSCs.minTotalImpactParameter_Muon << std::endl;
-      myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP);
+    if(fabs(myCSCs.TrackEta_dR) > 1.653 && fabs(myCSCs.TrackEta_dR) < 2.4) {
+      cutProgress++;
+      myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP_dR);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
       myHistograms.m_MinTotalImpactParameterMuon->Fill(myCSCs.minTotalImpactParameter_Muon);
-
-      if(myCSCs.minDR_Muon < 0.1){
-        double randphi = myCSCs.MuonGlobalPoint.phi()+2.0;
-	if(randphi>ROOT::Math::Pi()){randphi-=2*ROOT::Math::Pi();}
-	if(myCSCs.MuonGlobalPoint.eta()<0&&randphi<-0.9&&randphi>-1.6){randphi=randphi-4.0+2*ROOT::Math::Pi();}
-	GlobalPoint RandGlobalPoint(GlobalPoint::Polar(myCSCs.TrackGlobalPoint.theta(),randphi,myCSCs.TrackGlobalPoint.mag()));
-	bool GoodRand=true;
-	if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
-	double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint);
-        myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonGlobalPoint, myCSCs.TrackGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, myCSCs.minDR_Muon);//Spectra, myHistograms.m_Layer_Eta, myHistograms.m_MissingHits, myHistograms.m_MissingHitsEta);
-	myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
-	myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
-        myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
-        myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
-        //double RandPhi = myCSCs.MuonPhi + 1.5;
-        //if(RandPhi > ROOT::Math::Pi()) RandPhi-=2*ROOT::Math::Pi();
-        //if(myCSCs.MuonEta<0&&RandPhi<-0.9&&RandPhi>-1.6){RandPhi = RandPhi-3.0;}
-	//double minDR_RandomHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, myCSCs.MuonEta_dR, RandPhi); 
-	//myHistograms.m_MinDR_RandomHCAL->Fill(minDR_RandomHCAL);
-	//myHistograms.m_HitDepth_RandomHCAL->Fill(myHCAL.MuonHitDepth);
-	//myHistograms.m_HitEnergy_RandomHCAL->Fill(myHCAL.MuonHitEnergy);
-
       }
+
+    double MatchedP, MatchedMinDr;
+    GlobalPoint MatchedGlobalPoint, VertexPosition;
+    bool TrackHCAL = true;
+    if(TrackHCAL)
+    {
+       MatchedP = myCSCs.TrackP_dR;
+       MatchedMinDr = myCSCs.minDR;
+       MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
+       VertexPosition = myCSCs.TrackVertex;
     }
+    else
+    {
+       MatchedP = myCSCs.MuonP_dR;
+       MatchedMinDr = myCSCs.minDR_Muon;
+       MatchedGlobalPoint = myCSCs.MuonGlobalPoint;
+    }
+   
+    if(MatchedMinDr < 0.1)
+    {
+      cutProgress++;
+      double randphi = MatchedGlobalPoint.phi()+2.0;
+      if(randphi>ROOT::Math::Pi()){randphi-=2*ROOT::Math::Pi();}
+      if(MatchedGlobalPoint.eta()<0&&randphi<-0.9&&randphi>-1.6){randphi=randphi-4.0+2*ROOT::Math::Pi();}
+      GlobalPoint RandGlobalPoint(GlobalPoint::Polar(MatchedGlobalPoint.theta(),randphi,MatchedGlobalPoint.mag()));
+      bool GoodRand=true;
+      if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
+      double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint);
+      myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, MatchedP, VertexPosition);
+      myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
+      myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
+      myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
+      //myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
+    }
+
+    while(cutProgress > 0)
+    {
+      myHistograms.m_cutProgress->Fill(cutProgress);
+      cutProgress--;
+    }
+
   }else{
     bool useFirstTrackToPair = false;
     //Making efficiencies for random tracks
@@ -416,7 +395,9 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  if(!myTracks.PairTrackerTracks(iTrack_2nd, iTrack, transientTrackBuilder)) continue;
 
-	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack_2nd, myTracks.one_momentum, myTracks.tracksToVertex);
+          if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.one_momentum.eta(),myTracks.one_momentum.phi(),0.3,myTracks.one_momentum.perp())>3.0){continue;}
+
+	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack_2nd, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
           myHistograms.m_MinDR->Fill(myCSCs.minDR);
@@ -426,14 +407,10 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        useFirstTrackToPair = true;
     }
   }
-  
-//  myHistograms.PlotCSCHits(iEvent,iSetup,CSCSegment_Label);
-//  myHistograms.PlotHCALHits(iEvent,iSetup,HBHERecHit_Label);
-
 }
 
-bool MuAnalyzer::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<const reco::Track*>::const_iterator& Track, Histograms myHistograms){
-
+bool MuAnalyzer::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<const reco::Track*>::const_iterator& Track, Histograms myHistograms)
+{
   edm::Handle<std::vector<reco::GenParticle>> genParticles;
   iEvent.getByToken(m_genParticleToken, genParticles);
 
@@ -447,7 +424,6 @@ bool MuAnalyzer::isTrackMatchedToMuon(const edm::Event& iEvent, std::vector<cons
      matched = true;
   }
   return matched;
-
 }
 // ------------ method called once each job just before starting event loop  ------------
 void 

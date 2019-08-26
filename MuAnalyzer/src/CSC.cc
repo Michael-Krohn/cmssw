@@ -14,7 +14,7 @@
 
 CSC::CSC(){}
 
-void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, std::vector<const reco::Track*>::const_iterator& iTrack, GlobalVector one_momentum, std::vector<reco::TransientTrack> tracksToVertex){
+void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, std::vector<const reco::Track*>::const_iterator& iTrack, GlobalVector one_momentum, std::vector<reco::TransientTrack> tracksToVertex, GlobalPoint VertexPosition){
 
   edm::Handle<CSCSegmentCollection> TheCSCSegments;
   iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
@@ -50,7 +50,9 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 //         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
 	 TrackEta_dR = one_momentum.eta();
 	 TrackPhi_dR = one_momentum.phi();
-	 TrackP_dR = sqrt(pow(one_momentum.x(), 2) + pow(one_momentum.y(), 2) + pow(one_momentum.z(), 2));
+	 TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(one_momentum.theta(),one_momentum.phi(),TheGlobalPosition.mag()));
+	 TrackVertex = VertexPosition; 
+	 TrackP_dR = sqrt(pow(one_momentum.x(), 2) + pow(one_momentum.y(), 2) );
        }
 
        TrajectoryStateClosestToPoint  traj = tracksToVertex[0].trajectoryStateClosestToPoint(TheGlobalPosition);
@@ -92,7 +94,6 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
        LocalPoint TheLocalPosition = iSegment->localPosition();
 //       const BoundPlane& TheSurface = TheUnit->surface();
        GlobalPoint TheGlobalPosition = TheUnit->toGlobal(TheLocalPosition);
-       //GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
 
        if(fabs(iMuon->eta()) > 1.653){
          TrajectoryStateClosestToPoint  MuonTraj = tracksToVertex[1].trajectoryStateClosestToPoint(TheGlobalPosition);
@@ -101,19 +102,16 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
 	   MuonEta = iMuon->eta();
            MuonPhi = iMuon->phi();
            MuonP = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
-	   MuonGlobalPoint = TheGlobalPosition;
-	   TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),MuonGlobalPoint.mag()));
 	   
          }
          double dPhi_Muon = fabs(two_momentum.phi() - TheGlobalPosition.phi());
-         if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= ROOT::Math::Pi();
+         if(dPhi_Muon > ROOT::Math::Pi()) dPhi_Muon -= 2*ROOT::Math::Pi();
          if (minDR_Muon > sqrt(( pow((two_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi_Muon, 2.0)))){
             minDR_Muon = sqrt(( pow((two_momentum.eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi_Muon, 2.0)));
 	    MuonEta_dR = iMuon->eta();
             MuonPhi_dR = iMuon->phi();
-	    MuonGlobalPoint = TheGlobalPosition;
-	    TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),MuonGlobalPoint.mag()));
-            MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2) + pow(two_momentum.z(), 2));
+	    MuonGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),TheGlobalPosition.mag()));
+            MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2));
          
 	 }
        }

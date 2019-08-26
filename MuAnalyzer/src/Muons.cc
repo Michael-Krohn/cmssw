@@ -22,13 +22,29 @@ void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToke
 
     //pT above trigger turnon
     if (iMuon->pt() < 26 || fabs(iMuon->eta()) > 2.4) continue;
-    
+     
     selectedMuons.push_back(&(*iMuon));
 
-  }
-
-  if(selectedMuons.size() > 0){
-    highPtSelectedMuon = selectedMuons[0];
+    if(selectedMuons.size() == 1){
+      highPtSelectedMuon = selectedMuons[0];
+      highmuonpt=iMuon->pt();
+    }
+    else if(iMuon->pt()>highmuonpt)
+    {
+      highPtSelectedMuon=selectedMuons.back();
+      highmuonpt=iMuon->pt(); 
+    }
+  
+    if(selectedEndcapMuons.size()==0){highendcappt=0;}
+    if (fabs(iMuon->eta())>1.653)
+    {
+       selectedEndcapMuons.push_back(&(*iMuon));
+       if(iMuon->pt()>highendcappt)
+       {
+         highendcappt=iMuon->pt();
+         highPtSelectedEndcapMuon=selectedMuons.back();
+       }
+    }
   }
 
 }

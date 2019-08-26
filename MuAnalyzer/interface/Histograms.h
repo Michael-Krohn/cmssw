@@ -43,7 +43,10 @@ class Histograms{
     TH1F* m_histogram_MuonTrack_P;
 
     TH2F* m_histogram_differenceVertex_xy;
+    TH2F* m_histogram_misshitVertex_xy;
     TH1F* m_histogram_differenceVertex_z;
+    TH1F* m_histogram_misshitVertex_z;
+    TH1F* m_adjacentfailvertex_z;
 
     TH1F* m_MinTransverseImpactParameter;
     TH1F* m_MinLongiudinalImpactParameter;
@@ -107,14 +110,18 @@ class Histograms{
     TH1F* m_HitDepth_RandomHCAL;
     TH1F* m_ConeHits;
     TH1F* m_ConeEnergy;
+    TH1F* m_MissThreshConeEnergy;
     TH1F* m_RandomConeHits;
     TH1F* m_RandomConeEnergy;   
+    TH1F* m_HitsOverThresh;
     TH1F* m_Layer_Spectra[7];
     TH1F* m_RLayer_Spectra[7];
+    TH2F* m_DepthPairSpectra[6];
+    TH2F* m_RDepthPairSpectra[6];
     TH2F* m_Layer_Eta[7];
     TH2F* m_RLayer_Eta[7];
     TH1F* m_ValidIDs;
-    TH1F* m_HitsOverThreshold;
+    TH1F* m_Missing_ValidIDs;
     TH1F* m_MissingHits;
     TH1F* m_RMissingHits;
     TH2F* m_MissingHitsMap;
@@ -126,8 +133,13 @@ class Histograms{
     TH1F* m_TrackHCALDR_GoodHits;
     TH1F* m_BlankDepth;
     TH1F* m_4BlankDepth;
-    TH2F* m_BlankCellDetaDphi;
-    TH2F* m_BlankCellSmallDetaDphi;
+    TH2F* m_BlankCellDetaDphiPosEta;
+    TH2F* m_BlankCellSmallDetaDphiPosEta;
+    TH2F* m_BlankCellDetaDphiNegEta;
+    TH2F* m_BlankCellSmallDetaDphiNegEta;   
+    TH1F* m_MuonEtaDist;
+    TH1F* m_TrackPt;
+    TH1F* m_MissHitTrackPt;
 };
 
 #endif

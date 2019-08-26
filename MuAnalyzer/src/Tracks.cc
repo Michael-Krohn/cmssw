@@ -21,7 +21,7 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
       selectedTracks.push_back(&(*iTrack));
 
       if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.653) continue;
-
+      if (iTrack->pt()<26) continue;
       selectedEndcapTracks.push_back(&(*iTrack));
   }
 }
@@ -73,7 +73,6 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
     }
 
     if (MuonTrackMass < 80 || MuonTrackMass > 100) return false;
-
   }else{
     return false;
   }

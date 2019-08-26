@@ -17,8 +17,11 @@ class Muons{
     void SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken);
 
     std::vector<const reco::Muon*> selectedMuons;
+    std::vector<const reco::Muon*> selectedEndcapMuons;
     const reco::Muon* highPtSelectedMuon;
-
+    const reco::Muon* highPtSelectedEndcapMuon;
+    double highmuonpt;
+    double highendcappt;
 
 };
 
