@@ -42,7 +42,7 @@ def setTDRStyle():
   #tdrStyle.SetHistFillStyle(0)
   tdrStyle.SetHistLineColor(1)
   tdrStyle.SetHistLineStyle(0)
-  tdrStyle.SetHistLineWidth(1)
+  tdrStyle.SetHistLineWidth(2)
   #tdrStyle.SetLegoInnerR(Float_t rad = 0.5)
   #tdrStyle.SetNumberContours(Int_t number = 20)
 
@@ -104,7 +104,7 @@ def setTDRStyle():
 
   tdrStyle.SetTitleColor(1, "XYZ")
   tdrStyle.SetTitleFont(42, "XYZ")
-  tdrStyle.SetTitleSize(0.06, "XYZ")
+  tdrStyle.SetTitleSize(0.08, "XYZ")
   # tdrStyle.SetTitleXSize(Float_t size = 0.02) # Another way to set the size?
   # tdrStyle.SetTitleYSize(Float_t size = 0.02)
   tdrStyle.SetTitleXOffset(0.9)
@@ -116,7 +116,7 @@ def setTDRStyle():
   tdrStyle.SetLabelColor(1, "XYZ")
   tdrStyle.SetLabelFont(42, "XYZ")
   tdrStyle.SetLabelOffset(0.007, "XYZ")
-  tdrStyle.SetLabelSize(0.05, "XYZ")
+  tdrStyle.SetLabelSize(0.07, "XYZ")
 
 # For the axis:
 

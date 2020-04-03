@@ -12,7 +12,10 @@
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
-CSC::CSC(){}
+CSC::CSC()
+{
+minDR=10;
+}
 
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, std::vector<const reco::Track*>::const_iterator& iTrack, GlobalVector one_momentum, std::vector<reco::TransientTrack> tracksToVertex, GlobalPoint VertexPosition){
 
@@ -21,7 +24,6 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
   edm::ESHandle<CSCGeometry> TheCSCGeometry;
   iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
-
   if( TheCSCSegments.isValid() ){
     for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++){
 
@@ -31,7 +33,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 
        //Only using 1st layer of CSCs
-//       if(iDetId.station() != 1) continue;
+       if(iDetId.station() != 1) continue;
 
        DetId TheDetUnitId(iSegment->cscDetId());
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
@@ -70,6 +72,62 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 }
 
+void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition){
+
+  edm::Handle<CSCSegmentCollection> TheCSCSegments;
+  iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
+
+  edm::ESHandle<CSCGeometry> TheCSCGeometry;
+  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
+  minDR = 10;
+  if( TheCSCSegments.isValid() ){
+    for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++){
+
+       CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
+       if(iTrack->eta() < 0 && iDetId.endcap() == 1) continue;
+       if(iTrack->eta() > 0 && iDetId.endcap() == 2) continue;
+
+
+       //Only using 1st layer of CSCs
+       if(iDetId.station() != 1) continue;
+
+       DetId TheDetUnitId(iSegment->cscDetId());
+       const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+
+       double dPhi = fabs(iTrack->momentum().phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
+       printf ("dPhi is %f.\n",dPhi);
+       //double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
+       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
+
+       LocalPoint TheLocalPosition = iSegment->localPosition();
+       const BoundPlane& TheSurface = TheUnit->surface();
+       GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+
+       if(minDR > sqrt(( pow((iTrack->momentum().eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)))){
+          minDR = sqrt(( pow((iTrack->momentum().eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)));
+//       if(minDR > sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)))){
+//         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
+	 TrackEta_dR = iTrack->momentum().eta();
+	 TrackPhi_dR = iTrack->momentum().phi();
+	 TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(iTrack->momentum().theta(),iTrack->momentum().phi(),TheGlobalPosition.mag()));
+	 TrackVertex = VertexPosition; 
+	 TrackP_dR = sqrt(pow(iTrack->momentum().x(), 2) + pow(iTrack->momentum().y(), 2) );
+       }
+
+       TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+
+
+       if (minTotalImpactParameter > sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter())){
+	 minTotalImpactParameter = sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter());
+	  TrackEta = iTrack->momentum().eta();
+	  TrackPhi = iTrack->momentum().phi();
+	  TrackP  = sqrt(pow(iTrack->momentum().x(), 2) + pow(iTrack->momentum().y(), 2) + pow(iTrack->momentum().z(), 2));
+       }
+
+    }
+  }
+
+}
 void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Muon* iMuon, GlobalVector two_momentum, std::vector<reco::TransientTrack> tracksToVertex){
 
   edm::Handle<CSCSegmentCollection> TheCSCSegments;
@@ -111,7 +169,7 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
 	    MuonEta_dR = iMuon->eta();
             MuonPhi_dR = iMuon->phi();
 	    MuonGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),TheGlobalPosition.mag()));
-            MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2));
+            MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2)+pow(two_momentum.z(),2));
          
 	 }
        }

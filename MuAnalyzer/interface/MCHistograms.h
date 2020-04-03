@@ -43,6 +43,8 @@ class MCHistograms{
     TH1F* m_DeflectingAngle;
     TH1F* m_initialMuE;
     TH1F* m_finalMuE;
+    TH1F* m_initialMuPt;
+    TH1F* m_finalMuPt;
     TH1F* m_dphoEnergy;
     TH1F* m_TrackMotherdE;
     TH1F* m_TrackMotherdR;
@@ -51,6 +53,14 @@ class MCHistograms{
     TH1F* m_HitDepth_MuonHCAL;
     int cutProgress;
     TH1F* m_BremDepth;
+    TH1F* m_HitsOverThreshSplit[7];
+    TH1F* m_Depth_Spectra[7];
+    TH1F* m_BremSpectrum;
+    TH1F* m_CSC_dR;
+    TH1F* m_NThreshCut;
+    TH1F* m_TrackerVGlobal;
+    TH1F* m_MuonMotherdE;
+    TH1F* m_MuonMotherdR;
 };
 
 #endif

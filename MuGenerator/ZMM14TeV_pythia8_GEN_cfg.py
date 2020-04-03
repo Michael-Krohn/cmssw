@@ -28,13 +28,19 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 #process.load('SimG4Core.CustomPhysics.CustomPhysics_cfi')
 process.g4SimHits.Physics.type = 'SimG4Core/Physics/CustomPhysics'
-
 process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
     SaveSimTrack = cms.PSet(
         PDGCodes = cms.untracked.vint32([9994])
     ),
     type  = cms.string('SaveSimTrack')
 ) )
+
+#process.MessageLogger = cms.Service("MessageLogger",
+#    destinations = cms.untracked.vstring('simplestML'),
+#    simplestML = cms.untracked.PSet(
+#        threshold = cms.untracked.string('DEBUG'),
+#    )
+#)
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(500)

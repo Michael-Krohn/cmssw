@@ -17,6 +17,7 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
 #include "TH1F.h"
 
 #include <algorithm>
@@ -409,16 +410,19 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 //       hbhe_cell->reset();
     }
     int hitsoverthresh=0;
+    int rhitsoverthresh=0;
     for(int i=0;i<7;i++)
     {
        if(fabs(TrackiEta)>25||i<6)
        {
           if(layerenergies[i]<Hit_Thresholds[i])
 	  {
+	     myHistograms.m_NThreshCut->Fill(0);
 	     if(lowthreshadjacent[i]>Hit_Thresholds[i]){return;}
 	  }
        }
     }
+    myHistograms.m_NThreshCut->Fill(1);
     for(int i=0;i<7;i++) 
     {
        if(fabs(TrackiEta)>25||i<6)
@@ -438,6 +442,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
 	  {
 	     myHistograms.m_RLayer_Spectra[i]->Fill(rlayerenergies[i]);
 	     if(i<6){myHistograms.m_RDepthPairSpectra[i]->Fill(rlayerenergies[i],rlayerenergies[i+1]);}
+	     if(rlayerenergies[i]>Hit_Thresholds[i]){rhitsoverthresh++;}
 	  }
           if(rlayerenergies[i]!=0)
           {
@@ -500,6 +505,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
     {
        myHistograms.m_RandomConeHits->Fill(Hits[2]);
        myHistograms.m_RandomConeEnergy->Fill(Hits[3]);
+       myHistograms.m_RandomHitsOverThresh->Fill(rhitsoverthresh);
     }
     for(int j=1; j<5; j++)
     {
@@ -577,4 +583,165 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
+void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms){ 
+
+  double MuonEta = TrackGlobalPoint.eta();
+  double MuonPhi = TrackGlobalPoint.phi();
+  edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
+  iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
+  static double Hits[4];
+  Hits[0] = 0;
+  Hits[1] = 0;
+  Hits[2] = 0;
+  Hits[3] = 0;
+
+  edm::ESHandle<CaloGeometry> TheCALOGeometry;
+  iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+  
+  edm::ESHandle<HcalTopology> htopo;
+  iSetup.get<HcalRecNumberingRecord>().get(htopo);
+  const HcalTopology* theHBHETopology = htopo.product();
+  
+  const CaloGeometry* caloGeom = TheCALOGeometry.product();
+  const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
+  int TrackiEta,TrackiPhi;
+  //  HcalDetId MuonClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
+  HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(TrackGlobalPoint); 
+  TrackiEta = ClosestCell.ieta();
+  TrackiPhi = ClosestCell.iphi();
+  int BremDepth = ClosestCell.depth();
+  myHistograms.m_BremDepth->Fill(BremDepth);
+  if(fabs(TrackiEta)<19){return;}
+  if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return;}
+  if(fabs(TrackiEta)>28){return;}
+  const int Ndepths = 7;
+  const int CellsPerDepth = 5;
+  HcalDetId AdjacentCells[CellsPerDepth*Ndepths];
+  HcalDetId LowThreshAdjacentCells[CellsPerDepth*Ndepths];
+  HcalDetId CenterCells[Ndepths];
+  //GetConeIDs(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
+  //GetCenterCells(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth); 
+  double highetathresh, lowetathresh, phithresh;
+  if(fabs(TrackiEta)>20)
+  {
+     highetathresh = 0.015;
+     lowetathresh = 0.03;
+     phithresh = 0.055;
+  }
+  else
+  {
+     lowetathresh = 0.024;
+     highetathresh = 0.01;
+     phithresh = 0.008;
+  }
+  /*lowetathresh = 0.0;
+  highetathresh = 0.0;
+  phithresh = 0.0;*/
+  //GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
+  
+  double Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
+  if(Tdphi<-ROOT::Math::Pi()) Tdphi += 2*ROOT::Math::Pi();
+  double Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
+  bool etaedge = false;
+  if(TrackiEta>0)
+  {
+     if(Tdeta>highetathresh){etaedge=true;}
+     if(Tdeta<-lowetathresh){etaedge=true;}
+  }
+  else
+  {
+     if(Tdeta<-highetathresh){etaedge=true;}
+     if(Tdeta>lowetathresh){etaedge=true;}
+//       if(fabs(Tdeta)>lowetathresh){etaedge=true;}
+  }
+  bool phiedge = (fabs(Tdphi)>phithresh);
+  GetAdjacentCells(theHBHETopology,LowThreshAdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
+  if(!etaedge){Tdeta=10;}
+  if(!phiedge){Tdphi=10;}
+  GetAdjacentCells(theHBHETopology,AdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
+  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
+  int ValidIdCount = 0;
+  for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(AdjacentCells[i])){ValidIdCount++;}}
+  if(!hcalRecHits.isValid())
+  {
+    std::cout << "Could not find HCAL RecHits" << std::endl;
+  }
+  else
+  {
+    const HBHERecHitCollection *hbhe = hcalRecHits.product();
+    double layerenergies[7],lowthreshadjacent[7];    
+    for(int i=0;i<7;i++)
+    {
+       layerenergies[i]=0;
+       lowthreshadjacent[i]=0;
+    }
+
+    for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
+    {  
+       HcalDetId id(hbherechit->detid());
+       std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+//       Global3DPoint hbhe_position = hbhe_cell->getPosition();
+       
+       HcalDetId *trackmatch = std::find(std::begin(AdjacentCells), std::end(AdjacentCells), id);
+       HcalDetId *centermatch = std::find(std::begin(CenterCells), std::end(CenterCells), id);
+       HcalDetId *lowthreshmatch = std::find(std::begin(LowThreshAdjacentCells), std::end(LowThreshAdjacentCells), id);
+       int HitiEta = id.ieta();
+       if(fabs(HitiEta)<16){continue;} 
+       if(hbherechit->energy()!=0)
+       {
+         if(trackmatch!=std::end(AdjacentCells))
+         {	 
+           if(centermatch!=std::end(CenterCells))
+    	   {
+  	      Hits[1] += hbherechit->energy();
+              if(id.depth()<8) 
+  	      {
+  	        //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
+  	        layerenergies[id.depth()-1]+=hbherechit->energy();
+  	      }
+              if(id.depth()==BremDepth){myHistograms.m_BremSpectrum->Fill(hbherechit->energy());}
+  	      myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
+	   }
+         }
+	 if(lowthreshmatch!=std::end(LowThreshAdjacentCells)&&centermatch==std::end(CenterCells)&&(hbherechit->energy()>lowthreshadjacent[id.depth()]))
+	 {
+	    lowthreshadjacent[id.depth()]=hbherechit->energy();
+	 }
+       }
+//       hbhe_cell->reset();
+    }
+    int hitsoverthresh=0;
+    for(int i=0;i<7;i++)
+    {
+       if(fabs(TrackiEta)>25||i<6)
+       {
+          if(layerenergies[i]<Hit_Thresholds[i])
+	  {
+	     if(lowthreshadjacent[i]>Hit_Thresholds[i])
+	     {
+	        myHistograms.m_NThreshCut->Fill(0);
+	        return;
+	     }
+	  }
+       }
+    }
+    myHistograms.m_NThreshCut->Fill(1);
+    for(int i=0;i<7;i++) 
+    {
+       //if(layerenergies[i]!=0)
+       //{
+          if(i<6){Hits[0]++;}
+	  if(layerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
+	  //if(BremDepth-1<i){myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);}
+          myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);
+       //}
+    }   
+    myHistograms.m_ConeHits->Fill(Hits[0]);
+    myHistograms.m_HitsOverThresh->Fill(hitsoverthresh);
+    myHistograms.m_HitsOverThreshSplit[BremDepth-1]->Fill(hitsoverthresh);
+    myHistograms.m_ConeEnergy->Fill(Hits[1]);
+  }
+  return;
+}
 

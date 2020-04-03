@@ -30,8 +30,8 @@ GetOptions(
 
 print "$#ARGV\n";
 
-if ($#ARGV<4 || $#ARGV>4) {
-    print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] [isMC=True/False] [runRandomTrack=True/False] [runLocally=True/False]\n\n";
+if ($#ARGV<5 || $#ARGV>5) {
+    print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] [isMC=True/False] [runRandomTrack=True/False] [runLocally=True/False] [isSig=True/False]\n\n";
     print "    --batch (number of files per jobs) (default $batch)\n";
     print "    --start (output file number for first job) (default $startPoint)\n";
     print "    --jobname (name of the job) (default based on base config)\n";
@@ -47,8 +47,9 @@ $filelist=shift @ARGV;
 $cmsRunArguments=shift @ARGV;
 $cmsRunArguments2nd=shift @ARGV;
 $cmsRunArguments3rd=shift @ARGV;
+$cmsRunArguments4th=shift @ARGV;
 
-print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, and $cmsRunArguments3rd\n";
+print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, $cmsRunArguments3rd, and $cmsRunArguments4th\n";
 
 if ($jobBase eq "default") {
     my $stub3=$basecfg;
@@ -98,7 +99,7 @@ if ($nosubmit) {
     open(SUBMIT,"|condor_submit");
 }
 print(SUBMIT "Executable = $executable\n");
-print(SUBMIT "arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\"\n");
+print(SUBMIT "arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th\"\n");
 print(SUBMIT "Universe = vanilla\n");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
 print(SUBMIT "Error = $prodSpace/logs/error\n");
@@ -107,6 +108,7 @@ print(SUBMIT "Requirements = (Arch==\"X86_64\")");
 # Zebras are for remote login, not cluster computing
 print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"zebra04.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
 print(SUBMIT " && (Machine != \"scorpion13.spa.umn.edu\")");
+#print(SUBMIT " && (Machine != \"scorpion4.spa.umn.edu\") && (Machine != \"scorpion5.spa.umn.edu\") && (Machine != \"scorpion3.spa.umn.edu\")");
 #print(SUBMIT " && (Machine != \"scorpion32.spa.umn.edu\" && Machine != \"scorpion32.spa.umn.edu\" && Machine != \"scorpion32.spa.umn.edu\")");
 # These machines are VMs that run the grid interface
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\")");

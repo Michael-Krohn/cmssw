@@ -15,7 +15,7 @@ void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToke
   for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end(); iMuon++) {
 
     //Loose ID
-     if (!(iMuon->isPFMuon() && (iMuon->isGlobalMuon() || iMuon->isTrackerMuon()))) continue;
+    if (!(iMuon->isPFMuon() && (iMuon->isGlobalMuon() || iMuon->isTrackerMuon()))) continue;
 
     //PFIso Loose requirement
     if ((iMuon->pfIsolationR04().sumChargedHadronPt + TMath::Max(0., iMuon->pfIsolationR04().sumNeutralHadronEt + iMuon->pfIsolationR04().sumPhotonEt - 0.5*iMuon->pfIsolationR04().sumPUPt))/iMuon->pt() > 0.25) continue;

@@ -40,16 +40,32 @@ void MCHistograms::book(edm::Service<TFileService> fs){
   m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
   m_DBremLocation = fs->make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
   m_DeflectingAngle = fs->make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
-  m_initialMuE = fs->make<TH1F>("MuInitialE",";Energy (GeV);Events",100,0,200);
-  m_finalMuE = fs->make<TH1F>("MuFinalE",";Energy (GeV);Events",100,0,200);
+  m_initialMuE = fs->make<TH1F>("MuInitialE",";Energy (GeV);Events",800,0,800);
+  m_finalMuE = fs->make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,800);
+  m_initialMuPt = fs->make<TH1F>("MuInitialPt",";Pt (GeV);Events",200,0,400);
+  m_finalMuPt = fs->make<TH1F>("MuFinalPt",";Pt (GeV);Events",200,0,400);
   m_dphoEnergy = fs->make<TH1F>("DarkPhotonEnergy",";Energy (GeV);Events",100,0,200);
-  m_TrackMotherdE = fs->make<TH1F>("MotherTrackdE",";#DELTA E (GeV);Events",50,0,20);
-  m_TrackMotherdR = fs->make<TH1F>("MotherTrackdR",";#DELTA R ;Events",50,0,0.5);
+  m_TrackMotherdE = fs->make<TH1F>("MotherTrackdE",";#Delta E /E ;Events",100,0,1);
+  m_TrackMotherdR = fs->make<TH1F>("MotherTrackdR",";#Delta R ;Events",50,0,0.5);
   m_FractionalELost = fs->make<TH1F>("FractionalELost",";Fraction of Energy Remaining;Events",100,0,1);
   m_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
   m_HitDepth_MuonHCAL = fs->make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
   m_HitsOverThresh = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
   m_BremDepth = fs->make<TH1F>("BremDepth", "; Depth of Dark Brem; Events", 8,-0.5,7.5);
+  for(int i=0;i<7;i++)
+  {
+    std::string name = "Depth"+std::to_string(i+1)+"HitsOverThresh";
+    std::string specname = "Depth"+std::to_string(i+1)+"Spectra";
+    m_HitsOverThreshSplit[i] = fs->make<TH1F>(name.c_str(), "; Hits Over Threshold; Events", 8,-0.5,7.5);
+    m_Depth_Spectra[i] = fs->make<TH1F>(specname.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
+  }
+  m_BremSpectrum = fs->make<TH1F>("BremSpectrum","; Energy of Nearest Depth to Brem; Events", 200,0,10);
+  m_CSC_dR = fs->make<TH1F>("dRtoNearestCSC","; dR from Projected Track to Nearest CSC hit; Events", 140,0,7);
+  m_NThreshCut = fs->make<TH1F>("NPassAdjacentCut","; Fail cut in bin zero, pass in bin 1; Events", 2,-0.5,1.5);
+  m_TrackerVGlobal = fs->make<TH1F>("TrackerVGlobalMuons","; Only tracker in bin one, only global in two, both in three; Muons", 3,0.5,3.5);
+  m_MuonMotherdE = fs->make<TH1F>("MuonMotherdE","; #Delta E / E; Events",100,0,1);
+  m_MuonMotherdR = fs->make<TH1F>("MuonMotherdR","; #Delta R; Events",200,0,4);
+
 }
 
 void MCHistograms::IncCutFlow()

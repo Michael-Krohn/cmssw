@@ -106,6 +106,8 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
   m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
   m_HitsOverThresh = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_RandomHitsOverThresh = fs->make<TH1F>("RandomHitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+
   for(int i=0; i<7; i++)
   {
      std::string name = "Layer"+std::to_string(i+1)+"Spectra";
@@ -148,7 +150,19 @@ void Histograms::book(edm::Service<TFileService> fs){
   m_MuonEtaDist = fs->make<TH1F>("MuonEtaDist",";#eta; Events", 100,-10,10);
   m_TrackPt = fs->make<TH1F>("SelectedTrackPt",";#Pt (GeV); Events", 200, 0, 100);
   m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
+  m_DBremLocation = fs->make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
+  m_DeflectingAngle = fs->make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
+  m_initialMuE = fs->make<TH1F>("MuInitialE",";Energy (GeV);Events",100,0,200);
+  m_finalMuE = fs->make<TH1F>("MuFinalE",";Energy (GeV);Events",100,0,200);
+  m_dphoEnergy = fs->make<TH1F>("DarkPhotonEnergy",";Energy (GeV);Events",100,0,200);
+  m_NThreshCut = fs->make<TH1F>("NPassAdjacentCut","; Fail cut in bin zero, pass in bin 1; Events", 2,-0.5,1.5);
 }
+
+/*void Histograms::IncCutFlow()
+{
+   cutProgress++;
+   m_cutProgress->fill(cutProgress);
+}*/
 
 void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR){
 

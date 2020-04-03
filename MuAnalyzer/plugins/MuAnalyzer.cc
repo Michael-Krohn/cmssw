@@ -42,8 +42,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Math/interface/deltaR.h"
-
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "SimDataFormats/Track/interface/SimTrackContainer.h"
 
 // for vertexing
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -120,8 +120,11 @@ class MuAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetToken m_trigResultsToken;
     std::vector<std::string> m_muonPathsToPass;
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
+    edm::EDGetToken m_simTracksToken;
+
 
     bool m_isMC;
+    bool m_isSig;
     bool m_runRandomTrackEfficiency;
 
     Histograms myHistograms;
@@ -146,11 +149,13 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
   CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false)),
+  m_isSig (iConfig.getUntrackedParameter<bool>("isSig",false)),
   m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false))
 {
    //now do what ever initialization is needed
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
+    if(m_isSig){m_simTracksToken=consumes<edm::SimTrackContainer> (iConfig.getParameter<edm::InputTag>("g4SimHits"));}
   }
   else
   {
@@ -167,7 +172,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig):
 
 MuAnalyzer::~MuAnalyzer()
 {
-   // do anything here that needs to be done at desctruction time
+   // do anything here that needs to be done at destruction time
    // (e.g. close files, deallocate resources etc.)
 }
 
@@ -193,12 +198,26 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   myHistograms.m_eventCount->Fill(0.5);
   int cutProgress = 0;
 
-  if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
+  //if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   cutProgress++;
   if(!m_isMC)
   {
      if(!myEventInfo.passTriggers(iEvent, m_trigResultsToken, m_muonPathsToPass)) return;
   }
+  math::XYZTLorentzVectorD dpho;
+  if(m_isSig)
+  {
+    edm::Handle<SimTrackContainer> simtracks;
+    iEvent.getByToken(m_simTracksToken, simtracks);
+    bool dphofound=false;
+    for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
+    {
+       if(!isimtrk->noVertex()&&isimtrk->type()==9994){dphofound=true;}
+       dpho=isimtrk->momentum();
+    }
+    if(!dphofound){return;}
+  }
+
   cutProgress++;
 
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
@@ -256,14 +275,13 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	    if (!isTrackMatchedToMuon(iEvent, iTrack, myHistograms)) continue;
 	  }
 
-	  nTracksPairedPerMuon++;
-
-
-          nMuonTrackCand++;
-
 	  myHistograms.m_MuonTrackMass->Fill(myTracks.MuonTrackMass);
 
 	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
+          if(myCSCs.minTotalImpactParameter>10){continue;}
+          nTracksPairedPerMuon++;
+
+          nMuonTrackCand++;
 
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
 	  myHistograms.m_MinDR->Fill(myCSCs.minDR);
@@ -328,7 +346,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedEndcapMuon, myTracks.two_momentum, myTracks.tracksToVertex);
       }
     }
-    if(fabs(myCSCs.TrackEta_dR) > 1.653 && fabs(myCSCs.TrackEta_dR) < 2.4) {
+    if(fabs(myCSCs.MuonEta_dR) > 1.653 && fabs(myCSCs.MuonEta_dR) < 2.4) {
       cutProgress++;
       myHistograms.m_histogram_MuonTrack_P->Fill(myCSCs.MuonP_dR);
       myHistograms.m_MinDR_Muon->Fill(myCSCs.minDR_Muon);
@@ -336,6 +354,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
 
     double MatchedP, MatchedMinDr;
+    MatchedMinDr = 10;
     GlobalPoint MatchedGlobalPoint, VertexPosition;
     bool TrackHCAL = true;
     if(TrackHCAL)
@@ -351,7 +370,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
        MatchedMinDr = myCSCs.minDR_Muon;
        MatchedGlobalPoint = myCSCs.MuonGlobalPoint;
     }
-   
+     
     if(MatchedMinDr < 0.1)
     {
       cutProgress++;
@@ -362,6 +381,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       bool GoodRand=true;
       if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
       double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint);
+      if((pow(MatchedGlobalPoint.eta()-dpho.eta(),2)+pow(MatchedGlobalPoint.phi()-dpho.phi(),2))>0.01){return;}
       myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, MatchedP, VertexPosition);
       myHistograms.m_MinDR_MuonHCAL->Fill(minDR_MuonHCAL);
       myHistograms.m_HitEnergy_MinDR_MuonHCAL->Fill(myHCAL.MuonHitEnergy);
@@ -398,7 +418,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
           if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.one_momentum.eta(),myTracks.one_momentum.phi(),0.3,myTracks.one_momentum.perp())>3.0){continue;}
 
 	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack_2nd, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
-
+          
 	  myHistograms.m_MinTotalImpactParameter->Fill(myCSCs.minTotalImpactParameter);
           myHistograms.m_MinDR->Fill(myCSCs.minDR);
 

@@ -12,9 +12,9 @@ else:
 if len(sys.argv) < 1:
     sys.exit("Not enough arguments")
 
-JobNumber = JobNumber+1011
+#JobNumber = JobNumber+301
 from subprocess import call
 
-call(["/local/cms/user/revering/dphoton/CMSSW_10_0_2/src/DarkPhoton/MuGenerator/generate.sh", str(JobNumber), "ZMM14TeV_pythia8_RAW_cfg.py", "ZMM14TeV_pythia8_RECO_cfg.py"])
+call(["/data/cmszfs1/user/revering/dphoton/DBremAdd/CMSSW_10_2_6/src/DarkPhoton/MuGenerator/ZMM14TeV_SignalGen.sh", str(JobNumber), "ZMM14TeV_pythia8_GEN_cfg.py"])
 
 

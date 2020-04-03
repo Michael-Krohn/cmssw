@@ -15,6 +15,7 @@ cmsRun $STARTDIR/ZMM14TeV_pythia8_L1toRECO_cfg.py $job
 rm $scratch/ZMM14TeV+signal_"$job"_gensim.root
 rm $scratch/ZMM14TeV+signal_"$job"_step1.root
 mv $scratch/ZMM14TeV+signal_"$job".root $OUTDIR
+mv $scratch/MuonWeights.root $OUTDIR/MuonWeights_"$job".root
 cd $STARTDIR
 rm -rf $scratch
 # -lh /local/cms/user/revering/madgraph/scratch  | grep revering

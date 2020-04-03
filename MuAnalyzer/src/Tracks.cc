@@ -61,6 +61,7 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
       TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
       TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
       one_momentum = one_TSCP.momentum();
+      if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<26){return false;}
       two_momentum = two_TSCP.momentum();
 
       double total_energy = sqrt(one_momentum.mag2() + 0.106*0.106) + sqrt(two_momentum.mag2() + 0.106*0.106);

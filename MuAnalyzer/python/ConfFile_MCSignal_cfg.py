@@ -21,6 +21,12 @@ options.register( 'runLocally',
                                   VarParsing.varType.bool,
                                   "True if running locally")
 
+options.register( 'isSig',
+				  True,
+				  VarParsing.multiplicity.singleton,
+				  VarParsing.varType.bool,
+				  "True if using signal injected events")
+
 options.parseArguments()
 
 
@@ -51,7 +57,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('SigFiles.txt')
+	   mylist = FileUtils.loadListFromFile ('SigFilesForcedWeight.txt')
 	else:
 	   mylist = FileUtils.loadListFromFile('sampledata.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -80,6 +86,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     HBHERecHits = cms.InputTag("hbhereco"),
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),
+    isSig = cms.untracked.bool(options.isSig),
     runuandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 

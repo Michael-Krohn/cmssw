@@ -1,3 +1,3 @@
 #Automatically created by SCRAM
 import os
-__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/MuMu/MuMuAnalyzer/',1)[0])+'/cfipython/slc6_amd64_gcc530/MuMu/MuMuAnalyzer')
+__path__.append(os.path.dirname(os.path.abspath(__file__).rsplit('/DarkPhoton/MuAnalyzer/',1)[0])+'/cfipython/slc6_amd64_gcc700/DarkPhoton/MuAnalyzer')

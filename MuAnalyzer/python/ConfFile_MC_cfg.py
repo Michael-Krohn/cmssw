@@ -21,6 +21,12 @@ options.register( 'runLocally',
                                   VarParsing.varType.bool,
                                   "True if running locally")
 
+options.register( 'isSig',
+				  True,
+				  VarParsing.multiplicity.singleton,
+				  VarParsing.varType.bool,
+				  "True if dark photon signal injected")
+
 options.parseArguments()
 
 
@@ -73,12 +79,14 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
+    g4SimHits = cms.InputTag("g4SimHits"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),
+    isSig = cms.untracked.bool(options.isSig),
     runuandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 

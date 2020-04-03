@@ -14,6 +14,7 @@
 #include "Geometry/Records/interface/HcalRecNumberingRecord.h"
 #include "Geometry/CaloTopology/interface/HcalTopology.h"
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -23,6 +24,7 @@ class HCAL{
     void CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
     double MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint);
     void HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, GlobalPoint RandGlobalPoint, bool GoodRand, Histograms myHistograms, double TrackPt, GlobalPoint VertexPosition);
+    void FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms);
     double MuonHitEnergy;
     int    MuonHitDepth;
     double MuonMinDr;

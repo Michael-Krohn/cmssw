@@ -1,3 +1,11 @@
 *.pyc
 *.root
 *.txt
+*.log
+*.out
+*.png
+*.pdf
+*.lhe
+MuAnalyzer/plots/
+SimG4Core/
+SimG4CMS/

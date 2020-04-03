@@ -114,6 +114,7 @@ class Histograms{
     TH1F* m_RandomConeHits;
     TH1F* m_RandomConeEnergy;   
     TH1F* m_HitsOverThresh;
+    TH1F* m_RandomHitsOverThresh;
     TH1F* m_Layer_Spectra[7];
     TH1F* m_RLayer_Spectra[7];
     TH2F* m_DepthPairSpectra[6];
@@ -140,6 +141,12 @@ class Histograms{
     TH1F* m_MuonEtaDist;
     TH1F* m_TrackPt;
     TH1F* m_MissHitTrackPt;
+    TH2F* m_DBremLocation;
+    TH1F* m_DeflectingAngle;
+    TH1F* m_initialMuE;
+    TH1F* m_finalMuE;
+    TH1F* m_dphoEnergy;
+    TH1F* m_NThreshCut;
 };
 
 #endif
