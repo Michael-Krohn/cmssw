@@ -6,6 +6,8 @@
 *.png
 *.pdf
 *.lhe
+*.err
 MuAnalyzer/plots/
 SimG4Core/
 SimG4CMS/
+DarkPhoton/MuAnalyzer/plots/
