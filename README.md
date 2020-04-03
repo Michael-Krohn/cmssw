@@ -3,8 +3,8 @@
 To install code:
 
 ```
-cmsrel CMSSW_9_4_7
-cd CMSSW_9_4_7/src
-git clone https://github.com/Michael-Krohn/DarkPhoton.git
-scram b -j4
+cmsrel CMSSW_10_2_6/
+cd CMSSW_10_2_6/src
+git clone https://github.com/Revering/DarkPhoton.git
+scram b 
 ```
