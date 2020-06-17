@@ -583,8 +583,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
-void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms){ 
-
+void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight){ 
   double MuonEta = TrackGlobalPoint.eta();
   double MuonPhi = TrackGlobalPoint.phi();
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
@@ -611,6 +610,7 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   TrackiPhi = ClosestCell.iphi();
   int BremDepth = ClosestCell.depth();
   myHistograms.m_BremDepth->Fill(BremDepth);
+  myHistograms.m_WeightedBremDepth->Fill(BremDepth, weight);
   if(fabs(TrackiEta)<19){return;}
   if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return;}
   if(fabs(TrackiEta)>28){return;}
@@ -665,7 +665,7 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(AdjacentCells[i])){ValidIdCount++;}}
   if(!hcalRecHits.isValid())
   {
-    std::cout << "Could not find HCAL RecHits" << std::endl;
+    printf("Count not find HCAL RecHits.\n");
   }
   else
   {
@@ -712,6 +712,15 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 //       hbhe_cell->reset();
     }
     int hitsoverthresh=0;
+    if(standaloneE==0)
+    { 
+       double AdjacentE=0;
+       for(int i=0; i<7; i++)
+       {
+          AdjacentE+=lowthreshadjacent[i];
+       }
+       myHistograms.m_NStandaloneAdjacentHitEnergies->Fill(AdjacentE);
+    }
     for(int i=0;i<7;i++)
     {
        if(fabs(TrackiEta)>25||i<6)
@@ -721,6 +730,8 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 	     if(lowthreshadjacent[i]>Hit_Thresholds[i])
 	     {
 	        myHistograms.m_NThreshCut->Fill(0);
+                myHistograms.m_AdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);
+                if(standaloneE==0){myHistograms.m_NStandaloneAdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);}
 	        return;
 	     }
 	  }
@@ -741,6 +752,15 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
     myHistograms.m_HitsOverThresh->Fill(hitsoverthresh);
     myHistograms.m_HitsOverThreshSplit[BremDepth-1]->Fill(hitsoverthresh);
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
+    ConeEnergy = Hits[1];
+    m_HitsOverThresh = hitsoverthresh;
+    if(standaloneE==0){myHistograms.m_NMatchNStandaloneHitsOverThresh->Fill(hitsoverthresh);}
+    if(standaloneE!=0)
+    {
+       myHistograms.m_NonMatchedHEDeposit->Fill(Hits[1]);
+       myHistograms.m_NonMatchedHitsOverThresh->Fill(hitsoverthresh);
+    } 
+    if(standaloneE<80.){myHistograms.m_LowEHCAL->Fill(Hits[1]);}
   }
   return;
 }

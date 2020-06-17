@@ -27,6 +27,8 @@ class CSC{
     GlobalPoint MuonGlobalPoint;
     GlobalPoint TrackGlobalPoint;
     GlobalPoint TrackVertex;
+    GlobalVector CSCTraj;
+    double CSCChiSq;
     double MuonEta;
     double MuonPhi;
     double MuonP;

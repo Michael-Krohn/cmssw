@@ -33,7 +33,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 
        //Only using 1st layer of CSCs
-       if(iDetId.station() != 1) continue;
+       //if(iDetId.station() != 1) continue;
 
        DetId TheDetUnitId(iSegment->cscDetId());
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
@@ -95,7 +95,6 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 
        double dPhi = fabs(iTrack->momentum().phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
-       printf ("dPhi is %f.\n",dPhi);
        //double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
        if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
 
@@ -112,6 +111,8 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 	 TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(iTrack->momentum().theta(),iTrack->momentum().phi(),TheGlobalPosition.mag()));
 	 TrackVertex = VertexPosition; 
 	 TrackP_dR = sqrt(pow(iTrack->momentum().x(), 2) + pow(iTrack->momentum().y(), 2) );
+         CSCTraj = TheUnit->toGlobal(iSegment->localDirection());
+         CSCChiSq = iSegment->chi2();     
        }
 
        TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
@@ -170,11 +171,11 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
             MuonPhi_dR = iMuon->phi();
 	    MuonGlobalPoint = GlobalPoint(GlobalPoint::Polar(two_momentum.theta(),two_momentum.phi(),TheGlobalPosition.mag()));
             MuonP_dR = sqrt(pow(two_momentum.x(), 2) + pow(two_momentum.y(), 2)+pow(two_momentum.z(),2));
-         
 	 }
        }
     }
   }
 
 }
+
 

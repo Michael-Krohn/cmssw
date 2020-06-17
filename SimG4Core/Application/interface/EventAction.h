@@ -34,6 +34,8 @@ public:
     ~EventAction() override;
 
     void BeginOfEventAction(const G4Event * evt) override;
+    void SetWeight(double weight);
+    double Weight();
     void EndOfEventAction(const G4Event * evt) override;
 
     void abortEvent();

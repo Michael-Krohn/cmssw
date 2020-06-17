@@ -37,8 +37,8 @@ G4APrime* G4APrime::APrime()
    if(!theAPrime) {
      
       const G4String&     name = "A^1";
-      //G4double            mass = 1000.0*MeV;
-      G4double            mass = 100.0*MeV;
+      G4double            mass = 1000.0*MeV;
+      //G4double            mass = 100.0*MeV;
       G4double            width = 0.;       
       G4double            charge = 0;
       G4int               iSpin = 0;

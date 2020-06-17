@@ -22,10 +22,16 @@ options.register( 'runLocally',
                                   "True if running locally")
 
 options.register( 'isSig',
-				  True,
+				  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if using signal injected events")
+
+options.register( 'hasDpho',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if dark brem particle is present")
 
 options.parseArguments()
 
@@ -57,8 +63,12 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('SigFilesForcedWeight.txt')
-	else:
+	   #mylist = FileUtils.loadListFromFile ('SigFilesForcedWeight.txt')
+	   #mylist = FileUtils.loadListFromFile ('SigFiles_0p1_weightone.txt')
+           mylist = FileUtils.loadListFromFile ('DY_MC_Files.txt')
+           #mylist = FileUtils.loadListFromFile ('WeightedSig.txt')
+           #mylist = FileUtils.loadListFromFile ('HighBias.txt')
+        else:
 	   mylist = FileUtils.loadListFromFile('sampledata.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
@@ -84,10 +94,12 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
+    StandAloneTracks = cms.InputTag("standAloneMuons"),
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),
     isSig = cms.untracked.bool(options.isSig),
-    runuandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
+    hasDpho = cms.untracked.bool(options.hasDpho),
+    runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 
 process.TFileService = cms.Service("TFileService",
