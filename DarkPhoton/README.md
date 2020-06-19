@@ -8,4 +8,5 @@ cd CMSSW_10_2_6/src
 cmsenv
 git cms-init
 git cms-merge-topic revering:DarkPhoton
+scram b
 ```
