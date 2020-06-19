@@ -3,8 +3,9 @@
 To install code:
 
 ```
-cmsrel CMSSW_9_4_7
-cd CMSSW_9_4_7/src
-git clone https://github.com/Michael-Krohn/DarkPhoton.git
-scram b -j4
+scram project CMSSW_10_2_6
+cd CMSSW_10_2_6/src
+cmsenv
+git cms-init
+git cms-merge-topic revering:DarkPhoton
 ```
