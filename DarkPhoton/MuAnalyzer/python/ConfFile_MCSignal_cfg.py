@@ -22,13 +22,13 @@ options.register( 'runLocally',
                                   "True if running locally")
 
 options.register( 'isSig',
-				  False,
+				  True,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if using signal injected events")
 
 options.register( 'hasDpho',
-                                  False,
+                                  True,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if dark brem particle is present")
@@ -63,11 +63,8 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   #mylist = FileUtils.loadListFromFile ('SigFilesForcedWeight.txt')
-	   #mylist = FileUtils.loadListFromFile ('SigFiles_0p1_weightone.txt')
-           mylist = FileUtils.loadListFromFile ('DY_MC_Files.txt')
-           #mylist = FileUtils.loadListFromFile ('WeightedSig.txt')
-           #mylist = FileUtils.loadListFromFile ('HighBias.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/map_1p0_unweighted.txt')
+           #mylist = FileUtils.loadListFromFile ('datafiles/DY_MC_Files.txt')
         else:
 	   mylist = FileUtils.loadListFromFile('sampledata.txt')
 	readFiles = cms.untracked.vstring( *mylist)

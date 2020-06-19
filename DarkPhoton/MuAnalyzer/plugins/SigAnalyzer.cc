@@ -397,8 +397,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      //Signal categories
      if(myHCAL.ConeEnergy<10)
      {
-        if(!MuonMatched&&staMinDr>0.5&&myHCAL.m_HitsOverThresh<6){myHistograms.m_SignalSelectionCuts->Fill(2);}
-        if(MuonMatched&&staE<60.){myHistograms.m_SignalSelectionCuts->Fill(1);}
+        if(!MuonMatched&&staMinDr>0.5){myHistograms.m_SignalSelectionCuts->Fill(2);}
+        else if(MuonMatched&&staE<60.){myHistograms.m_SignalSelectionCuts->Fill(1);}
         else{myHistograms.m_SignalSelectionCuts->Fill(0);}
      }
      else{myHistograms.m_SignalSelectionCuts->Fill(0);}   
