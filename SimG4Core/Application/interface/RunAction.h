@@ -5,6 +5,8 @@
 #include "SimG4Core/Notification/interface/SimActivityRegistry.h"
 
 #include "G4UserRunAction.hh"
+#include "SimG4Core/Application/interface/XsecBiasingOperator.h"
+#include "SimG4Core/Application/interface/DarkBremXsecBiasingOperator.h"
 
 #include <string>
 
@@ -30,6 +32,7 @@ private:
     std::string m_stopFile;
     G4Timer* m_timer;
     bool m_isMaster; 
+    DarkBremXsecBiasingOperator* xsecBiasing;
 };
 
 #endif

@@ -72,6 +72,9 @@
 #include "G4ParticleTable.hh"
 #include "G4Field.hh"
 #include "G4FieldManager.hh"
+#include "G4ProductionCuts.hh"
+#include "G4Region.hh"
+#include "G4RegionStore.hh"
 
 #include "G4GDMLParser.hh"
 #include "G4SystemOfUnits.hh"
