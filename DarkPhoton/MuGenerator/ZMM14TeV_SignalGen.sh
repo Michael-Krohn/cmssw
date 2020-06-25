@@ -9,6 +9,8 @@ mkdir -p $OUTDIR
 scratch=$STARTDIR/scratch.$job
 mkdir -p $scratch
 cd $scratch
+source /local/grid/cmssoft/cms/cmsset_default.sh
+cmsenv
 cmsRun $STARTDIR/$scriptname $job 
 cmsRun $STARTDIR/ZMM14TeV_pythia8_SIMtoL1_cfg.py $job
 cmsRun $STARTDIR/ZMM14TeV_pythia8_L1toRECO_cfg.py $job
