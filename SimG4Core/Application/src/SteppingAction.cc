@@ -9,6 +9,7 @@
 #include "G4RegionStore.hh"
 #include "G4UnitsTable.hh"
 #include "G4SystemOfUnits.hh"
+#include "G4VProcess.hh"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -87,7 +88,8 @@ SteppingAction::SteppingAction(EventAction* e, const edm::ParameterSet & p,
   }
 }
 
-SteppingAction::~SteppingAction() {}
+SteppingAction::~SteppingAction() {
+}
 
 void SteppingAction::UserSteppingAction(const G4Step * aStep) 
 {
@@ -97,6 +99,36 @@ void SteppingAction::UserSteppingAction(const G4Step * aStep)
   m_g4StepSignal(aStep); 
 
   G4Track * theTrack = aStep->GetTrack();
+  if (theTrack->GetParticleDefinition()->GetParticleName()=="A^1")
+  {
+     eventAction_->SetDBremFlag(1);
+  }
+  
+  /*if((theTrack->GetCreatorProcess()==NULL)&&(theTrack->GetParticleDefinition()->GetParticleName()=="mu-"||theTrack->GetParticleDefinition()->GetParticleName()=="mu+"))
+  {
+     if(theTrack->GetWeight()!=1)
+     {
+        if(theTrack->GetWeight()>1) {eventAction_->IncWeight(theTrack->GetWeight()-1.);}
+        aStep->GetPostStepPoint()->SetWeight(1);
+     }
+  }*/
+  if(theTrack->GetCreatorProcess()!=NULL)
+  {
+    if (theTrack->GetCreatorProcess()->GetProcessName()=="biasWrapper(muDBrem)")
+    {
+	if(theTrack->GetWeight()<1)
+	{
+	   //eventAction_->m_MuonWeights->Fill(theTrack->GetWeight()*20000);
+	   //aStep->GetPostStepPoint()->SetWeight(theTrack->GetWeight()*20000.);
+           //aStep->GetPostStepPoint()->SetWeight(1.);
+           if(eventAction_->Weight()<=1.)
+           {
+              eventAction_->SetWeight(theTrack->GetWeight()*40000.);
+              //std::cout<<"Setting weight to " << theTrack->GetWeight()*40000. << ".\n";
+           }
+        }
+     }
+  }
   TrackStatus tstat = (theTrack->GetTrackStatus() == fAlive) ? sAlive : sKilledByProcess;
   G4StepPoint* postStep = aStep->GetPostStepPoint();
 
