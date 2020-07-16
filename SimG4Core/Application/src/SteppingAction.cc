@@ -104,14 +104,6 @@ void SteppingAction::UserSteppingAction(const G4Step * aStep)
      eventAction_->SetDBremFlag(1);
   }
   
-  /*if((theTrack->GetCreatorProcess()==NULL)&&(theTrack->GetParticleDefinition()->GetParticleName()=="mu-"||theTrack->GetParticleDefinition()->GetParticleName()=="mu+"))
-  {
-     if(theTrack->GetWeight()!=1)
-     {
-        if(theTrack->GetWeight()>1) {eventAction_->IncWeight(theTrack->GetWeight()-1.);}
-        aStep->GetPostStepPoint()->SetWeight(1);
-     }
-  }*/
   if(theTrack->GetCreatorProcess()!=NULL)
   {
     if (theTrack->GetCreatorProcess()->GetProcessName()=="biasWrapper(muDBrem)")
