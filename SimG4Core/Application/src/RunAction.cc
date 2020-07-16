@@ -6,6 +6,12 @@
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
+#include "SimG4Core/Application/interface/XsecBiasingOperator.h"
+#include "SimG4Core/Application/interface/DarkBremXsecBiasingOperator.h"
+#include "G4Region.hh"
+#include "G4RegionStore.hh"
+#include "G4LogicalVolumeStore.hh"
+#include "G4ProductionCuts.hh"
 #include "G4Timer.hh" 
 #include <iostream>
 #include <fstream>
@@ -14,7 +20,9 @@ RunAction::RunAction(const edm::ParameterSet& p, SimRunInterface* rm, bool maste
   : m_runInterface(rm), 
     m_stopFile(p.getParameter<std::string>("StopFile")),
     m_timer(nullptr), m_isMaster(master)
-{}
+{
+   xsecBiasing = nullptr;
+}
 
 RunAction::~RunAction()
 {}
@@ -27,6 +35,20 @@ void RunAction::BeginOfRunAction(const G4Run * aRun)
         << "RunAction::BeginOfRunAction: termination signal received";
       m_runInterface->abortRun(true);
     }
+ 
+  xsecBiasing = new DarkBremXsecBiasingOperator("DarkBremXsecBiasingOperator");
+  for (G4LogicalVolume* volume : *G4LogicalVolumeStore::GetInstance())
+  {
+     G4String volumeName = volume->GetName();
+     //if(volumeName.contains("MBBT")||volumeName.contains("MBAT")||volumeName.contains("CALO")||volumeName.contains("VCAL"))
+     if(volumeName.contains("HE")&&(volumeName!="CHEL")&&(volumeName!="RHEX"))
+     {
+        xsecBiasing->AttachTo(volume);
+        std::cout << "Attaching biasing operator " << xsecBiasing->GetName() << " to volume " << volume->GetName() << std::endl;
+     }
+  }
+
+  xsecBiasing->StartRun(); 
   BeginOfRun r(aRun);
   m_beginOfRunSignal(&r);
   /*
@@ -56,6 +78,7 @@ void RunAction::EndOfRunAction(const G4Run * aRun)
         << "RunAction::EndOfRunAction: termination signal received";
       m_runInterface->abortRun(true);
     }
+  xsecBiasing->EndRun();  
   EndOfRun r(aRun);
   m_endOfRunSignal(&r);
 }
