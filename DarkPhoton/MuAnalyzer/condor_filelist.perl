@@ -18,6 +18,8 @@ $arch=$ENV{"SCRAM_ARCH"};
 
 $jobBase="default";
 
+print "$executable\n";
+
 GetOptions(
     "batch=i" => \$batch,
     "start=i" => \$startPoint,
@@ -106,10 +108,10 @@ if ($nosubmit) {
 }
 print(SUBMIT "Executable = $executable\n");
 if($nargs==4) {
-  print(SUBMIT "arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\"\n");
+  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\"\n");
 }
 if($nargs==6) {
-  print(SUBMIT "arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\"\n");
+  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\"\n");
 }
 print(SUBMIT "Universe = vanilla\n");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
@@ -169,7 +171,12 @@ while ($i<=$#flist) {
     $log="$prodSpace/$jobBase/log/$stub.log";
     $elog="$prodSpace/$jobBase/log/$stub.err";
     $sleep=(($ii*2) % 60)+2;  # Never sleep more than a ~minute, but always sleep at least 2
-    print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] \n");
+    if($nargs==4) {
+      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\n");
+    }
+    if($nargs==6) {
+      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\n");
+    }
     print(SUBMIT "Queue\n");
 }
 
