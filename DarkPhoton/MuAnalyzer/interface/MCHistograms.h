@@ -95,9 +95,28 @@ class MCHistograms{
     TH1F* m_NStandaloneAdjacentFailHitEnergy;
     TH1F* m_EventWeights;
     TH1F* m_SignalSelectionCuts;
+    TH1F* m_WeightedSignalSelectionCuts;
     TH1F* m_DBremR;
     TH1F* m_WeightedDBremR;
     TH1F* m_NMatchNStandaloneHitsOverThresh;
+    TH1F* m_PassSigEta;
+    TH1F* m_PassSigHEHits;
+    TH1F* m_PassSigHEEnergy;
+    TH1F* m_PassSigHEHitByDepth;
+    TH1F* m_PassSigDrtoCSC;
+    TH1F* m_PassSigDrtoStandalone;
+    TH2F* m_PassSigLocation;
+    TH1F* m_PassSigVtxZ;
+    TH1F* m_NPassSigVtxZ;
+    TH2F* m_NPassSigLocation;
+    TH1F* m_NPassSigEta;
+    TH1F* m_NPassSigHEHits;
+    TH1F* m_NPassSigHEEnergy;
+    TH1F* m_NPassSigHEHitByDepth;
+    TH1F* m_NPassSigDrtoCSC;
+    TH1F* m_NPassSigDrtoStandalone;
+    TH1F* m_FailAdjVtxZ;
+    TH1F* m_HECellZPositions[7];
+    TH1F* m_HECellsFound;
 };
-
 #endif
