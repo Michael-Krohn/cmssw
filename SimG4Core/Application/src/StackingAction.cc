@@ -44,8 +44,8 @@ StackingAction::StackingAction(const TrackingAction* trka, const edm::ParameterS
   savePDandCinMuon = 
     p.getUntrackedParameter<bool>("SavePrimaryDecayProductsAndConversionsInMuon",
 				  false);
-  saveFirstSecondary = 
-    p.getUntrackedParameter<bool>("SaveFirstLevelSecondary",false);
+  saveFirstSecondary = true;
+  //  p.getUntrackedParameter<bool>("SaveFirstLevelSecondary",false);
   killInCalo = false;
   killInCaloEfH = false;
 

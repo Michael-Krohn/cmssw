@@ -14,7 +14,9 @@
 #include <vector>
 #include <map>
 #include <string>
- 
+#include "TH1F.h"
+#include "TFile.h"
+
 class SimRunInterface;
 class BeginOfEvent;
 class EndOfEvent;
@@ -23,13 +25,17 @@ class CMSSteppingVerbose;
 class EventAction: public G4UserEventAction
 {
 public:
-
+    
+    //TFile*   m_WeightsFile;
+    //TH1F*    m_MuonWeights;
     explicit EventAction(const edm::ParameterSet& ps,
 			 SimRunInterface*, SimTrackManager*,
 			 CMSSteppingVerbose*);
     ~EventAction() override;
 
     void BeginOfEventAction(const G4Event * evt) override;
+    void SetWeight(double weight);
+    double Weight();
     void EndOfEventAction(const G4Event * evt) override;
 
     void abortEvent();
@@ -50,6 +56,8 @@ public:
     SimActivityRegistry::BeginOfEventSignal m_beginOfEventSignal;
     SimActivityRegistry::EndOfEventSignal m_endOfEventSignal;
 
+    void SetDBremFlag(bool flag);
+    int nevents;
 private:
 
     SimRunInterface* m_runInterface;
@@ -58,6 +66,7 @@ private:
     std::string m_stopFile;
     bool m_printRandom;
     bool m_debug;
+    bool DBremFlag;
 };
 
 #endif
