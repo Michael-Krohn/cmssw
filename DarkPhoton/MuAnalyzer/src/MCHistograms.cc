@@ -99,9 +99,33 @@ void MCHistograms::book(edm::Service<TFileService> fs){
   m_NStandaloneAdjacentFailHitEnergy = fs->make<TH1F>("NStandaloneFailAdjacentHitEnergy","; Energy in adjacent hit (Gev); Events", 200, 0, 20);
   m_EventWeights = fs->make<TH1F>("EventWeights","; Weight; Number of Events", 200, 0, 10);
   m_SignalSelectionCuts = fs->make<TH1F>("SignalCuts","; Event Category; Events", 3, -0.5, 2.5);
+  m_WeightedSignalSelectionCuts = fs->make<TH1F>("WeightedSignalCuts","; Event Category; Events", 3, -0.5, 2.5);
   m_DBremR = fs->make<TH1F>("Dark Brem R","; Dark Brem R; Events", 300,0, 600);
   m_WeightedDBremR = fs->make<TH1F>("Weighted Dark Brem R","; Dark Brem R; Events", 300,0, 600);
   m_NMatchNStandaloneHitsOverThresh = fs->make<TH1F>("NSHitsOverThresh","; Hits Over Threshold; Events", 8, -0.5, 7.5);
+  m_PassSigEta = fs->make<TH1F>("PassSigEta","; Eta; Number of Events", 100, -2.4, 2.4);
+  m_PassSigHEHits = fs->make<TH1F>("PassSigHEHits","; Hits in HE; Number of Events", 8, -0.5, 7.5);
+  m_PassSigHEEnergy = fs->make<TH1F>("PassSigHEEnergy","; Cone energy in HE (GeV); Number of Events", 200, 0, 100);
+  m_PassSigHEHitByDepth = fs->make<TH1F>("PassSigHEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
+  m_PassSigDrtoCSC = fs->make<TH1F>("PassSigDrtoCSC","; #Delta R to Nearest CSC; Number of Events", 140, 0, 0.5);
+  m_PassSigDrtoStandalone = fs->make<TH1F>("PassSigDrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
+  m_PassSigLocation = fs->make<TH2F>("PassSigLocation","; #eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
+  m_PassSigVtxZ = fs->make<TH1F>("PassSigVtxZ","; Vertex z position; Events", 100,-20,20);
+  m_NPassSigVtxZ = fs->make<TH1F>("NPassSigVtxZ","; Vertex z position; Events", 100,-20,20);
+  m_NPassSigLocation = fs->make<TH2F>("NPassSigLocation","; #eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
+  m_NPassSigEta = fs->make<TH1F>("NPassSigEta","; Eta; Number of Events", 100, -2.4, 2.4);
+  m_NPassSigHEHits = fs->make<TH1F>("NPassSigHEHits","; Hits in HE; Number of Events", 8, -0.5, 7.5);
+  m_NPassSigHEEnergy = fs->make<TH1F>("NPassSigHEEnergy","; Cone energy in HE (GeV); Number of Events", 200, 0, 100);
+  m_NPassSigHEHitByDepth = fs->make<TH1F>("NPassSigHEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
+  m_NPassSigDrtoCSC = fs->make<TH1F>("NPassSigDrtoCSC","; #Delta R to Nearest CSC; Number of Events", 140, 0, 0.5);
+  m_NPassSigDrtoStandalone = fs->make<TH1F>("NPassSigDrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
+  m_FailAdjVtxZ = fs->make<TH1F>("FailAdjVtxZ","; Vertex Z position; Events", 100, -20, 20);
+  for(int i=0;i<7;i++)
+  {
+    std::string name = "HECellZPositions"+std::to_string(i+1);
+    m_HECellZPositions[i] = fs->make<TH1F>(name.c_str(),"; Z Positions of HE Cells; Events", 1400, -700, 700);
+  }
+  m_HECellsFound = fs->make<TH1F>("NHECellsFound","; Cells found in HE; Number of Events", 30,0,30);
 }
 
 void MCHistograms::IncCutFlow()

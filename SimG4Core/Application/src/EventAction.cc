@@ -62,15 +62,7 @@ double EventAction::Weight() {return m_runInterface->simEvent()->weight();}
 
 void EventAction::EndOfEventAction(const G4Event * anEvent)
 {
-  /*if(anEvent->GetEventID()==499)
-  {
-    m_WeightsFile = new TFile("MuonWeights.root","Recreate");
-    m_MuonWeights->Write();
-    m_WeightsFile->Write();
-    m_WeightsFile->Close();
-  }*/
-  //std::cout << "Final weight is: " << m_runInterface->simEvent()->weight() << "\n.";
-  if (!DBremFlag){return;}
+  //if (!DBremFlag){return;}
   
   if(m_printRandom) 
     {

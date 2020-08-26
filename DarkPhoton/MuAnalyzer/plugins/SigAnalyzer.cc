@@ -235,7 +235,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       const SimVertex &vtx = (*simvertices)[(*simvertices).size()-1];
       weight_ = vtx.position().z()*10.;
   }
-
+  if (!m_hasDpho){weight_ = 1.;}
+  
   double nstandalone = staTracks->size(); 
   int dphovtx = -1;
   bool founddpho=false;
@@ -268,6 +269,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   //Find deflected muon
   double FmuE = 0;
   bool foundsib=false;
+  double vtxz;
   math::XYZTLorentzVectorD FinalMu;
   for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
   {
@@ -297,6 +299,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           bremDepth = 1.0;
           founddpho=true;
           foundsib=true;
+	  const SimVertex &vtx = (*simvertices)[isimtrk->vertIndex()];
+	  vtxz = vtx.position().z();
        }
      }
   }
@@ -385,7 +389,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         myHistograms.m_NonMatchedLocation->Fill(mother.rho(),mother.z());
         myHistograms.m_NonMatchedLocationEtaPhi->Fill(mother.eta(),mother.phi());
      } 
-     myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, myHistograms, standaloneE, weight_);
+     if(!myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, myHistograms, standaloneE, weight_, selectedTrack->dsz())){return;}
+     myHistograms.m_HECellsFound->Fill(myHCAL.CellsFound);
      if(staMinDr>0.5&&!MuonMatched)
      {
         myHistograms.m_NMatchNHitHCALEnergy->Fill(myHCAL.ConeEnergy);
@@ -395,13 +400,64 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      
      myHistograms.m_EventWeights->Fill(weight_);
      //Signal categories
-     if(myHCAL.ConeEnergy<10)
+     bool passSigCuts = false;
+     //if(myHCAL.m_failAdjacent){return;}
+     vtxz = selectedTrack->dsz();
+     if(myHCAL.m_failAdjacent){myHistograms.m_FailAdjVtxZ->Fill(vtxz);}
+     if(myHCAL.m_HitsOverThresh<2){return;}
+     if(myHCAL.ConeEnergy<10&&myCSCs.minDR>0.05&&selectedTrack->eta()>-2.35&&!myHCAL.m_failAdjacent)
      {
-        if(!MuonMatched&&staMinDr>0.5){myHistograms.m_SignalSelectionCuts->Fill(2);}
-        else if(MuonMatched&&staE<60.){myHistograms.m_SignalSelectionCuts->Fill(1);}
-        else{myHistograms.m_SignalSelectionCuts->Fill(0);}
+        if(!MuonMatched&&staMinDr>0.5)
+	{
+	  passSigCuts = true;
+	  myHistograms.m_SignalSelectionCuts->Fill(2);
+	  double cat = 2;
+	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
+	  myHistograms.m_PassSigEta->Fill(selectedTrack->eta());
+	  myHistograms.m_PassSigHEHits->Fill(myHCAL.m_HitsOverThresh);
+	  myHistograms.m_PassSigHEEnergy->Fill(myHCAL.ConeEnergy);
+	  myHistograms.m_PassSigLocation->Fill(selectedTrack->eta(),selectedTrack->phi());
+	  for(int k=0;k<7;k++)
+	  {
+	     if(myHCAL.m_hitEnergies[k]<0.1){myHistograms.m_PassSigHEHitByDepth->Fill(k+1);}
+	  }
+          myHistograms.m_PassSigDrtoCSC->Fill(myCSCs.minDR);
+	  myHistograms.m_PassSigDrtoStandalone->Fill(staMinDr);
+	  myHistograms.m_PassSigVtxZ->Fill(vtxz);
+	}
+        else if(MuonMatched&&staE<60.)
+	{
+	  double cat = 1;
+	  myHistograms.m_SignalSelectionCuts->Fill(1);
+	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
+	}
+        else
+	{
+	  double cat = 0;
+	  myHistograms.m_SignalSelectionCuts->Fill(0);
+	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
+	}
      }
-     else{myHistograms.m_SignalSelectionCuts->Fill(0);}   
+     else
+     {
+       double cat = 0;
+       myHistograms.m_SignalSelectionCuts->Fill(0);
+       myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
+     }   
+     if(!passSigCuts)
+     {
+        myHistograms.m_NPassSigLocation->Fill(selectedTrack->eta(),selectedTrack->phi());
+        myHistograms.m_NPassSigEta->Fill(selectedTrack->eta());
+	myHistograms.m_NPassSigHEHits->Fill(myHCAL.m_HitsOverThresh);
+	myHistograms.m_NPassSigHEEnergy->Fill(myHCAL.ConeEnergy);
+        myHistograms.m_NPassSigDrtoCSC->Fill(myCSCs.minDR);
+	myHistograms.m_NPassSigDrtoStandalone->Fill(staMinDr);	 
+	myHistograms.m_NPassSigVtxZ->Fill(vtxz);
+	for(int k=0;k<7;k++)
+	  {
+	     if(myHCAL.m_hitEnergies[k]<0.1){myHistograms.m_NPassSigHEHitByDepth->Fill(k+1);}
+	  }
+     }
   }
 }
 

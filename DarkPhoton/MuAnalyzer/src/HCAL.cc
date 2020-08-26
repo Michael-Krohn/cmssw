@@ -583,7 +583,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
-void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight){ 
+bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight, double vtxz){ 
   double MuonEta = TrackGlobalPoint.eta();
   double MuonPhi = TrackGlobalPoint.phi();
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
@@ -593,7 +593,7 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   Hits[1] = 0;
   Hits[2] = 0;
   Hits[3] = 0;
-
+  m_HitsOverThresh = 0;
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
   
@@ -611,14 +611,14 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   int BremDepth = ClosestCell.depth();
   myHistograms.m_BremDepth->Fill(BremDepth);
   myHistograms.m_WeightedBremDepth->Fill(BremDepth, weight);
-  if(fabs(TrackiEta)<19){return;}
-  if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return;}
-  if(fabs(TrackiEta)>28){return;}
+  if(fabs(TrackiEta)<19){return false;}
+  if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return false;}
+  if(fabs(TrackiEta)>28){return false;}
   const int Ndepths = 7;
   const int CellsPerDepth = 5;
   HcalDetId AdjacentCells[CellsPerDepth*Ndepths];
   HcalDetId LowThreshAdjacentCells[CellsPerDepth*Ndepths];
-  HcalDetId CenterCells[Ndepths];
+  HcalDetId CenterCells[CellsPerDepth*Ndepths];
   //GetConeIDs(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
   //GetCenterCells(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth); 
   double highetathresh, lowetathresh, phithresh;
@@ -660,7 +660,8 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   if(!etaedge){Tdeta=10;}
   if(!phiedge){Tdphi=10;}
   GetAdjacentCells(theHBHETopology,AdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
-  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
+  //  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
+  CellsFound = GetProjectedCells(HEGeom,CenterCells,vtxz,TrackGlobalPoint);
   int ValidIdCount = 0;
   for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(AdjacentCells[i])){ValidIdCount++;}}
   if(!hcalRecHits.isValid())
@@ -688,6 +689,7 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        HcalDetId *lowthreshmatch = std::find(std::begin(LowThreshAdjacentCells), std::end(LowThreshAdjacentCells), id);
        int HitiEta = id.ieta();
        if(fabs(HitiEta)<16){continue;} 
+       myHistograms.m_HECellZPositions[id.depth()-1]->Fill(hbhe_cell->getPosition().z());
        if(hbherechit->energy()!=0)
        {
          if(trackmatch!=std::end(AdjacentCells))
@@ -721,8 +723,10 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        }
        myHistograms.m_NStandaloneAdjacentHitEnergies->Fill(AdjacentE);
     }
+    m_failAdjacent=false;
     for(int i=0;i<7;i++)
     {
+       m_hitEnergies[i]=layerenergies[i];
        if(fabs(TrackiEta)>25||i<6)
        {
           if(layerenergies[i]<Hit_Thresholds[i])
@@ -732,7 +736,7 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 	        myHistograms.m_NThreshCut->Fill(0);
                 myHistograms.m_AdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);
                 if(standaloneE==0){myHistograms.m_NStandaloneAdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);}
-	        return;
+	        m_failAdjacent=true;
 	     }
 	  }
        }
@@ -762,6 +766,39 @@ void HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
     } 
     if(standaloneE<80.){myHistograms.m_LowEHCAL->Fill(Hits[1]);}
   }
-  return;
+  return true;
 }
+
+int HCAL::GetProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, double vtxz, GlobalPoint direction)
+{
+
+   double start, step, end;
+   start = 320;
+   step = 5;
+   end = 530;
+   int j=0;
+   HcalDetId lastClosestCell;
+   for(int i = start; i<end; i+=step)
+   {
+      double testPointPerp = fabs(i*tan(direction.theta()));
+      double testPointX = testPointPerp*cos(direction.phi());
+      double testPointY = testPointPerp*sin(direction.phi());
+      double testPointZ;
+      if(direction.eta()>0){testPointZ = vtxz+i;}
+      else
+      {
+        testPointZ = vtxz-i;	
+      }
+      GlobalPoint testGlobalPoint = GlobalPoint(testPointX,testPointY,testPointZ);
+      HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(testGlobalPoint);
+      if(testClosestCell!=lastClosestCell)
+      {
+        lastClosestCell=testClosestCell;
+        TrackAlignedCells[j] = testClosestCell;
+	j = j+1;
+      }
+   }
+   return j;
+}
+
 
