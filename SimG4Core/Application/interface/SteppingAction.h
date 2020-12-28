@@ -14,6 +14,9 @@
 #include <string>
 #include <vector>
 
+#include "TH1F.h"
+#include "TFile.h"
+
 class EventAction;
 class CMSSteppingVerbose;
 
@@ -65,6 +68,8 @@ private:
   unsigned int                  numberEkins;
   unsigned int                  numberPart;
   unsigned int                  ndeadRegions;
+  TFile*                        m_WeightsFile;
+  TH1F*                         m_MuonWeights;
 
   bool                          initialized;
   bool                          killBeamPipe;

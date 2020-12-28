@@ -346,7 +346,7 @@ bool HCalSD::getFromLibrary(const G4Step * aStep) {
     if (useParam) {
       getFromParam(aStep, kill);
 #ifdef EDM_ML_DEBUG
-      G4String nameVolume = lv->GetName();
+      G4String nameVolume = aStep->GetPreStepPoint()->GetPhysicalVolume()->GetLogicalVolume()->GetName();
       LogDebug("HcalSim") << "HCalSD: " << getNumberOfHits()
                           << " hits from parametrization in " << nameVolume 
                           << " for Track " << track->GetTrackID()
@@ -491,10 +491,11 @@ double HCalSD::getEnergyDeposit(const G4Step* aStep) {
     const G4Material* mat = aStep->GetPreStepPoint()->GetMaterial();
     if (isItScintillator(mat)) weight_ *= getAttenuation(aStep, birk1, birk2, birk3);
   }
+  int pdg = theTrack->GetDefinition()->GetPDGEncoding();
   double wt1 = getResponseWt(theTrack);
   double wt2 = theTrack->GetWeight();
   double edep = weight_*wt1*destep;
-  if (wt2 > 0.0) { edep *= wt2; }
+  if ((wt2 > 0.0) && (pdg==2112 || pdg == 22)){ edep *= wt2; }
 #ifdef EDM_ML_DEBUG
   edm::LogInfo("HcalSim") 
     << "HCalSD: edep= " << edep << " Det: " << det+2 << " depth= " << depth_
@@ -785,7 +786,7 @@ void HCalSD::hitForFibre (const G4Step* aStep) { // if not ParamShower
   edm::LogInfo("HcalSim") << "HCalSD::hitForFibre " << hits.size() 
                           << " hits for " << GetName() << " of " << primaryID 
                           << " with " << theTrack->GetDefinition()->GetParticleName() 
-                          << " of " << preStepPoint->GetKineticEnergy()/GeV 
+                          << " of " << aStep->GetPreStepPoint()->GetKineticEnergy()/GeV 
                           << " GeV in detector type " << det;
 #endif
 
@@ -818,7 +819,7 @@ void HCalSD::getFromParam (const G4Step* aStep, bool& isKilled) {
   edm::LogInfo("HcalSim") << "HCalSD::getFromParam " << hits.size() << " hits for " 
                             << GetName() << " of " << primaryID << " with " 
                             <<  aStep->GetTrack()->GetDefinition()->GetParticleName()
-                            << " of " << preStepPoint->GetKineticEnergy()/GeV 
+                            << " of " << aStep->GetPreStepPoint()->GetKineticEnergy()/GeV 
                             << " GeV in detector type " << det;
 #endif
   for (unsigned int i=0; i<hits.size(); ++i) {
