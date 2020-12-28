@@ -20,9 +20,12 @@ class Muons{
     std::vector<const reco::Muon*> selectedEndcapMuons;
     const reco::Muon* highPtSelectedMuon;
     const reco::Muon* highPtSelectedEndcapMuon;
-    double highmuonpt;
-    double highendcappt;
+    const reco::Muon* secondhighPtSelectedMuon;
 
+    double highmuonpt;
+    double secondhighmuonpt;
+    double highendcappt;
+    double muonisolation;
 };
 
 #endif

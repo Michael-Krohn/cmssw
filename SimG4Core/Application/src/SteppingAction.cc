@@ -115,7 +115,7 @@ void SteppingAction::UserSteppingAction(const G4Step * aStep)
            //aStep->GetPostStepPoint()->SetWeight(1.);
            if(eventAction_->Weight()<=1.)
            {
-              eventAction_->SetWeight(theTrack->GetWeight()*40000.);
+              eventAction_->SetWeight(theTrack->GetWeight()*2000.);
               //std::cout<<"Setting weight to " << theTrack->GetWeight()*40000. << ".\n";
            }
         }

@@ -110,8 +110,8 @@ class XsecBiasingOperator : public G4VBiasingOperator {
         double threshold_{0};
 
         /** Factor to multiply the xsec by. */
-        double xsecFactor_{40000};
-        //double xsecFactor_{1000};
+        double xsecFactor_{2000};
+        //double xsecFactor_{40000};
 
         //--------//
         // Unused //

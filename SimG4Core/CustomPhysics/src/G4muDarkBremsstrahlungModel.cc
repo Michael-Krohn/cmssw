@@ -383,7 +383,7 @@ void G4muDarkBremsstrahlungModel::SampleSecondaries(std::vector<G4DynamicParticl
             std::string fname = "/hdfs/cms/user/revering/madgraph/muon/" + std::string(directory->d_name);
 	    //Parse files that end in ".lhe"
 	    //if(fname.substr(fname.find_last_of(".")+1) == "lhe") {ParseLHE(fname);}   
-	    if(fname.substr(fname.find_last_of("_")+1) == "mA1p0.lhe") {ParseLHE(fname);}
+	    if(fname.substr(fname.find_last_of("_")+1) == "mA0p1.lhe") {ParseLHE(fname);}
 	 }
       }
       MakePlaceholders(); //Setup the placeholder offsets for getting data.

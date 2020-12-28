@@ -45,11 +45,11 @@ void EventAction::BeginOfEventAction(const G4Event * anEvent)
 
   if(nullptr != m_SteppingVerbose) { m_SteppingVerbose->BeginOfEvent(anEvent); }
   
-  G4bool state = true;
-  G4String pname = "biasWrapper(muDBrem)";
-  G4ProcessTable* ptable = G4ProcessTable::GetProcessTable();
-  ptable->SetProcessActivation(pname,state);
-  SetDBremFlag(false);
+//  G4bool state = true;
+//  G4String pname = "biasWrapper(muDBrem)";
+//  G4ProcessTable* ptable = G4ProcessTable::GetProcessTable();
+//  ptable->SetProcessActivation(pname,state);
+//  SetDBremFlag(false);
 
 }
 

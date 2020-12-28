@@ -15,6 +15,8 @@
 #include "Geometry/CaloTopology/interface/HcalTopology.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
 
+#include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
@@ -583,11 +585,12 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
-bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight, double vtxz){ 
+bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track){ 
   double MuonEta = TrackGlobalPoint.eta();
   double MuonPhi = TrackGlobalPoint.phi();
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
+  double ReducedConeE=0;
   static double Hits[4];
   Hits[0] = 0;
   Hits[1] = 0;
@@ -640,9 +643,9 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   //GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
   
   double Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  double Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
   if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
   if(Tdphi<-ROOT::Math::Pi()) Tdphi += 2*ROOT::Math::Pi();
-  double Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
   bool etaedge = false;
   if(TrackiEta>0)
   {
@@ -661,15 +664,19 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   if(!phiedge){Tdphi=10;}
   GetAdjacentCells(theHBHETopology,AdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
   //  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
-  CellsFound = GetProjectedCells(HEGeom,CenterCells,vtxz,TrackGlobalPoint);
+  CellsFound = GetTransientProjectedCells(HEGeom,CenterCells,track);
+  Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
+
   int ValidIdCount = 0;
   for(int i=0;i<CellsPerDepth*Ndepths;i++){if(theHBHETopology->validHcal(AdjacentCells[i])){ValidIdCount++;}}
   if(!hcalRecHits.isValid())
   {
-    printf("Count not find HCAL RecHits.\n");
+    printf("Could not find HCAL RecHits.\n");
   }
   else
   {
+    printf("Successfully found HCAL RecHits.\n");
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     double layerenergies[7],lowthreshadjacent[7];    
     for(int i=0;i<7;i++)
@@ -680,6 +687,7 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
     {  
+       printf("Found an HCAL hit, energy is %f.\n",hbherechit->energy());
        HcalDetId id(hbherechit->detid());
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
 //       Global3DPoint hbhe_position = hbhe_cell->getPosition();
@@ -689,14 +697,18 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        HcalDetId *lowthreshmatch = std::find(std::begin(LowThreshAdjacentCells), std::end(LowThreshAdjacentCells), id);
        int HitiEta = id.ieta();
        if(fabs(HitiEta)<16){continue;} 
-       myHistograms.m_HECellZPositions[id.depth()-1]->Fill(hbhe_cell->getPosition().z());
        if(hbherechit->energy()!=0)
        {
+         if(centermatch!=std::end(CenterCells))
+         {
+           Hits[0]++;
+           Hits[1]+=hbherechit->energy();
+           if(hbherechit->energy()>0.8){ReducedConeE+= hbherechit->energy();}
+         }
          if(trackmatch!=std::end(AdjacentCells))
          {	 
            if(centermatch!=std::end(CenterCells))
     	   {
-  	      Hits[1] += hbherechit->energy();
               if(id.depth()<8) 
   	      {
   	        //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
@@ -746,16 +758,73 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
     {
        //if(layerenergies[i]!=0)
        //{
-          if(i<6){Hits[0]++;}
 	  if(layerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
 	  //if(BremDepth-1<i){myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);}
           myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);
        //}
     }   
+    if(m_failAdjacent)
+    {
+      if(charge >0)
+      {
+         if(MuonEta>0)
+         {
+           if(TrackiEta>20){myHistograms.m_BigEtaAdjFaildEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAdjFaildEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+         }
+         else
+         {
+           if(TrackiEta<-20){myHistograms.m_BigEtaAdjFaildEtadPhiMuPlusEtaMinus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAdjFaildEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+         }
+      }
+      else
+      {
+         if(MuonEta>0)
+         {
+           if(TrackiEta>20){myHistograms.m_BigEtaAdjFaildEtadPhiMuMinusEtaPlus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAdjFaildEtadPhiMuMinusEtaPlus->Fill(Tdeta,Tdphi);}
+
+         }
+         else
+         {
+           if(TrackiEta<-20){myHistograms.m_BigEtaAdjFaildEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAdjFaildEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
+         }
+      }
+    }
+    if(charge >0)
+      {
+         if(MuonEta>0)
+         {
+           if(TrackiEta>20){myHistograms.m_BigEtaAlldEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAlldEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+         }
+         else
+         {
+           if(TrackiEta<-20){myHistograms.m_BigEtaAlldEtadPhiMuPlusEtaMinus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAlldEtadPhiMuPlusEtaPlus->Fill(Tdeta,Tdphi);}
+         }
+      }
+      else
+      {
+         if(MuonEta>0)
+         {
+           if(TrackiEta>20){myHistograms.m_BigEtaAlldEtadPhiMuMinusEtaPlus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAlldEtadPhiMuMinusEtaPlus->Fill(Tdeta,Tdphi);}
+
+         }
+         else
+         {
+           if(TrackiEta<-20){myHistograms.m_BigEtaAlldEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
+           else{myHistograms.m_SmallEtaAlldEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
+         }
+      }
     myHistograms.m_ConeHits->Fill(Hits[0]);
     myHistograms.m_HitsOverThresh->Fill(hitsoverthresh);
     myHistograms.m_HitsOverThreshSplit[BremDepth-1]->Fill(hitsoverthresh);
     myHistograms.m_ConeEnergy->Fill(Hits[1]);
+    myHistograms.m_ReducedHEConeEnergy->Fill(ReducedConeE);
     ConeEnergy = Hits[1];
     m_HitsOverThresh = hitsoverthresh;
     if(standaloneE==0){myHistograms.m_NMatchNStandaloneHitsOverThresh->Fill(hitsoverthresh);}
@@ -801,4 +870,33 @@ int HCAL::GetProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *Tr
    return j;
 }
 
+int HCAL::GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, reco::TransientTrack muTrack)
+{
 
+   double start, step, end;
+   start = 320;
+   step = 5;
+   end = 530;
+   int j=0;
+   HcalDetId lastClosestCell;
+   for(int i = start; i<end; i+=step)
+   {
+      double testPointPerp = fabs(i*tan(muTrack.track().theta()));
+      double testPointX = testPointPerp*cos(muTrack.track().phi());
+      double testPointY = testPointPerp*sin(muTrack.track().phi());
+      double testPointZ; 
+      if(muTrack.track().eta()>9){testPointZ = i;}
+      else{testPointZ=-i;}
+
+      GlobalPoint testGlobalPoint = GlobalPoint(testPointX,testPointY,testPointZ);
+      TrajectoryStateClosestToPoint traj = muTrack.trajectoryStateClosestToPoint(testGlobalPoint);
+      HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(traj.position());
+      if(testClosestCell!=lastClosestCell)
+      {
+        lastClosestCell=testClosestCell;
+        TrackAlignedCells[j] = testClosestCell;
+	j = j+1;
+      }
+   }
+   return j;
+}

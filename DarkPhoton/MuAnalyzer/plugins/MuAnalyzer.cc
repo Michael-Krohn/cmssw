@@ -209,13 +209,12 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   {
     edm::Handle<SimTrackContainer> simtracks;
     iEvent.getByToken(m_simTracksToken, simtracks);
-    bool dphofound=false;
+    //bool dphofound=false;
     for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
     {
-       if(!isimtrk->noVertex()&&isimtrk->type()==9994){dphofound=true;}
+       //if(!isimtrk->noVertex()&&isimtrk->type()==9994){dphofound=true;}
        dpho=isimtrk->momentum();
     }
-    if(!dphofound){return;}
   }
 
   cutProgress++;
@@ -274,7 +273,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	  if (m_isMC){
 	    if (!isTrackMatchedToMuon(iEvent, iTrack, myHistograms)) continue;
 	  }
-
+          myHistograms.m_TagMuonEta->Fill(myMuons.highPtSelectedMuon->eta());
 	  myHistograms.m_MuonTrackMass->Fill(myTracks.MuonTrackMass);
 
 	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
@@ -342,7 +341,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          }else{
            continue;
          }
-         if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.two_momentum.eta(),myTracks.two_momentum.phi(),0.3,myTracks.two_momentum.perp())>3.0){continue;}
+//         if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.two_momentum.eta(),myTracks.two_momentum.phi(),0.3,myTracks.two_momentum.perp())>3.0){continue;}
          myCSCs.ExtrapolateMuonToCSC(iEvent, iSetup, CSCSegment_Label, myMuons.highPtSelectedEndcapMuon, myTracks.two_momentum, myTracks.tracksToVertex);
       }
     }
@@ -379,7 +378,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(MatchedGlobalPoint.eta()<0&&randphi<-0.9&&randphi>-1.6){randphi=randphi-4.0+2*ROOT::Math::Pi();}
       GlobalPoint RandGlobalPoint(GlobalPoint::Polar(MatchedGlobalPoint.theta(),randphi,MatchedGlobalPoint.mag()));
       bool GoodRand=true;
-      if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
+//      if(myTracks.GetIsolation(iEvent, trackCollection_label,RandGlobalPoint.eta(),RandGlobalPoint.phi(),0.3,0)>3.0){GoodRand=false;}
       double minDR_MuonHCAL = myHCAL.MuonMindR(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint);
       if((pow(MatchedGlobalPoint.eta()-dpho.eta(),2)+pow(MatchedGlobalPoint.phi()-dpho.phi(),2))>0.01){return;}
       myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, myHistograms, MatchedP, VertexPosition);
@@ -415,7 +414,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 	  if(!myTracks.PairTrackerTracks(iTrack_2nd, iTrack, transientTrackBuilder)) continue;
 
-          if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.one_momentum.eta(),myTracks.one_momentum.phi(),0.3,myTracks.one_momentum.perp())>3.0){continue;}
+//          if(myTracks.GetIsolation(iEvent, trackCollection_label,myTracks.one_momentum.eta(),myTracks.one_momentum.phi(),0.3,myTracks.one_momentum.perp())>3.0){continue;}
 
 	  myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack_2nd, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
           

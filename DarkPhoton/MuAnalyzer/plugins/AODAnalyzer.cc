@@ -1,9 +1,9 @@
 // -*- C++ -*-
 //
-// Package:    DarkPhoton/SigAnalyzer
-// Class:      SigAnalyzer
+// Package:    DarkPhoton/AODAnalyzer
+// Class:      AODAnalyzer
 // 
-/**\class SigAnalyzer SigAnalyzer.cc DarkPhoton/MuAnalyzer/plugins/SigAnalyzer.cc
+/**\class AODAnalyzer AODAnalyzer.cc DarkPhoton/MuAnalyzer/plugins/AODAnalyzer.cc
 
  Description: [one line class summary]
 
@@ -107,10 +107,10 @@
 // constructor "usesResource("TFileService");"
 // This will improve performance in multithreaded jobs.
 
-class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
+class AODAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
    public:
-      explicit SigAnalyzer(const edm::ParameterSet&);
-      ~SigAnalyzer();
+      explicit AODAnalyzer(const edm::ParameterSet&);
+      ~AODAnalyzer();
 
       static void fillDescriptions(edm::ConfigurationDescriptions& descriptions);
 
@@ -141,13 +141,8 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
     edm::EDGetToken m_theSTAMuonLabel;
     bool m_isMC;
-    bool m_isSig;
-    bool m_hasDpho;
-    bool m_runRandomTrackEfficiency;
-    double bremDepth;
-    double standaloneE;
     double weight_;
-
+    double standaloneE;
     MCHistograms myHistograms;
 
 };
@@ -163,24 +158,16 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 //
 // constructors and destructor
 //
-SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
+AODAnalyzer::AODAnalyzer(const edm::ParameterSet& iConfig):
   m_recoMuonToken (consumes<std::vector<reco::Muon>> (iConfig.getParameter<edm::InputTag>("recoMuons"))),
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
-  CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
-  m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
-  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
-  m_isSig (iConfig.getUntrackedParameter<bool>("isSig",false)),
-  m_hasDpho (iConfig.getUntrackedParameter<bool>("hasDpho",false)),
-  m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false)),
-  bremDepth(0)
+  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true))
 {
-   //now do what ever initialization is neededa
+   //now do what ever initialization is needed
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
-    m_simTracksToken = consumes<edm::SimTrackContainer> (iConfig.getParameter<edm::InputTag>("g4SimHits"));
-    m_simVerticesToken = consumes<edm::SimVertexContainer> (iConfig.getParameter<edm::InputTag>("g4SimHits"));
     m_genInfoToken = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
   }
   else
@@ -196,7 +183,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
 }
 
 
-SigAnalyzer::~SigAnalyzer()
+AODAnalyzer::~AODAnalyzer()
 {
    // do anything here that needs to be done at destruction time
    // (e.g. close files, deallocate resources etc.)
@@ -207,8 +194,8 @@ SigAnalyzer::~SigAnalyzer()
 //
 
 // ------------ method called for each event  ------------
-void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
-{ 
+void AODAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
+{
   using namespace edm;
   using namespace std;
   using namespace reco;
@@ -217,140 +204,23 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   Muons myMuons;
   EventInfo myEventInfo;
   Tracks myTracks;
-  CSC myCSCs;
   HCAL myHCAL;
-  edm::Handle<SimTrackContainer> simtracks;
-  edm::Handle<SimVertexContainer> simvertices;
-  if(m_isMC)
-  {
-     iEvent.getByToken(m_simTracksToken, simtracks);
-     iEvent.getByToken(m_simVerticesToken, simvertices);
-  }
+
   myHistograms.ResetCutFlow();
-  edm::Handle<reco::TrackCollection> staTracks;
-  iEvent.getByToken(m_theSTAMuonLabel, staTracks);
-  edm::Handle<reco::VertexCollection> vtxHandle;
-  iEvent.getByToken(primaryVertices_Label, vtxHandle);
+
   edm::ESHandle<MagneticField> theMGField;
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
-  if(m_isMC)
-  {
-     if ((*simvertices).size()>0)
-     {
-         const SimVertex &vtx = (*simvertices)[(*simvertices).size()-1];
-         weight_ = vtx.position().z()*10.;
-     }
-  }
-  if (!m_hasDpho){weight_ = 1.;}
+
   myHistograms.m_eventCount->Fill(0.5);
   //if(!founddpho){return;}
   myHistograms.IncCutFlow();
+ 
   myTracks.SelectTracks(iEvent, trackCollection_label);
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  double nstandalone = staTracks->size(); 
-  int dphovtx = -1;
-  int nmuons = 0;
-  int nendcapmu = 0;
-  int nhighptmu = 0;
-  bool founddpho=false;
-  double dphoE = 0;
-  math::XYZTLorentzVectorD dpho, mother, tagmu;
-  //find dark brem vertexaa
-  if(m_isMC)
-  {
-    for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
-    {
-       if(!isimtrk->noVertex()&&isimtrk->type()==9994)
-       {
-          const SimVertex &vtx = (*simvertices)[isimtrk->vertIndex()];
-          if(double(fabs(vtx.position().z()))>388&&double(vtx.position().rho())<268&&double(vtx.position().rho())<(1.2857*fabs(vtx.position().z()-302.8)))
-          {
-             bremDepth = vtx.position().r();
-             myHistograms.m_DBremLocation->Fill(vtx.position().z(),vtx.position().rho());
-             myHistograms.m_WeightedDBremLocation->Fill(vtx.position().z(),vtx.position().rho(),weight_);
-  	   dpho=isimtrk->momentum();
-  	   dphovtx=isimtrk->vertIndex();
-  	   dphoE=isimtrk->momentum().E();
-  	   myHistograms.m_dphoEnergy->Fill(dphoE);
-  	   founddpho=true;
-             myHistograms.m_DBremR->Fill(vtx.position().r());
-             myHistograms.m_WeightedDBremR->Fill(vtx.position().r(), weight_);
-  	}
-       }
-       if(!isimtrk->noVertex()&&fabs(isimtrk->type())==13)
-       {
-           if(isimtrk->momentum().pt()>26.)
-           {
-              if(fabs(isimtrk->momentum().eta())<2.4)
-              {
-                if(fabs(isimtrk->momentum().eta())>1.6)
-                {
-                   nendcapmu++;
-                }
-                nhighptmu++;
-              }
-           }
-           nmuons++;  
-       }
-    }
-  }
-  if(bremDepth==0){bremDepth=1;}
-  //Find deflected muon or the initial muon if there was no deflection
-  double FmuE = 0;
-  double vtxz;
   math::XYZTLorentzVectorD FinalMu;
-  double highpt = 10000;
-  float probecharge;
-  bool FirstInBarrel = true;
-  if(m_isMC)
-  {
-     for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
-     {
-        if(!isimtrk->noVertex())
-        {
-           if(founddpho&&isimtrk->vertIndex()==dphovtx&&isimtrk->type()!=9994)
-   	{
-   	   FmuE=isimtrk->momentum().E();
-           FinalMu = isimtrk->momentum();
-   	   double iE = sqrt(pow(FinalMu.x()+dpho.x(),2)+pow(FinalMu.y()+dpho.y(),2)+pow(FinalMu.z()+dpho.z(),2)+pow(0.1056,2));
-           mother.SetPxPyPzE(FinalMu.x()+dpho.x(),FinalMu.y()+dpho.y(),FinalMu.z()+dpho.z(),iE);
-           probecharge = isimtrk->charge();
-   	}
-           if(!founddpho)
-           {
-              if(fabs(isimtrk->type())==13&&isimtrk->vertIndex()==0)
-              {
-                 math::XYZTLorentzVectorD candidateMu = isimtrk->momentum();
-                 bool inEndcap = (fabs(candidateMu.eta()) < 2.4 && fabs(candidateMu.eta()) > 1.4);
-                 //if (candidateMu.pt()<26.){continue;}
-                 if((candidateMu.pt()<highpt&&FirstInBarrel)||(inEndcap&&FirstInBarrel)||(inEndcap&&!FirstInBarrel&&candidateMu.pt()<highpt))
-                 {
-                    if(inEndcap){FirstInBarrel=false;}
-                    highpt=candidateMu.pt();
-                    FmuE=candidateMu.E();
-                    FinalMu = candidateMu;
-                    mother.SetPxPyPzE(FinalMu.x(),FinalMu.y(),FinalMu.z(),FmuE);
-                    bremDepth = 1.0;
-                    probecharge = isimtrk->charge();
-                    const SimVertex &vtx = (*simvertices)[isimtrk->vertIndex()];
-                    vtxz = vtx.position().z();
-                 }
-              }
-           }
-        }
-     }
   
-     for(SimTrackContainer::const_iterator isimtrk = simtracks->begin(); isimtrk!=simtracks->end(); ++isimtrk)
-     {
-       if(fabs(isimtrk->type())==13&&isimtrk->vertIndex()==0&&isimtrk->charge()!=probecharge)
-       {
-         math::XYZTLorentzVectorD candidateMu = isimtrk->momentum();
-         tagmu.SetPxPyPzE(candidateMu.x(),candidateMu.y(),candidateMu.z(),candidateMu.E());    
-       } 
-     }
-  }
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);  
 
@@ -359,7 +229,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByToken(m_recoMuonToken, recoMuons);
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
-  if(m_isMC){ MatchSimTrks(mother, tagmu, myMuons, myTracks, transientTrackBuilder, myHistograms);}
   int nMatches =0;
   bool backupmatch = false;
   double tageta,tagpt, pairVtxChi;
@@ -396,6 +265,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      }
      nselectedmuons++;
   }*/
+
   myHistograms.m_nSelectedMuons->Fill(myMuons.selectedMuons.size());
   if(!SiblingMatched)
   {  
@@ -415,29 +285,19 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         } 
      }
   }
-  //if(!founddpho){return;}
-  //myHistograms.IncCutFlow();
-  if(!m_isMC&&SiblingMatched)
-  {
-    mother.SetPxPyPzE(selectedTrack->momentum().x(),selectedTrack->momentum().y(),selectedTrack->momentum().z(),selectedTrack->p());
-  }
-  if(m_isMC)
-  {
-    if(nhighptmu<2){return;}
-    myHistograms.IncCutFlow();
-    if(nendcapmu<1){return;}
-    myHistograms.IncCutFlow();
-  }
+  myHistograms.IncCutFlow();
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
  // myHistograms.IncCutFlow();
   if(myMuons.highmuonpt<26.){return;}
   myHistograms.IncCutFlow();
   myHistograms.m_NMatchedMuons->Fill(nMatches);
-  
+ 
+  edm::Handle <reco::VertexCollection> vtxHandle;
+  iEvent.getByToken(primaryVertices_Label, vtxHandle);
+ 
   if(SiblingMatched)
   {
      myHistograms.m_EventsWithDpho->Fill(0.5);
-     if(founddpho){myHistograms.m_EventsWithDpho->Fill(1.5);}
      myHistograms.m_TrackIsolation->Fill(myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt());
      myHistograms.m_TagMuonEta->Fill(tageta);
      myHistograms.m_PairVtxChi->Fill(pairVtxChi);
@@ -453,140 +313,14 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      }
      myHistograms.m_DiMuonMass->Fill(myTracks.MuonTrackMass);
      myHistograms.IncCutFlow();
+     GlobalPoint TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),50));
    // this wraps tracks with additional methods that are used in vertex-calculation
-     GlobalPoint FillerPoint; 
-     myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack,transientTrackBuilder->build(selectedTrack),  FillerPoint);
-     GlobalPoint TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),bremDepth));
-     if(m_isMC)
-     {
-        double dotpro = mother.x()*FinalMu.x()+mother.y()*FinalMu.y()+mother.z()*FinalMu.z();
-        myHistograms.m_DeflectingAngle->Fill(std::acos(dotpro/mother.P()/FinalMu.P()));
-        myHistograms.m_FractionalELost->Fill(FmuE/(FmuE+dphoE));
-        myHistograms.m_finalMuE->Fill(FmuE);
-        myHistograms.m_finalMuPt->Fill(FinalMu.Pt());
-        myHistograms.m_initialMuPt->Fill(mother.Pt());
-     }
-     myHistograms.m_MinCSCImpactParameter->Fill(myCSCs.minTotalImpactParameter);
-     myHistograms.m_CSC_dR->Fill(myCSCs.minDR);
-     bool MuonMatched = MatchTrackToMuon(iEvent,mother,myMuons,myHistograms,FmuE,myCSCs.minDR);
-     double staMinDr = 7.;
-     if(MuonMatched)
-     {
-        myHistograms.IncCutFlow();
-        myHistograms.m_CSCHitChiSq->Fill(myCSCs.CSCChiSq);
-        ROOT::Math::DisplacementVector3D unitmother = mother.Vect().unit();
-	GlobalVector unitcsc = myCSCs.CSCTraj.unit();
-        double dotpro = unitmother.x()*unitcsc.x()+unitmother.y()*unitcsc.y()+unitmother.z()*unitcsc.z();
-        myHistograms.m_CSCHitAngleChange->Fill(std::acos(dotpro));
-        myHistograms.m_MatchedLocation->Fill(mother.eta(),mother.phi());
-     }    
-     double stadEoverE = 10.;
-     double staE = -10;
-     double closestapproach = 100.;
-     if(nstandalone>0)
-     {
-       for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
-       {
-          //reco::TransientTrack track(*staTrack, &*theMGField, theTrackingGeometry);
-          reco::TransientTrack track = transientTrackBuilder->build(*staTrack); 
-          double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),FinalMu.eta(),FinalMu.phi());
-          if(dR<staMinDr)
-          {
-            staMinDr=dR;
-            closestapproach=track.stateAtBeamLine().transverseImpactParameter().value();
-            stadEoverE=(std::sqrt(track.impactPointTSCP().momentum().mag2())-mother.P())/mother.P();
-            staE = std::sqrt(track.impactPointTSCP().momentum().mag2());
-          }
-       }
-     }
-     myHistograms.m_AllVertexOffset->Fill(closestapproach);
-     if(!MuonMatched)
-     {
-        myHistograms.m_NMatchStandaloneDr->Fill(staMinDr);
-        myHistograms.m_NStandalone->Fill(nstandalone);
-        myHistograms.m_NMatchStandaloneDE->Fill(stadEoverE);
-        if(staMinDr<0.5) {standaloneE = staE;}
-        myHistograms.m_NMatchStandaloneE->Fill(staE);
-        myHistograms.m_NMatchVertexOffset->Fill(closestapproach);
-        myHistograms.m_NonMatchedCSC->Fill(myCSCs.minDR);
-        myHistograms.m_NonMatchedLocation->Fill(mother.rho(),mother.z());
-        myHistograms.m_NonMatchedLocationEtaPhi->Fill(mother.eta(),mother.phi());
-     } 
      if(!myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, myHistograms, standaloneE, weight_, selectedTrack->dsz(), selectedTrack->charge(), transientTrackBuilder->build(selectedTrack))){return;}
      myHistograms.m_HECellsFound->Fill(myHCAL.CellsFound);
-     if(staMinDr>0.5&&!MuonMatched)
-     {
-        myHistograms.m_NMatchNHitHCALEnergy->Fill(myHCAL.ConeEnergy);
-        if(myHCAL.ConeEnergy<10){myHistograms.m_NMatchNHitLocation->Fill(mother.eta(),mother.phi());}
-     }
-     
-     myHistograms.m_EventWeights->Fill(weight_);
-     //Signal categories
-     bool passSigCuts = false;
-     //if(myHCAL.m_failAdjacent){return;}
-     //vtxz = selectedTrack->dsz();
-     reco::TransientTrack selectedTransientTrack = transientTrackBuilder->build(selectedTrack); 
-     TrajectoryStateClosestToPoint traj = selectedTransientTrack.trajectoryStateClosestToPoint(GlobalPoint(0,0,0));
-     vtxz = traj.perigeeParameters().longitudinalImpactParameter();
-     if(myHCAL.m_failAdjacent){myHistograms.m_FailAdjVtxZ->Fill(vtxz);}
-     if(myHCAL.m_HitsOverThresh<2){return;}
-     if(myHCAL.ConeEnergy<10&&myCSCs.minDR>0.05&&selectedTrack->eta()>-2.35&&!myHCAL.m_failAdjacent)
-     {
-        if(!MuonMatched&&staMinDr>0.5)
-	{
-	  passSigCuts = true;
-	  myHistograms.m_SignalSelectionCuts->Fill(2);
-	  double cat = 2;
-	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
-	  myHistograms.m_PassSigEta->Fill(selectedTrack->eta());
-	  myHistograms.m_PassSigHEHits->Fill(myHCAL.m_HitsOverThresh);
-	  myHistograms.m_PassSigHEEnergy->Fill(myHCAL.ConeEnergy);
-	  myHistograms.m_PassSigLocation->Fill(selectedTrack->eta(),selectedTrack->phi());
-	  for(int k=0;k<7;k++)
-	  {
-	     if(myHCAL.m_hitEnergies[k]<0.1){myHistograms.m_PassSigHEHitByDepth->Fill(k+1);}
-	  }
-          myHistograms.m_PassSigDrtoCSC->Fill(myCSCs.minDR);
-	  myHistograms.m_PassSigDrtoStandalone->Fill(staMinDr);
-	  myHistograms.m_PassSigVtxZ->Fill(vtxz);
-	}
-        else if(MuonMatched&&staE<60.)
-	{
-	  double cat = 1;
-	  myHistograms.m_SignalSelectionCuts->Fill(1);
-	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
-	}
-        else
-	{
-	  double cat = 0;
-	  myHistograms.m_SignalSelectionCuts->Fill(0);
-	  myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
-	}
-     }
-     else
-     {
-       double cat = 0;
-       myHistograms.m_SignalSelectionCuts->Fill(0);
-       myHistograms.m_WeightedSignalSelectionCuts->Fill(cat,weight_);
-     }   
-     if(!passSigCuts)
-     {
-        myHistograms.m_NPassSigLocation->Fill(selectedTrack->eta(),selectedTrack->phi());
-        myHistograms.m_NPassSigEta->Fill(selectedTrack->eta());
-	myHistograms.m_NPassSigHEHits->Fill(myHCAL.m_HitsOverThresh);
-	myHistograms.m_NPassSigHEEnergy->Fill(myHCAL.ConeEnergy);
-        myHistograms.m_NPassSigDrtoCSC->Fill(myCSCs.minDR);
-	myHistograms.m_NPassSigDrtoStandalone->Fill(staMinDr);	 
-	myHistograms.m_NPassSigVtxZ->Fill(vtxz);
-	for(int k=0;k<7;k++)
-	  {
-	     if(myHCAL.m_hitEnergies[k]<0.1){myHistograms.m_NPassSigHEHitByDepth->Fill(k+1);}
-	  }
-     }
   }
 }
 
-bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, MCHistograms myHistograms)
+bool AODAnalyzer::MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, MCHistograms myHistograms)
 {
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
@@ -618,7 +352,7 @@ bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentz
   return matched;
 }
 
-void SigAnalyzer::MatchSimTrks(math::XYZTLorentzVectorD mother, math::XYZTLorentzVectorD tagmu, Muons myMuons, Tracks myTracks, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, MCHistograms myHistograms)
+void AODAnalyzer::MatchSimTrks(math::XYZTLorentzVectorD mother, math::XYZTLorentzVectorD tagmu, Muons myMuons, Tracks myTracks, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, MCHistograms myHistograms)
 {
   const reco::Track* selectedTrack;
   const reco::Muon* selectedMuon;
@@ -663,7 +397,7 @@ void SigAnalyzer::MatchSimTrks(math::XYZTLorentzVectorD mother, math::XYZTLorent
   }
 }
 
-bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, MCHistograms myHistograms, double FmuE, double minCSCdr)
+bool AODAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, MCHistograms myHistograms, double FmuE, double minCSCdr)
 {
   bool matched = false;
   double mindE = 1.;
@@ -730,19 +464,19 @@ bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVe
 }
 // ------------ method called once each job just before starting event loop  ------------
 void 
-SigAnalyzer::beginJob()
+AODAnalyzer::beginJob()
 {
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
-SigAnalyzer::endJob() 
+AODAnalyzer::endJob() 
 {
 }
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
-SigAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
+AODAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
   //The following says we do not know what parameters are allowed so do no validation
   // Please change this to state exactly what you do use, even if it is no parameters
   edm::ParameterSetDescription desc;
@@ -751,4 +485,4 @@ SigAnalyzer::fillDescriptions(edm::ConfigurationDescriptions& descriptions) {
 }
 
 //define this as a plug-in
-DEFINE_FWK_MODULE(SigAnalyzer);
+DEFINE_FWK_MODULE(AODAnalyzer);

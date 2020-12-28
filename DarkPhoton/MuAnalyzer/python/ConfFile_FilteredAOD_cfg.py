@@ -53,7 +53,7 @@ if(options.runLocally):
 	if(options.isMC):
 	   mylist = FileUtils.loadListFromFile ('samplemc.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('sampledata.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(

@@ -9,29 +9,11 @@ options.register( 'isMC',
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
 
-options.register( 'runRandomTrack',
-                                  False,
-                                  VarParsing.multiplicity.singleton,
-				  VarParsing.varType.bool,
-				  "True if is studying random track efficiency")
-
 options.register( 'runLocally',
                                   False,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if running locally")
-
-options.register( 'isSig',
-				  True,
-				  VarParsing.multiplicity.singleton,
-				  VarParsing.varType.bool,
-				  "True if using signal injected events")
-
-options.register( 'hasDpho',
-                                  True,
-                                  VarParsing.multiplicity.singleton,
-                                  VarParsing.varType.bool,
-                                  "True if dark brem particle is present")
 
 options.parseArguments()
 
@@ -63,10 +45,10 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/map1p0_13TeV.txt')
+	   mylist = FileUtils.loadListFromFile ('mupxAOD_filtered.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/DY_MC_Files.txt')
         else:
-	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
+	   mylist = FileUtils.loadListFromFile('sampledata.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -81,22 +63,17 @@ process.source = cms.Source("PoolSource",
     fileNames = readFiles
 )
 
-process.demo = cms.EDAnalyzer('SigAnalyzer',
+process.demo = cms.EDAnalyzer('AODAnalyzer',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
-    g4SimHits = cms.InputTag("g4SimHits"),
-    CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
-    HBHERecHits = cms.InputTag("hbhereco"),
+    HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     StandAloneTracks = cms.InputTag("standAloneMuons"),
 #    ReducedHBHERecHits = cms.InputTag("reducedHcalRecHits"),
     isMC = cms.untracked.bool(options.isMC),
-    isSig = cms.untracked.bool(options.isSig),
-    hasDpho = cms.untracked.bool(options.hasDpho),
-    runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 
 process.TFileService = cms.Service("TFileService",

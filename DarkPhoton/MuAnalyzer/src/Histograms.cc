@@ -27,7 +27,7 @@ void Histograms::book(edm::Service<TFileService> fs){
 
   m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
-
+  m_TagMuonEta = fs->make<TH1F>("TaggingMuonEta", ";#eta; Events", 100, -2.6, 2.6);
   m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
 
   m_GENMuonTrackdR = fs->make<TH1F>("DeltaR_GENMuonTrack", ";DeltaR(GENMuon,Track) ;Events", 30,  0.  , 0.2  );

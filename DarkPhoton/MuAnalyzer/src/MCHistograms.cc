@@ -32,9 +32,15 @@ void MCHistograms::book(edm::Service<TFileService> fs){
   m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
 
   m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
-
+  m_SimInvMass = fs->make<TH1F>("SimMuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
+  m_DiMuonMass = fs->make<TH1F>("DiMuonInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 70, 110);
+  m_TagMuonEta = fs->make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
+  m_TagMuonPt = fs->make<TH1F>("TaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
+  m_NoBackupTagMuonEta = fs->make<TH1F>("NoBackupTaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
+  m_NoBackupTagMuonPt = fs->make<TH1F>("NoBackupTaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
+  m_nSelectedMuons = fs->make<TH1F>("NumberOfSelectedMuons","; # of Selected Muons; Events", 20, -0.5, 19.5);
   m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
-  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
+  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
   m_MuonEtaDist = fs->make<TH1F>("MuonEtaDist",";#eta; Events", 100,-10,10);
   m_TrackPt = fs->make<TH1F>("SelectedTrackPt",";#Pt (GeV); Events", 200, 0, 100);
   m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
@@ -120,12 +126,34 @@ void MCHistograms::book(edm::Service<TFileService> fs){
   m_NPassSigDrtoCSC = fs->make<TH1F>("NPassSigDrtoCSC","; #Delta R to Nearest CSC; Number of Events", 140, 0, 0.5);
   m_NPassSigDrtoStandalone = fs->make<TH1F>("NPassSigDrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
   m_FailAdjVtxZ = fs->make<TH1F>("FailAdjVtxZ","; Vertex Z position; Events", 100, -20, 20);
-  for(int i=0;i<7;i++)
-  {
-    std::string name = "HECellZPositions"+std::to_string(i+1);
-    m_HECellZPositions[i] = fs->make<TH1F>(name.c_str(),"; Z Positions of HE Cells; Events", 1400, -700, 700);
-  }
   m_HECellsFound = fs->make<TH1F>("NHECellsFound","; Cells found in HE; Number of Events", 30,0,30);
+  m_BigEtaAdjFaildEtadPhiMuPlusEtaPlus = fs->make<TH2F>("BMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuPlusEtaMinus = fs->make<TH2F>("BMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuMinusEtaPlus = fs->make<TH2F>("BMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuMinusEtaMinus = fs->make<TH2F>("BMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuPlusEtaPlus = fs->make<TH2F>("BAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuPlusEtaMinus = fs->make<TH2F>("BAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuMinusEtaPlus = fs->make<TH2F>("BAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuMinusEtaMinus = fs->make<TH2F>("BAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuPlusEtaPlus = fs->make<TH2F>("SMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuPlusEtaMinus = fs->make<TH2F>("SMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuMinusEtaPlus = fs->make<TH2F>("SMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuMinusEtaMinus = fs->make<TH2F>("SMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuPlusEtaPlus = fs->make<TH2F>("SAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuPlusEtaMinus = fs->make<TH2F>("SAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuMinusEtaPlus = fs->make<TH2F>("SAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuMinusEtaMinus = fs->make<TH2F>("SAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigCSCdrEta = fs->make<TH1F>("BigCSCdrEta","; #eta; Events", 200, -2.4,2.4);
+  m_NMatchedMuons = fs->make<TH1F>("NMatchedMuons", "; Number of tagging muons matching track; Events", 10,-0.5,9.5);
+  m_MinCSCImpactParameter = fs->make<TH1F>("CSCMinImpact", "; CSC Min Impact Parameter; Events", 300, 0, 1000);
+  m_EventsWithDpho = fs->make<TH1F>("EventsWithDpho", "; Bin; Events", 2,0,2);
+  m_PairVtxChi = fs->make<TH1F>("PairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
+  m_SimVtxChi = fs->make<TH1F>("SimPairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
+  m_BigConeEnergy = fs->make<TH1F>("BigConeEnergy", "; Energy of hits within #Delta R of 0.3 to Probe Muon; Events", 100, 0, 20);
+  m_SimProbeTrackPt = fs->make<TH1F>("SimProbeTrackPt", "; Pt of Probe Track from Z decay; Events", 100, 0, 120);
+  m_SimProbeTrackEta = fs->make<TH1F>("SimProbeTrackEta", "; #eta of Potential Probe Tracks; Events", 100, -2.6, 2.6);
+  m_ReducedHEConeEnergy = fs->make<TH1F>("ReducedHEConeEnergy", "; Energy of hits >0.8 GeV Along Probe Muon Path; Events", 100, 0, 20);
+  m_TrackIsolation = fs->make<TH1F>("TrackIsolation","; Track Based Isolation; Events",200,0,5);
 }
 
 void MCHistograms::IncCutFlow()

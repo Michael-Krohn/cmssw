@@ -62,11 +62,11 @@ CustomPhysics::CustomPhysics(const edm::ParameterSet & p)
   }
   printf("Registering physics APrimephysics.\n");
   // Custom Physics
-  RegisterPhysics(new APrimePhysics);
+  /*RegisterPhysics(new APrimePhysics);
 
   G4GenericBiasingPhysics* biasingPhysics = new G4GenericBiasingPhysics();
   biasingPhysics->Bias("mu-");
   biasingPhysics->Bias("mu+");
   RegisterPhysics(biasingPhysics);
-
+*/
 }
