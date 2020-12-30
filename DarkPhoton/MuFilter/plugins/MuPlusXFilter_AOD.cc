@@ -104,6 +104,7 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
     edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
+    edm::EDGetTokenT<edm::TriggerResults> trigResults_Label;
     edm::EDGetToken m_genParticleToken;
     const reco::Track* selTrack;
     const reco::Muon* selMuon;
@@ -131,6 +132,7 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
+  trigResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResultsTag"))),
   selVtxChi(0),
   selMuonTrackMass(0),
   selTrackIso(1000),
@@ -173,13 +175,19 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_allEvents.ResetCutFlow();
   m_passingEvents.ResetCutFlow();
   edm::Handle<edm::TriggerResults> trigResults;
-  edm::InputTag trigResultsTag("TriggerResults","","HLT");
-  iEvent.getByLabel(trigResultsTag,trigResults);
-  const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
-  std::string pathName="HLT_IsoMu24_v1.1";
-  bool passTrig=trigResults->accept(trigNames.triggerIndex(pathName));
-
-  if(!passTrig) return false;
+  iEvent.getByToken(trigResults_Label, trigResults);
+  if(!m_isMC)
+  {
+     const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
+     std::string pathName="HLT_IsoMu24_v";
+     unsigned int trigIndex=0;
+     for(unsigned int itrig=0; itrig!=trigResults->size(); ++itrig)
+     {
+        if(trigNames.triggerName(itrig).find(pathName)!=std::string::npos){trigIndex=itrig;}
+     }
+     bool passTrig=trigResults->accept(trigIndex);
+     if(!passTrig) return false;
+  }
   m_allEvents.IncCutFlow();
   m_passingEvents.IncCutFlow();
   reco::Vertex bestVtx;

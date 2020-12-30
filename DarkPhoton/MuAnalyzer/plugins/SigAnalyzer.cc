@@ -226,6 +226,16 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      iEvent.getByToken(m_simTracksToken, simtracks);
      iEvent.getByToken(m_simVerticesToken, simvertices);
   }
+/*  if(!m_isMC)
+  {
+     edm::Handle<edm::TriggerResults> trigResults;
+     iEvent.getByToken(m_trigResultsToken, trigResults);
+     const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
+     for(unsigned int itrig=0; itrig!=trigResults->size(); ++itrig)
+     {
+        printf("%s\n",trigNames.triggerName(itrig).c_str());
+     }
+  }*/ 
   myHistograms.ResetCutFlow();
   edm::Handle<reco::TrackCollection> staTracks;
   iEvent.getByToken(m_theSTAMuonLabel, staTracks);

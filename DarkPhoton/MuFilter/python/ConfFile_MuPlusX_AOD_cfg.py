@@ -33,7 +33,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('Run2018D-22Jan2019.txt')
+mylist = FileUtils.loadListFromFile('../MuAnalyzer/datafiles/ZMM_13TeV_AOD.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor
@@ -53,6 +53,7 @@ process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    TriggerResultsTag = cms.InputTag("TriggerResults","","HLT"),
     genParticles = cms.InputTag("genParticles"),
     isMC = cms.untracked.bool(False)
 )
@@ -64,10 +65,10 @@ process.USER = cms.OutputModule("PoolOutputModule",
     fileName = cms.untracked.string('mupx_filtering.root')
 )
 
-#process.TFileService = cms.Service("TFileService",
-#                                   fileName = cms.string("DiMuon_Histos.root"),
-#				   closeFileFast = cms.untracked.bool(False)
-#)
+process.TFileService = cms.Service("TFileService",
+                                   fileName = cms.string("skim_monitor_hists.root"),
+				   closeFileFast = cms.untracked.bool(False)
+)
 
 process.p1 = cms.Path(process.DiMuonFilter)
 process.outpath = cms.EndPath(process.USER)
