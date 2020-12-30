@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if is MC dataset")
@@ -24,7 +24,7 @@ process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 if(options.isMC):
         process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v17')
 else:
-        process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
+        process.GlobalTag.globaltag = cms.string('102X_dataRun2_Prompt_v11')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
@@ -33,7 +33,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('../MuAnalyzer/datafiles/LargerAOD_test.txt')
+mylist = FileUtils.loadListFromFile('Run2018D-22Jan2019.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor
@@ -44,8 +44,8 @@ process.source = cms.Source("PoolSource",
     
 )
 
-if not(options.isMC):
-        process.source.lumisToProcess = LumiList.LumiList(filename = 'Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON_MuonPhys.txt').getVLuminosityBlockRange()
+#if not(options.isMC):
+#        process.source.lumisToProcess = LumiList.LumiList(filename = 'Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON_MuonPhys.txt').getVLuminosityBlockRange()
 
 
 process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',

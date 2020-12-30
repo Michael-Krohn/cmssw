@@ -22,5 +22,6 @@
 <use name="Geometry/CaloTopology"/>
 <use name="CLHEP"/>
 <use name="root"/>
-<use name="DarkPhoton/MuFilter"/>
-<flags EDM_PLUGIN="1"/>
+<export>
+   <lib name="1"/>
+</export>

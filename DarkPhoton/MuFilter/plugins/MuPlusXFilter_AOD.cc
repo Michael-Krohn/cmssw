@@ -25,6 +25,8 @@
 #include <TH1.h>
 
 // user include files
+#include "DarkPhoton/MuFilter/interface/eventHistos.h"
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/stream/EDFilter.h"
 
@@ -34,6 +36,8 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/StreamID.h"
 
+#include "DataFormats/Common/interface/TriggerResults.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
@@ -90,16 +94,23 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
       
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<reco::Track>::const_iterator&);
 
-    bool passTrackIsolation(const edm::Event&, edm::EDGetTokenT<std::vector<reco::Track>>,double, edm::Handle<reco::VertexCollection>, std::vector<reco::Track>::const_iterator&);
-    bool passHCALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack);
+    double TrackIsolation(const edm::Event&, edm::EDGetTokenT<std::vector<reco::Track>>,double, edm::Handle<reco::VertexCollection>, std::vector<reco::Track>::const_iterator&);
+    double HCALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack);
     void GetTransientProjectedCells(const CaloSubdetectorGeometry*, HcalDetId*, reco::TransientTrack);
 
+    eventHistos m_allEvents;
+    eventHistos m_passingEvents;
     edm::EDGetToken m_recoMuonToken;
     edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
     edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
     edm::EDGetToken m_genParticleToken;
-
+    const reco::Track* selTrack;
+    const reco::Muon* selMuon;
+    double selVtxChi;
+    double selMuonTrackMass;
+    double selTrackIso;
+    double selHcalIso;
     bool m_isMC;
 
 };
@@ -120,8 +131,15 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
+  selVtxChi(0),
+  selMuonTrackMass(0),
+  selTrackIso(1000),
+  selHcalIso(1000),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true))
 {
+  edm::Service<TFileService> fs;
+  m_allEvents.book(fs->mkdir("allEvents"));
+  m_passingEvents.book(fs->mkdir("passingEvents"));
    //now do what ever initialization is needed
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
@@ -152,6 +170,18 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
    using namespace reco;
    using namespace pat;
 
+  m_allEvents.ResetCutFlow();
+  m_passingEvents.ResetCutFlow();
+  edm::Handle<edm::TriggerResults> trigResults;
+  edm::InputTag trigResultsTag("TriggerResults","","HLT");
+  iEvent.getByLabel(trigResultsTag,trigResults);
+  const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
+  std::string pathName="HLT_IsoMu24_v1.1";
+  bool passTrig=trigResults->accept(trigNames.triggerIndex(pathName));
+
+  if(!passTrig) return false;
+  m_allEvents.IncCutFlow();
+  m_passingEvents.IncCutFlow();
   reco::Vertex bestVtx;
   edm::Handle<std::vector<reco::Vertex>> vertices;
   iEvent.getByToken(primaryVertices_Label, vertices);
@@ -174,13 +204,14 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     std::cout<<"NO GOOD VERTEX" << std::endl;
     return false;
   }
-
   bestVtx = *(firstGoodVertex);
+  m_allEvents.IncCutFlow();
+  m_passingEvents.IncCutFlow();
 
   int anyMuonPass = 0;
   int nMuonTrackCand = 0;
   int nTracksNoMuon = 0;
-
+  int nTotalMuonTrackCand = 0;
   float MuonTrackMass = 0.;
 
   edm::Handle<std::vector<reco::Muon>> recoMuons;
@@ -189,17 +220,16 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
 
-   // this wraps tracks with additional methods that are used in vertex-calculation
-   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
-   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
+  // this wraps tracks with additional methods that are used in vertex-calculation
+  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
 
   //Looping over the reconstructed Muons
+  
   for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end(); iMuon++) {
-    std::cout << "CHECKING IF WE HAVE A TIGHT MUON" << std::endl;
     if(!(iMuon->passed(reco::Muon::CutBasedIdTight))) continue;
     if(!(iMuon->passed(reco::Muon::PFIsoTight))) continue;
     if(!(iMuon->passed(reco::Muon::TkIsoTight))) continue;
-    std::cout << "CHECKING IF MUON PASSES pT, eta" << std::endl;
     if (iMuon->pt() < 26 || fabs(iMuon->eta()) > 2.4) continue;
     anyMuonPass++;
 
@@ -226,11 +256,14 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         // try to fit these two tracks to a common vertex
         KalmanVertexFitter vertexFitter;
         CachingVertex<5> fittedVertex = vertexFitter.vertex(tracksToVertex);
-
+        double vtxChi = 0;
         // some poor fits will simply fail to find a common vertex
-        if (fittedVertex.isValid()  &&  fittedVertex.totalChiSquared() >= 0.  &&  fittedVertex.degreesOfFreedom() > 0) {
+        if (fittedVertex.isValid()  &&  fittedVertex.totalChiSquared() >= 0.  &&  fittedVertex.degreesOfFreedom() > 0)        {
            // others we can exclude by their poor fit
-           if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
+           vtxChi = fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom(); 
+
+           if (vtxChi < 3.) 
+           {
               // important! evaluate momentum vectors AT THE VERTEX
               TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
               TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
@@ -243,30 +276,46 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 	      double total_py = one_momentum.y() + two_momentum.y();
 	      double total_pz = one_momentum.z() + two_momentum.z();
               MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
-           }else{
-	      continue;
-	   }
-        }else{
-	   continue;
-	}
+           }
+           else{continue;}
+        }
+        else{continue;}
 
 /*	TLorentzVector* TrackVector;
         TLorentzVector* MuonVector;
 	TrackVector->SetPtEtaPhiM(iTrack->pt(),iTrack->eta(),iTrack->phi(),iTrack->m());*/
 //        if ((iMuon->p4() + iTrack->p4()).mass() < 85 || (iMuon->p4() + iTrack->p4()).mass() > 105) continue;
 	if (MuonTrackMass < 60 || MuonTrackMass > 120) continue;
-
-        if(passTrackIsolation(iEvent,trackCollection_label, 0.3, vertices, iTrack)&&passHCALIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack))) continue;
+        nTotalMuonTrackCand++;
+        double trackIso = TrackIsolation(iEvent,trackCollection_label, 0.3, vertices, iTrack);
+        double hcalIso = HCALIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
+       
+        if(nMuonTrackCand==0)
+        {
+           selTrack = &(*iTrack);
+           selMuon = &(*iMuon);
+           selVtxChi = vtxChi;
+           selMuonTrackMass = MuonTrackMass;
+           selTrackIso = trackIso;
+           selHcalIso = hcalIso;
+        }
+        if(trackIso<0.15&&hcalIso<3) continue;
 
         if (m_isMC){
 	  if (!isTrackMatchedToMuon(iEvent, iTrack)) continue;//Matching the track to a GEN muon
 	}
-
+        selTrack = &(*iTrack);
+        selMuon = &(*iMuon);
+        selVtxChi = vtxChi;
+        selMuonTrackMass = MuonTrackMass;
+        selTrackIso = trackIso;
+        selHcalIso = hcalIso;
         nMuonTrackCand++;
 //	MuonTrackMass = (iMuon->p4() + iTrack->p4()).mass();
 
 	nTracksNoMuon=0.;
-        for(std::vector<reco::Muon>::const_iterator iMuon2 = recoMuons->begin(); iMuon2 != recoMuons->end(); iMuon2++) {
+        for(std::vector<reco::Muon>::const_iterator iMuon2 = recoMuons->begin(); iMuon2 != recoMuons->end(); iMuon2++)
+        {
 
            if (!(iMuon2->isPFMuon() && (iMuon2->isGlobalMuon() || iMuon2->isTrackerMuon()))) continue;
            if (fabs(iMuon2->eta()) > 2.8 || fabs(iMuon2->eta()) < 1.653) continue;
@@ -278,11 +327,56 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     }
   }
-
-  if (nMuonTrackCand > 0){
+  if(anyMuonPass>0)
+  {
+    m_allEvents.IncCutFlow();
+    m_passingEvents.IncCutFlow();
+    if(nTotalMuonTrackCand>0)
+    {
+       m_allEvents.IncCutFlow();
+       m_passingEvents.IncCutFlow();
+       if(nMuonTrackCand>0)
+       {
+         m_allEvents.IncCutFlow();          
+         m_passingEvents.IncCutFlow();      
+       }
+    }
+  }  
+  m_allEvents.m_eventCount->Fill(1);
+  m_allEvents.m_MuonTrackMass->Fill(selMuonTrackMass);
+  m_allEvents.m_ProbeEta->Fill(selTrack->eta());
+  m_allEvents.m_ProbePt->Fill(selTrack->pt());
+  m_allEvents.m_ProbePhi->Fill(selTrack->phi());
+  m_allEvents.m_NPassingProbe->Fill(nMuonTrackCand);
+  m_allEvents.m_TagEta->Fill(selMuon->eta());
+  m_allEvents.m_TagPt->Fill(selMuon->pt());
+  m_allEvents.m_TagPhi->Fill(selMuon->phi());
+  m_allEvents.m_NPassingTag->Fill(anyMuonPass);
+  m_allEvents.m_TagProbeVtxChi->Fill(selVtxChi);
+  m_allEvents.m_ProbeTrackIso->Fill(selTrackIso);
+  m_allEvents.m_ProbeHcalIso->Fill(selHcalIso);
+  m_allEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
+ 
+  if (nMuonTrackCand > 0)
+  {
     std::cout <<"PASSES"<<std::endl;
+    m_passingEvents.m_eventCount->Fill(1);
+    m_passingEvents.m_MuonTrackMass->Fill(selMuonTrackMass);
+    m_passingEvents.m_ProbeEta->Fill(selTrack->eta());
+    m_passingEvents.m_ProbePt->Fill(selTrack->pt());
+    m_passingEvents.m_ProbePhi->Fill(selTrack->phi());
+    m_passingEvents.m_NPassingProbe->Fill(nMuonTrackCand);
+    m_passingEvents.m_TagEta->Fill(selMuon->eta());
+    m_passingEvents.m_TagPt->Fill(selMuon->pt());
+    m_passingEvents.m_TagPhi->Fill(selMuon->phi());
+    m_passingEvents.m_NPassingTag->Fill(anyMuonPass);
+    m_passingEvents.m_TagProbeVtxChi->Fill(selVtxChi);
+    m_passingEvents.m_ProbeTrackIso->Fill(selTrackIso);
+    m_passingEvents.m_ProbeHcalIso->Fill(selHcalIso);
+    m_passingEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
     return true;
-  }else{
+  }else
+  {
     std::cout << "FAILS"<<std::endl;
     return false;
   }		
@@ -307,7 +401,7 @@ bool MuPlusXFilter_AOD::isTrackMatchedToMuon(const edm::Event& iEvent, std::vect
 
 }
 
-bool MuPlusXFilter_AOD::passTrackIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, std::vector<reco::Track>::const_iterator& iTrack)
+double MuPlusXFilter_AOD::TrackIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, std::vector<reco::Track>::const_iterator& iTrack)
 {
    bool foundtrack = false;
    unsigned int vtxindex = 0;
@@ -328,7 +422,7 @@ bool MuPlusXFilter_AOD::passTrackIsolation(const edm::Event& iEvent, edm::EDGetT
       }
    }
    
-   if(!foundtrack){return false;}
+   if(!foundtrack){return 100;}
 
    reco::VertexRef primaryVtx(vtxHandle,vtxindex);
   
@@ -340,11 +434,10 @@ bool MuPlusXFilter_AOD::passTrackIsolation(const edm::Event& iEvent, edm::EDGetT
       Isolation += secondarytrack->pt();
    }
 
-   if(Isolation/iTrack->pt()<0.15) return true;
-   return false;
+   return Isolation/iTrack->pt();
 }
 
-bool MuPlusXFilter_AOD::passHCALIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, const reco::TransientTrack track)
+double MuPlusXFilter_AOD::HCALIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, const reco::TransientTrack track)
 {
    edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
    iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
@@ -360,7 +453,7 @@ bool MuPlusXFilter_AOD::passHCALIsolation(const edm::Event& iEvent, const edm::E
 
    GetTransientProjectedCells(HEGeom,MatchedCells,track);
 
-   if(!hcalRecHits.isValid()) return false;
+   if(!hcalRecHits.isValid()) return 1000;
    const HBHERecHitCollection *hbhe = hcalRecHits.product();
    for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
    {
@@ -370,9 +463,8 @@ bool MuPlusXFilter_AOD::passHCALIsolation(const edm::Event& iEvent, const edm::E
       HcalDetId *match = std::find(std::begin(MatchedCells), std::end(MatchedCells), id);
       if(match!=std::end(MatchedCells)) MatchedEnergy+=hbherechit->energy();
    }
-
-   if(MatchedEnergy<3) return true;
-   return false;
+ 
+   return MatchedEnergy;
 }
 
 void MuPlusXFilter_AOD::GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *MatchedCells, reco::TransientTrack muTrack)
