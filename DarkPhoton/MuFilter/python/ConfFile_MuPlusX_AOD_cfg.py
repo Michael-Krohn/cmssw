@@ -33,12 +33,12 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('../MuAnalyzer/datafiles/ZMM_13TeV_AOD.txt')
+mylist = FileUtils.loadListFromFile('Run2018D_UL2018_v4.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor
 process.source = cms.Source("PoolSource",
-    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
+    # duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     # replace 'myfile.root' with the source file you want to use
     fileNames = readFiles
     
@@ -53,6 +53,8 @@ process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    EERecHits = cms.InputTag("reducedEcalRecHitsEE"),
+    EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
     TriggerResultsTag = cms.InputTag("TriggerResults","","HLT"),
     genParticles = cms.InputTag("genParticles"),
     isMC = cms.untracked.bool(False)
