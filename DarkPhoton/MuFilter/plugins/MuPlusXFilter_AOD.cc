@@ -23,7 +23,7 @@
 #include <TLorentzVector.h>
 #include <TVector3.h>
 #include <TH1.h>
-
+#include "Math/VectorUtil.h"
 // user include files
 #include "DarkPhoton/MuFilter/interface/eventHistos.h"
 
@@ -48,6 +48,7 @@
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 
@@ -96,6 +97,8 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
 
     double TrackIsolation(const edm::Event&, edm::EDGetTokenT<std::vector<reco::Track>>,double, edm::Handle<reco::VertexCollection>, std::vector<reco::Track>::const_iterator&);
     double HCALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack);
+    double ECALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<EcalRecHitCollection>, edm::EDGetTokenT<EcalRecHitCollection>, const reco::TransientTrack);
+
     void GetTransientProjectedCells(const CaloSubdetectorGeometry*, HcalDetId*, reco::TransientTrack);
 
     eventHistos m_allEvents;
@@ -104,6 +107,8 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
     edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
+    edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label;
+    edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
     edm::EDGetTokenT<edm::TriggerResults> trigResults_Label;
     edm::EDGetToken m_genParticleToken;
     const reco::Track* selTrack;
@@ -112,6 +117,7 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     double selMuonTrackMass;
     double selTrackIso;
     double selHcalIso;
+    double selEcalIso;
     bool m_isMC;
 
 };
@@ -132,6 +138,8 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
+  reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
+  reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
   trigResults_Label(consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("TriggerResultsTag"))),
   selVtxChi(0),
   selMuonTrackMass(0),
@@ -303,7 +311,8 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         nTotalMuonTrackCand++;
         double trackIso = TrackIsolation(iEvent,trackCollection_label, 0.3, vertices, iTrack);
         double hcalIso = HCALIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
-       
+        double ecalIso = ECALIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));      
+
         if(nMuonTrackCand==0)
         {
            selTrack = &(*iTrack);
@@ -312,6 +321,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
            selMuonTrackMass = MuonTrackMass;
            selTrackIso = trackIso;
            selHcalIso = hcalIso;
+           selEcalIso = ecalIso;
         }
         if(trackIso<0.15&&hcalIso<3) continue;
 
@@ -324,6 +334,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         selMuonTrackMass = MuonTrackMass;
         selTrackIso = trackIso;
         selHcalIso = hcalIso;
+        selEcalIso = ecalIso;
         nMuonTrackCand++;
 //	MuonTrackMass = (iMuon->p4() + iTrack->p4()).mass();
 
@@ -371,6 +382,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_allEvents.m_TagProbeVtxChi->Fill(selVtxChi);
   m_allEvents.m_ProbeTrackIso->Fill(selTrackIso);
   m_allEvents.m_ProbeHcalIso->Fill(selHcalIso);
+  m_allEvents.m_ProbeEcalIso->Fill(selEcalIso);
   m_allEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
  
   if (nMuonTrackCand > 0)
@@ -389,6 +401,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     m_passingEvents.m_TagProbeVtxChi->Fill(selVtxChi);
     m_passingEvents.m_ProbeTrackIso->Fill(selTrackIso);
     m_passingEvents.m_ProbeHcalIso->Fill(selHcalIso);
+    m_passingEvents.m_ProbeEcalIso->Fill(selEcalIso);
     m_passingEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
     return true;
   }else
@@ -452,6 +465,37 @@ double MuPlusXFilter_AOD::TrackIsolation(const edm::Event& iEvent, edm::EDGetTok
 
    return Isolation/iTrack->pt();
 }
+
+double MuPlusXFilter_AOD::ECALIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label, const reco::TransientTrack track)
+{
+   edm::Handle<EcalRecHitCollection> rechitsEE;
+   iEvent.getByToken(reducedEndcapRecHitCollection_Label, rechitsEE);
+
+   edm::Handle<EcalRecHitCollection> rechitsEB;
+   iEvent.getByToken(reducedBarrelRecHitCollection_Label, rechitsEB);
+ 
+   edm::ESHandle<CaloGeometry> TheCALOGeometry;
+   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+
+   const CaloGeometry* caloGeom = TheCALOGeometry.product();
+
+   double eDR = 0;
+
+   for(EcalRecHitCollection::const_iterator hit = rechitsEE->begin(); hit!= rechitsEE->end(); hit++)
+   {
+      const DetId id = (*hit).detid();
+      const GlobalPoint hitPos = caloGeom->getSubdetectorGeometry(id)->getGeometry(id)->getPosition();
+      TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
+      math::XYZVector idPositionRoot(hitPos.x(),hitPos.y(),hitPos.z());
+      math::XYZVector trajRoot(traj.position().x(),traj.position().y(),traj.position().z());
+      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4)
+      {
+         eDR+= (*hit).energy();
+      }            
+   } 
+   return eDR;
+}
+ 
 
 double MuPlusXFilter_AOD::HCALIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, const reco::TransientTrack track)
 {

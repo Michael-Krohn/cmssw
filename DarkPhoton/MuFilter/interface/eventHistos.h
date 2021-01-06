@@ -32,6 +32,7 @@ class eventHistos
       TH1F* m_TagProbeVtxChi;
       TH1F* m_ProbeTrackIso;
       TH1F* m_ProbeHcalIso;
+      TH1F* m_ProbeEcalIso;
       TH2F* m_ProbeCombinedIso;     
       double cutProgress;
 };
