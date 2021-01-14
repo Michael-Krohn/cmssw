@@ -33,7 +33,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('Run2018D_UL2018_v4.txt')
+mylist = FileUtils.loadListFromFile('Run2018D_UL2018_v4_1stHalf.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor

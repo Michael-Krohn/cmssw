@@ -145,6 +145,7 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
   selMuonTrackMass(0),
   selTrackIso(1000),
   selHcalIso(1000),
+  selEcalIso(1000),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true))
 {
   edm::Service<TFileService> fs;
@@ -200,7 +201,11 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
      }
      if(!foundtrig){return false;}
      bool passTrig=trigResults->accept(trigIndex);
-     if(!passTrig) return false;
+     if(!passTrig)
+     {
+        std::cout<<"Failed trigger" << std::endl;
+        return false;
+     }
   }
   m_allEvents.IncCutFlow();
   m_passingEvents.IncCutFlow();
@@ -323,7 +328,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
            selHcalIso = hcalIso;
            selEcalIso = ecalIso;
         }
-        if(trackIso<0.15&&hcalIso<3) continue;
+        if(trackIso<0.2&&ecalIso<30) continue;
 
         if (m_isMC){
 	  if (!isTrackMatchedToMuon(iEvent, iTrack)) continue;//Matching the track to a GEN muon
@@ -375,6 +380,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_allEvents.m_ProbeEta->Fill(selTrack->eta());
   m_allEvents.m_ProbePt->Fill(selTrack->pt());
   m_allEvents.m_ProbePhi->Fill(selTrack->phi());
+  m_allEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
   m_allEvents.m_NPassingProbe->Fill(nMuonTrackCand);
   m_allEvents.m_TagEta->Fill(selMuon->eta());
   m_allEvents.m_TagPt->Fill(selMuon->pt());
@@ -393,6 +399,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     m_passingEvents.m_ProbeEta->Fill(selTrack->eta());
     m_passingEvents.m_ProbePt->Fill(selTrack->pt());
     m_passingEvents.m_ProbePhi->Fill(selTrack->phi());
+    m_passingEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
     m_passingEvents.m_NPassingProbe->Fill(nMuonTrackCand);
     m_passingEvents.m_TagEta->Fill(selMuon->eta());
     m_passingEvents.m_TagPt->Fill(selMuon->pt());
@@ -488,7 +495,7 @@ double MuPlusXFilter_AOD::ECALIsolation(const edm::Event& iEvent, const edm::Eve
       TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
       math::XYZVector idPositionRoot(hitPos.x(),hitPos.y(),hitPos.z());
       math::XYZVector trajRoot(traj.position().x(),traj.position().y(),traj.position().z());
-      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4)
+      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4&&(*hit).energy()>0.3)
       {
          eDR+= (*hit).energy();
       }            
