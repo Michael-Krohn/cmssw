@@ -145,6 +145,7 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
   selMuonTrackMass(0),
   selTrackIso(1000),
   selHcalIso(1000),
+  selEcalIso(1000),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true))
 {
   edm::Service<TFileService> fs;
@@ -202,7 +203,11 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
      }
      if(!foundtrig){return false;}
      bool passTrig=trigResults->accept(trigIndex);
-     if(!passTrig) return false;
+     if(!passTrig)
+     {
+        std::cout<<"Failed trigger" << std::endl;
+        return false;
+     }
   }
   m_allEvents.IncCutFlow();
   m_passingEvents.IncCutFlow();
