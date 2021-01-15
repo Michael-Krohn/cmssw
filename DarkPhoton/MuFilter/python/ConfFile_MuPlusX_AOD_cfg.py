@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  False,
+                                  True,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if is MC dataset")
@@ -33,12 +33,12 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('Run2018D_UL2018_v4.txt')
+mylist = FileUtils.loadListFromFile('ZTT_13TeV_RequireOneMu.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor
 process.source = cms.Source("PoolSource",
-    # duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
+    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     # replace 'myfile.root' with the source file you want to use
     fileNames = readFiles
     

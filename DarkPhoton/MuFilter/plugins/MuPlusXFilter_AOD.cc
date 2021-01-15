@@ -184,6 +184,8 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_passingEvents.ResetCutFlow();
   edm::Handle<edm::TriggerResults> trigResults;
   iEvent.getByToken(trigResults_Label, trigResults);
+  m_allEvents.m_eventCount->Fill(1);
+
   if(!m_isMC)
   {
      const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
@@ -323,11 +325,11 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
            selHcalIso = hcalIso;
            selEcalIso = ecalIso;
         }
-        if(trackIso<0.15&&hcalIso<3) continue;
+        if(trackIso<0.2&&ecalIso<30) continue;
 
-        if (m_isMC){
+        /*if (m_isMC){
 	  if (!isTrackMatchedToMuon(iEvent, iTrack)) continue;//Matching the track to a GEN muon
-	}
+	}*/
         selTrack = &(*iTrack);
         selMuon = &(*iMuon);
         selVtxChi = vtxChi;
@@ -367,7 +369,6 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
        }
     }
   }
-  m_allEvents.m_eventCount->Fill(1);
   m_allEvents.m_NPassingTag->Fill(anyMuonPass);
 
   if(nTotalMuonTrackCand==0) return false;  
@@ -375,6 +376,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_allEvents.m_ProbeEta->Fill(selTrack->eta());
   m_allEvents.m_ProbePt->Fill(selTrack->pt());
   m_allEvents.m_ProbePhi->Fill(selTrack->phi());
+  m_allEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
   m_allEvents.m_NPassingProbe->Fill(nMuonTrackCand);
   m_allEvents.m_TagEta->Fill(selMuon->eta());
   m_allEvents.m_TagPt->Fill(selMuon->pt());
@@ -393,6 +395,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
     m_passingEvents.m_ProbeEta->Fill(selTrack->eta());
     m_passingEvents.m_ProbePt->Fill(selTrack->pt());
     m_passingEvents.m_ProbePhi->Fill(selTrack->phi());
+    m_passingEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
     m_passingEvents.m_NPassingProbe->Fill(nMuonTrackCand);
     m_passingEvents.m_TagEta->Fill(selMuon->eta());
     m_passingEvents.m_TagPt->Fill(selMuon->pt());
@@ -488,7 +491,7 @@ double MuPlusXFilter_AOD::ECALIsolation(const edm::Event& iEvent, const edm::Eve
       TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
       math::XYZVector idPositionRoot(hitPos.x(),hitPos.y(),hitPos.z());
       math::XYZVector trajRoot(traj.position().x(),traj.position().y(),traj.position().z());
-      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4)
+      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4&&(*hit).energy()>0.3)
       {
          eDR+= (*hit).energy();
       }            
