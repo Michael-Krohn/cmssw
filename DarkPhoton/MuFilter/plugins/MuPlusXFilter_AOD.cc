@@ -98,7 +98,6 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     double TrackIsolation(const edm::Event&, edm::EDGetTokenT<std::vector<reco::Track>>,double, edm::Handle<reco::VertexCollection>, std::vector<reco::Track>::const_iterator&);
     double HCALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack);
     double ECALIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<EcalRecHitCollection>, edm::EDGetTokenT<EcalRecHitCollection>, const reco::TransientTrack);
-
     void GetTransientProjectedCells(const CaloSubdetectorGeometry*, HcalDetId*, reco::TransientTrack);
 
     eventHistos m_allEvents;
@@ -181,12 +180,11 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   using namespace reco;
   using namespace pat;
 
+  m_allEvents.m_eventCount->Fill(1);
   m_allEvents.ResetCutFlow();
   m_passingEvents.ResetCutFlow();
   edm::Handle<edm::TriggerResults> trigResults;
   iEvent.getByToken(trigResults_Label, trigResults);
-  m_allEvents.m_eventCount->Fill(1);
-
   if(!m_isMC)
   {
      const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
@@ -332,9 +330,6 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         }
         if(trackIso<0.2&&ecalIso<30) continue;
 
-        /*if (m_isMC){
-	  if (!isTrackMatchedToMuon(iEvent, iTrack)) continue;//Matching the track to a GEN muon
-	}*/
         selTrack = &(*iTrack);
         selMuon = &(*iMuon);
         selVtxChi = vtxChi;
