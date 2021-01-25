@@ -241,7 +241,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   double highpt=0;
   double muTrackMass=0;
   //Pair our candidate track with a tagging muon to reconstruct a Z
-  if(myMuons.selectedMuons.size()>1)
+  if(myMuons.selectedMuons.size()>0)
   {
      for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
      {
