@@ -22,6 +22,7 @@
 #include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
 #include "TH1F.h"
 
+#include "Math/VectorUtil.h"
 #include <algorithm>
 #include <iostream>
 
@@ -868,6 +869,52 @@ int HCAL::GetProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *Tr
       }
    }
    return j;
+}
+
+double HCAL::GetIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, const reco::TransientTrack track)
+{
+   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
+   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
+   double MatchedEnergy = 0;
+
+   edm::ESHandle<CaloGeometry> TheCALOGeometry;
+   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+
+   const CaloGeometry* caloGeom = TheCALOGeometry.product();
+   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
+
+/*   HcalDetId MatchedCells[20];
+
+   GetTransientProjectedCells(HEGeom,MatchedCells,track);
+
+   if(!hcalRecHits.isValid()) return 1000;
+   const HBHERecHitCollection *hbhe = hcalRecHits.product();
+   for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
+   {
+      HcalDetId id(hbherechit->detid());
+      std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+
+      HcalDetId *match = std::find(std::begin(MatchedCells), std::end(MatchedCells), id);
+      if(match!=std::end(MatchedCells)) MatchedEnergy+=hbherechit->energy();
+   }
+   */
+   if(!hcalRecHits.isValid()) return 1000;
+   const HBHERecHitCollection *hbhe = hcalRecHits.product();
+   for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
+   {
+      HcalDetId id(hbherechit->detid());
+      std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+      const GlobalPoint hitPos = hbhe_cell->getPosition();
+      TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
+      math::XYZVector idPositionRoot(hitPos.x(),hitPos.y(),hitPos.z());
+      math::XYZVector trajRoot(traj.position().x(),traj.position().y(),traj.position().z());
+      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4)
+      {
+         MatchedEnergy+=hbherechit->energy();
+      }
+   }
+ 
+   return MatchedEnergy;
 }
 
 int HCAL::GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, reco::TransientTrack muTrack)

@@ -20,7 +20,7 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
       selectedTracks.push_back(&(*iTrack));
 
-      if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.653) continue;
+      if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.5) continue;
       if (iTrack->pt()<15) continue;
       if (iTrack->pt()>highendcaptrackpt)
       {
