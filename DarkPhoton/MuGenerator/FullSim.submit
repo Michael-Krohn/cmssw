@@ -1,0 +1,15 @@
+Executable           = /data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_2_6/src/DarkPhoton/MuGenerator/ZTT13TeV_SignalGen.sh
+Universe             = vanilla
+Requirements =  Arch=="X86_64" && (Machine != "zebra01.spa.umn.edu") && (Machine != "zebra02.spa.umn.edu") && (Machine != "zebra03.spa.umn.edu") && (Machine != "zebra04.spa.umn.edu")
++CondorGroup = "cmsfarm"
+getenv = True
+request_memory=4000
+nice_user=False
+
+InitialDir           = /data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_2_6/src/DarkPhoton/MuGenerator/
+
+Arguments            = $(process) ZTT13TeV_pythia8_GEN_cfg.py
+output               = log/$(Process).out
+error                = log/$(Process).err
+Log                  = log/$(Process).log
+Queue 1200
