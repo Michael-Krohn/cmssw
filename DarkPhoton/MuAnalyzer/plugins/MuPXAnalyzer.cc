@@ -251,20 +251,39 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
         {
            if((*iMuon)->charge()==(*iTrack)->charge()) continue;
-           if(!(*iMuon)->isGlobalMuon()) continue;
-           if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
+           //if(!(*iMuon)->isGlobalMuon()) continue;
+           if((*iMuon)->isGlobalMuon())
            {
-             Paired=true;
-             nPairs++;
-             if((*iTrack)->pt()>hightrackpt)
-             {
-                highpt=(*iMuon)->pt();
-                pairVtxChi=myTracks.pairvertexchi;
-                muTrackMass=myTracks.MuonTrackMass;
-                selectedMuon = (*iMuon);
-                selectedTrack = (*iTrack); 
-             }
+              if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
+              {
+                Paired=true;
+                nPairs++;
+                if((*iTrack)->pt()>hightrackpt)
+                {
+                   highpt=(*iMuon)->pt();
+                   pairVtxChi=myTracks.pairvertexchi;
+                   muTrackMass=myTracks.MuonTrackMass;
+                   selectedMuon = (*iMuon);
+                   selectedTrack = (*iTrack); 
+                }
+              }
            } 
+           else if((*iMuon)->isTrackerMuon())
+           {
+              if(myTracks.PairTracks(iTrack, (*iMuon)->innerTrack(), transientTrackBuilder))
+              {
+                Paired=true;
+                nPairs++;
+                if((*iTrack)->pt()>hightrackpt)
+                {
+                   highpt=(*iMuon)->pt();
+                   pairVtxChi=myTracks.pairvertexchi;
+                   muTrackMass=myTracks.MuonTrackMass;
+                   selectedMuon = (*iMuon);
+                   selectedTrack = (*iTrack); 
+                }
+              }
+           }
         }
         if(nPairs>0){nPairedTracks=nPairs;} 
      }
