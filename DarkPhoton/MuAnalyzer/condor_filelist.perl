@@ -33,7 +33,7 @@ GetOptions(
 print "$#ARGV\n";
 $nargs = $#ARGV;
 
-if ($#ARGV!=4 && $#ARGV!=6) {
+if ($#ARGV!=3 && $#ARGV!=6) {
     print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] [isMC=True/False] [runRandomTrack=True/False] [runLocally=True/False] [isSig=True/False] [hasDpho=True/False]\n\n";
     print "    --batch (number of files per jobs) (default $batch)\n";
     print "    --start (output file number for first job) (default $startPoint)\n";
@@ -49,14 +49,13 @@ $basecfg=shift @ARGV;
 $filelist=shift @ARGV;
 $cmsRunArguments=shift @ARGV;
 $cmsRunArguments2nd=shift @ARGV;
-$cmsRunArguments3rd=shift @ARGV;
 if($nargs==6) {
   $cmsRunArguments4th=shift @ARGV;
   $cmsRunArguments5th=shift @ARGV;
   print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, $cmsRunArguments3rd, $cmsRunArguments4th, and $cmsRunArguments5th\n";
 }
-if($nargs==4) {
-  print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, and $cmsRunArguments3rd\n";
+if($nargs==3) {
+  print "cmsRun Arguments: $cmsRunArguments and $cmsRunArguments2nd\n";
 }
 
 if ($jobBase eq "default") {
@@ -107,8 +106,8 @@ if ($nosubmit) {
     open(SUBMIT,"|condor_submit");
 }
 print(SUBMIT "Executable = $executable\n");
-if($nargs==4) {
-  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\"\n");
+if($nargs==3) {
+  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd\"\n");
 }
 if($nargs==6) {
   print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\"\n");
@@ -169,8 +168,8 @@ while ($i<=$#flist) {
     $log="$prodSpace/$jobBase/log/$stub.log";
     $elog="$prodSpace/$jobBase/log/$stub.err";
     $sleep=(($ii*2) % 60)+2;  # Never sleep more than a ~minute, but always sleep at least 2
-    if($nargs==4) {
-      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd\n");
+    if($nargs==3) {
+      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd\n");
     }
     if($nargs==6) {
       print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\n");
