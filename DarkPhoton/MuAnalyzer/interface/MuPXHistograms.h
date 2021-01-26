@@ -26,6 +26,7 @@ class MuPXHistograms{
     void ResetCutFlow();
 
   public:
+    TH1F* m_eventWeight;
     TH1F* m_eventCount;
     TH1F* m_cutProgress;
     TH1F* m_MuonTrackMass;
@@ -45,6 +46,9 @@ class MuPXHistograms{
     TH1F* m_ProbeEcalIso;
     TH2F* m_ProbeCombinedIso;     
     double cutProgress;
+    //Multiple Paired Track Hists
+    TH1F* m_SmallestCone;
+    TH1F* m_AverageDr;
         
 };
 #endif
