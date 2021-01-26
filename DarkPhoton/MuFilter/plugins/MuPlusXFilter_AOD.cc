@@ -68,6 +68,9 @@
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
 #include "RecoVertex/KalmanVertexFit/interface/KalmanVertexFitter.h"
 
+// Event Weights
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+
 //
 // class declaration
 //
@@ -110,6 +113,7 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
     edm::EDGetTokenT<edm::TriggerResults> trigResults_Label;
     edm::EDGetToken m_genParticleToken;
+    edm::EDGetToken m_genInfoToken;
     const reco::Track* selTrack;
     const reco::Muon* selMuon;
     double selVtxChi;
@@ -118,6 +122,7 @@ class MuPlusXFilter_AOD : public edm::stream::EDFilter<>  {
     double selHcalIso;
     double selEcalIso;
     bool m_isMC;
+    double weight_;
 
 };
 
@@ -153,6 +158,7 @@ MuPlusXFilter_AOD::MuPlusXFilter_AOD(const edm::ParameterSet& iConfig):
    //now do what ever initialization is needed
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
+    m_genInfoToken = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
   }
 
 }
@@ -187,6 +193,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(trigResults_Label, trigResults);
   if(!m_isMC)
   {
+     weight_=1;
      const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
      std::string pathName="HLT_IsoMu24_v";
      unsigned int trigIndex=0;
@@ -206,6 +213,12 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         std::cout<<"Failed trigger" << std::endl;
         return false;
      }
+  }
+  else
+  {
+     edm::Handle<GenEventInfoProduct> eventInfo;
+     iEvent.getByToken(m_genInfoToken, eventInfo);
+     weight_= eventInfo->weight();
   }
   m_allEvents.IncCutFlow();
   m_passingEvents.IncCutFlow();
@@ -369,43 +382,45 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
        }
     }
   }
-  m_allEvents.m_NPassingTag->Fill(anyMuonPass);
+  m_allEvents.m_NPassingTag->Fill(anyMuonPass,weight_);
 
   if(nTotalMuonTrackCand==0) return false;  
-  m_allEvents.m_MuonTrackMass->Fill(selMuonTrackMass);
-  m_allEvents.m_ProbeEta->Fill(selTrack->eta());
-  m_allEvents.m_ProbePt->Fill(selTrack->pt());
-  m_allEvents.m_ProbePhi->Fill(selTrack->phi());
-  m_allEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
-  m_allEvents.m_NPassingProbe->Fill(nMuonTrackCand);
-  m_allEvents.m_TagEta->Fill(selMuon->eta());
-  m_allEvents.m_TagPt->Fill(selMuon->pt());
-  m_allEvents.m_TagPhi->Fill(selMuon->phi());
-  m_allEvents.m_TagProbeVtxChi->Fill(selVtxChi);
-  m_allEvents.m_ProbeTrackIso->Fill(selTrackIso);
-  m_allEvents.m_ProbeHcalIso->Fill(selHcalIso);
-  m_allEvents.m_ProbeEcalIso->Fill(selEcalIso);
-  m_allEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
+  m_allEvents.m_eventWeight->Fill(weight_);
+  m_allEvents.m_MuonTrackMass->Fill(selMuonTrackMass,weight_);
+  m_allEvents.m_ProbeEta->Fill(selTrack->eta(),weight_);
+  m_allEvents.m_ProbePt->Fill(selTrack->pt(),weight_);
+  m_allEvents.m_ProbePhi->Fill(selTrack->phi(),weight_);
+  m_allEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi(),weight_);
+  m_allEvents.m_NPassingProbe->Fill(nMuonTrackCand,weight_);
+  m_allEvents.m_TagEta->Fill(selMuon->eta(),weight_);
+  m_allEvents.m_TagPt->Fill(selMuon->pt(),weight_);
+  m_allEvents.m_TagPhi->Fill(selMuon->phi(),weight_);
+  m_allEvents.m_TagProbeVtxChi->Fill(selVtxChi,weight_);
+  m_allEvents.m_ProbeTrackIso->Fill(selTrackIso,weight_);
+  m_allEvents.m_ProbeHcalIso->Fill(selHcalIso,weight_);
+  m_allEvents.m_ProbeEcalIso->Fill(selEcalIso,weight_);
+  m_allEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso,weight_);
  
   if (nMuonTrackCand > 0)
   {
     std::cout <<"PASSES"<<std::endl;
     m_passingEvents.m_eventCount->Fill(1);
-    m_passingEvents.m_MuonTrackMass->Fill(selMuonTrackMass);
-    m_passingEvents.m_ProbeEta->Fill(selTrack->eta());
-    m_passingEvents.m_ProbePt->Fill(selTrack->pt());
-    m_passingEvents.m_ProbePhi->Fill(selTrack->phi());
-    m_passingEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi());
-    m_passingEvents.m_NPassingProbe->Fill(nMuonTrackCand);
-    m_passingEvents.m_TagEta->Fill(selMuon->eta());
-    m_passingEvents.m_TagPt->Fill(selMuon->pt());
-    m_passingEvents.m_TagPhi->Fill(selMuon->phi());
-    m_passingEvents.m_NPassingTag->Fill(anyMuonPass);
-    m_passingEvents.m_TagProbeVtxChi->Fill(selVtxChi);
-    m_passingEvents.m_ProbeTrackIso->Fill(selTrackIso);
-    m_passingEvents.m_ProbeHcalIso->Fill(selHcalIso);
-    m_passingEvents.m_ProbeEcalIso->Fill(selEcalIso);
-    m_passingEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso);
+    m_passingEvents.m_eventWeight->Fill(weight_);
+    m_passingEvents.m_MuonTrackMass->Fill(selMuonTrackMass,weight_);
+    m_passingEvents.m_ProbeEta->Fill(selTrack->eta(),weight_);
+    m_passingEvents.m_ProbePt->Fill(selTrack->pt(),weight_);
+    m_passingEvents.m_ProbePhi->Fill(selTrack->phi(),weight_);
+    m_passingEvents.m_ProbeEtaPhi->Fill(selTrack->eta(),selTrack->phi(),weight_);
+    m_passingEvents.m_NPassingProbe->Fill(nMuonTrackCand,weight_);
+    m_passingEvents.m_TagEta->Fill(selMuon->eta(),weight_);
+    m_passingEvents.m_TagPt->Fill(selMuon->pt(),weight_);
+    m_passingEvents.m_TagPhi->Fill(selMuon->phi(),weight_);
+    m_passingEvents.m_NPassingTag->Fill(anyMuonPass,weight_);
+    m_passingEvents.m_TagProbeVtxChi->Fill(selVtxChi,weight_);
+    m_passingEvents.m_ProbeTrackIso->Fill(selTrackIso,weight_);
+    m_passingEvents.m_ProbeHcalIso->Fill(selHcalIso,weight_);
+    m_passingEvents.m_ProbeEcalIso->Fill(selEcalIso,weight_);
+    m_passingEvents.m_ProbeCombinedIso->Fill(selTrackIso,selHcalIso,weight_);
     return true;
   }else
   {
