@@ -22,9 +22,9 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v17')
+        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v11_L1v1')
 else:
-        process.GlobalTag.globaltag = cms.string('102X_dataRun2_Prompt_v11')
+        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v11_L1v1')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
@@ -33,12 +33,12 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('ZTT_13TeV_RequireOneMu.txt')
+mylist = FileUtils.loadListFromFile('WJetsToLNu.txt')
 readFiles = cms.untracked.vstring( *mylist )
 
 #Uncomment when running over condor
 process.source = cms.Source("PoolSource",
-    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
+    # duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     # replace 'myfile.root' with the source file you want to use
     fileNames = readFiles
     
@@ -57,7 +57,7 @@ process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',
     EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
     TriggerResultsTag = cms.InputTag("TriggerResults","","HLT"),
     genParticles = cms.InputTag("genParticles"),
-    isMC = cms.untracked.bool(False)
+    isMC = cms.untracked.bool(True)
 )
 
 process.USER = cms.OutputModule("PoolOutputModule",
