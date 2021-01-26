@@ -27,7 +27,7 @@ MuPXHistograms::MuPXHistograms()
 }
 
 void MuPXHistograms::book(edm::Service<TFileService> fs){
-
+  m_eventWeight = fs->make<TH1F>("eventWeight",";Weight; Events",100, -1, 10);
   m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
@@ -46,6 +46,9 @@ void MuPXHistograms::book(edm::Service<TFileService> fs){
   m_ProbeEcalIso = fs->make<TH1F>("ProbeEcalIsolation","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   m_ProbeCombinedIso = fs->make<TH2F>("ProbeCombinedIsolation","; Track Based Isolation; Hcal energy in matched hits (GeV); Events", 200, 0, 5, 200, 0, 8);
   m_NPassingProbe = fs->make<TH1F>("NTracksPassingProbe","; Tracks Passing Probe Selection; Events", 20, -0.5, 19.5);
+  //Multiple Paired Tracks Histograms
+  m_SmallestCone = fs->make<TH1F>("SmallestConeSize","; Smallest #Delta R Cone that contains all paired tracks; Events", 50, 0, 4);
+  m_AverageDr = fs->make<TH1F>("AverageDr","; Average #Delta R between all paired tracks;", 100, 0, 5);
 }
 
 void MuPXHistograms::IncCutFlow()

@@ -138,6 +138,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetToken m_trigResultsToken;
     edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
     std::vector<std::string> m_muonPathsToPass;
+    std::vector<const reco::Track*> pairedTracks;
     const reco::Track* selectedTrack;
     const reco::Muon* selectedMuon;
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label;
@@ -220,13 +221,24 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
 
-  myHistograms.m_eventCount->Fill(0.5);
+  if(m_isMC)
+  {
+     edm::Handle<GenEventInfoProduct> eventInfo;
+     iEvent.getByToken(m_genInfoToken, eventInfo);
+     weight_  = eventInfo->weight();
+     myHistograms.m_eventWeight->Fill(weight_);
+  }
+  else
+  {
+     weight_=1;
+  }
+  myHistograms.m_eventCount->Fill(0.5,weight_);
   //if(!founddpho){return;}
   myHistograms.IncCutFlow();
  
   myTracks.SelectTracks(iEvent, trackCollection_label);
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size());
+//  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
  
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);  
@@ -257,7 +269,9 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
               if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
               {
                 Paired=true;
+                if(nPairs==0){pairedTracks.clear();}
                 nPairs++;
+                pairedTracks.push_back((*iTrack));
                 if((*iTrack)->pt()>hightrackpt)
                 {
                    highpt=(*iMuon)->pt();
@@ -273,7 +287,9 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
               if(myTracks.PairTracks(iTrack, (*iMuon)->innerTrack(), transientTrackBuilder))
               {
                 Paired=true;
+                if(nPairs==0){pairedTracks.clear();}
                 nPairs++;
+                pairedTracks.push_back((*iTrack));
                 if((*iTrack)->pt()>hightrackpt)
                 {
                    highpt=(*iMuon)->pt();
@@ -294,27 +310,48 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
  // myHistograms.IncCutFlow();
   if(myMuons.highmuonpt<26.){return;}
   myHistograms.IncCutFlow();
-  myHistograms.m_NPassingProbe->Fill(nPairedTracks);
+  myHistograms.m_NPassingProbe->Fill(nPairedTracks,weight_);
  
   edm::Handle <reco::VertexCollection> vtxHandle;
   iEvent.getByToken(primaryVertices_Label, vtxHandle);
  
   if(Paired)
   {
-     myHistograms.m_ProbeTrackIso->Fill(myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt());
-     myHistograms.m_ProbeEcalIso->Fill(myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack)));
-     myHistograms.m_ProbeHcalIso->Fill(myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack)));
-     myHistograms.m_TagEta->Fill(selectedMuon->eta());
-     myHistograms.m_TagPhi->Fill(selectedMuon->phi());
-     myHistograms.m_TagEtaPhi->Fill(selectedMuon->eta(),selectedMuon->phi());
-     myHistograms.m_TagProbeVtxChi->Fill(pairVtxChi);
-     myHistograms.m_TagPt->Fill(selectedMuon->pt());
-     myHistograms.m_ProbePt->Fill(selectedTrack->pt());
-     myHistograms.m_ProbeEta->Fill(selectedTrack->eta());
-     myHistograms.m_ProbePhi->Fill(selectedTrack->phi());
-     myHistograms.m_ProbeEtaPhi->Fill(selectedTrack->eta(),selectedTrack->phi());
-     myHistograms.m_MuonTrackMass->Fill(muTrackMass);
+     myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
+     myHistograms.m_ProbeTrackIso->Fill(myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt(),weight_);
+     myHistograms.m_ProbeEcalIso->Fill(myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
+     myHistograms.m_ProbeHcalIso->Fill(myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
+     myHistograms.m_TagEta->Fill(selectedMuon->eta(),weight_);
+     myHistograms.m_TagPhi->Fill(selectedMuon->phi(),weight_);
+     myHistograms.m_TagEtaPhi->Fill(selectedMuon->eta(),selectedMuon->phi(),weight_);
+     myHistograms.m_TagProbeVtxChi->Fill(pairVtxChi,weight_);
+     myHistograms.m_TagPt->Fill(selectedMuon->pt(),weight_);
+     myHistograms.m_ProbePt->Fill(selectedTrack->pt(),weight_);
+     myHistograms.m_ProbeEta->Fill(selectedTrack->eta(),weight_);
+     myHistograms.m_ProbePhi->Fill(selectedTrack->phi(),weight_);
+     myHistograms.m_ProbeEtaPhi->Fill(selectedTrack->eta(),selectedTrack->phi(),weight_);
+     myHistograms.m_MuonTrackMass->Fill(muTrackMass,weight_);
      myHistograms.IncCutFlow();
+
+     //Study multiple paired tracks
+     double largestDR = 0;
+     double drSum = 0;
+     int drcount = 0;
+     for(std::vector<const reco::Track*>::const_iterator iTrack = pairedTracks.begin(); iTrack != pairedTracks.end(); ++iTrack)
+     {
+        for(std::vector<const reco::Track*>::const_iterator iTrack2 = pairedTracks.begin(); iTrack2 != pairedTracks.end(); ++iTrack2)
+        {
+           if(iTrack!=iTrack2)
+           {
+             double DR = deltaR((*iTrack)->eta(),(*iTrack)->phi(),(*iTrack2)->eta(),(*iTrack2)->phi());
+             drcount++;
+             drSum+=DR;
+             if(DR>largestDR){largestDR=DR;} 
+           }
+        }
+     }
+     myHistograms.m_SmallestCone->Fill(largestDR/2.,weight_);
+     if(drcount>0){myHistograms.m_AverageDr->Fill(drSum/drcount,weight_);}
   }
 }
 
