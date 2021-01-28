@@ -253,17 +253,21 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   double highpt=0;
   double muTrackMass=0;
   //Pair our candidate track with a tagging muon to reconstruct a Z
-  if(myMuons.selectedMuons.size()>0)
-  {
-     for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
+  double MuonTrackMass=0;
+
+
+  //Looping over vertices and verifying there is at least 1 good one. Might be unnecessary since vertex fitting is performed later.
+
+  for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
      {
         double hightrackpt=0;
         int nPairs=0;
-        if((*iMuon)->pt()<highpt) continue;
+        //if((*iMuon)->pt()<highpt) continue;
         for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
         {
            if((*iMuon)->charge()==(*iTrack)->charge()) continue;
            //if(!(*iMuon)->isGlobalMuon()) continue;
+           if((*iMuon)->pt()<highpt){continue;}
            if((*iMuon)->isGlobalMuon())
            {
               if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
@@ -303,7 +307,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         }
         if(nPairs>0){nPairedTracks=nPairs;} 
      }
-  }
   
   myHistograms.IncCutFlow();
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
@@ -311,13 +314,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   if(myMuons.highmuonpt<26.){return;}
   myHistograms.IncCutFlow();
   myHistograms.m_NPassingProbe->Fill(nPairedTracks,weight_);
- 
+  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_); 
   edm::Handle <reco::VertexCollection> vtxHandle;
   iEvent.getByToken(primaryVertices_Label, vtxHandle);
  
   if(Paired)
   {
-     myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
      myHistograms.m_ProbeTrackIso->Fill(myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt(),weight_);
      myHistograms.m_ProbeEcalIso->Fill(myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
      myHistograms.m_ProbeHcalIso->Fill(myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
@@ -350,8 +352,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
            }
         }
      }
-     myHistograms.m_SmallestCone->Fill(largestDR/2.,weight_);
-     if(drcount>0){myHistograms.m_AverageDr->Fill(drSum/drcount,weight_);}
+     if(drcount>0)
+     {
+        myHistograms.m_SmallestCone->Fill(largestDR/2.,weight_);
+        myHistograms.m_AverageDr->Fill(drSum/drcount,weight_);
+     }
   }
 }
 
