@@ -185,15 +185,22 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   using namespace std;
   using namespace reco;
   using namespace pat;
-
-  m_allEvents.m_eventCount->Fill(1);
+  
+  if(m_isMC)
+  {
+     edm::Handle<GenEventInfoProduct> eventInfo;
+     iEvent.getByToken(m_genInfoToken, eventInfo);
+     weight_= eventInfo->weight();
+     m_allEvents.m_eventWeight->Fill(weight_);
+  }
+  else{weight_=1;}
+  m_allEvents.m_eventCount->Fill(1, weight_);
   m_allEvents.ResetCutFlow();
   m_passingEvents.ResetCutFlow();
   edm::Handle<edm::TriggerResults> trigResults;
   iEvent.getByToken(trigResults_Label, trigResults);
   if(!m_isMC)
   {
-     weight_=1;
      const edm::TriggerNames& trigNames = iEvent.triggerNames(*trigResults);
      std::string pathName="HLT_IsoMu24_v";
      unsigned int trigIndex=0;
@@ -213,12 +220,6 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
         std::cout<<"Failed trigger" << std::endl;
         return false;
      }
-  }
-  else
-  {
-     edm::Handle<GenEventInfoProduct> eventInfo;
-     iEvent.getByToken(m_genInfoToken, eventInfo);
-     weight_= eventInfo->weight();
   }
   m_allEvents.IncCutFlow();
   m_passingEvents.IncCutFlow();
@@ -385,7 +386,6 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   m_allEvents.m_NPassingTag->Fill(anyMuonPass,weight_);
 
   if(nTotalMuonTrackCand==0) return false;  
-  m_allEvents.m_eventWeight->Fill(weight_);
   m_allEvents.m_MuonTrackMass->Fill(selMuonTrackMass,weight_);
   m_allEvents.m_ProbeEta->Fill(selTrack->eta(),weight_);
   m_allEvents.m_ProbePt->Fill(selTrack->pt(),weight_);
@@ -404,7 +404,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (nMuonTrackCand > 0)
   {
     std::cout <<"PASSES"<<std::endl;
-    m_passingEvents.m_eventCount->Fill(1);
+    m_passingEvents.m_eventCount->Fill(1,weight_);
     m_passingEvents.m_eventWeight->Fill(weight_);
     m_passingEvents.m_MuonTrackMass->Fill(selMuonTrackMass,weight_);
     m_passingEvents.m_ProbeEta->Fill(selTrack->eta(),weight_);

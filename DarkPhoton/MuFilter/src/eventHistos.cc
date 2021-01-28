@@ -29,7 +29,7 @@ eventHistos::eventHistos()
 void eventHistos::book(TFileDirectory histFolder){
 
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1); 
-  m_eventWeight = histFolder.make<TH1F>("eventWeight","; Weight; Events", 100, -1, 10);
+  m_eventWeight = histFolder.make<TH1F>("eventWeight","; Weight; Events", 1000, -10, 100);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
   m_TagEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
