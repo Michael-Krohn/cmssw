@@ -194,7 +194,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
      m_allEvents.m_eventWeight->Fill(weight_);
   }
   else{weight_=1;}
-  m_allEvents.m_eventCount->Fill(1, weight_);
+  m_allEvents.m_eventCount->Fill(0.5, weight_);
   m_allEvents.ResetCutFlow();
   m_passingEvents.ResetCutFlow();
   edm::Handle<edm::TriggerResults> trigResults;
@@ -404,7 +404,7 @@ MuPlusXFilter_AOD::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
   if (nMuonTrackCand > 0)
   {
     std::cout <<"PASSES"<<std::endl;
-    m_passingEvents.m_eventCount->Fill(1,weight_);
+    m_passingEvents.m_eventCount->Fill(0.5,weight_);
     m_passingEvents.m_eventWeight->Fill(weight_);
     m_passingEvents.m_MuonTrackMass->Fill(selMuonTrackMass,weight_);
     m_passingEvents.m_ProbeEta->Fill(selTrack->eta(),weight_);
