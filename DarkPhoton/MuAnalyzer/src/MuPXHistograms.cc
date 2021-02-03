@@ -27,7 +27,7 @@ MuPXHistograms::MuPXHistograms()
 }
 
 void MuPXHistograms::book(edm::Service<TFileService> fs){
-  m_eventWeight = fs->make<TH1F>("eventWeight",";Weight; Events",100, -1, 10);
+  m_eventWeight = fs->make<TH1F>("eventWeight",";Weight; Events",200, -100, 100);
   m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );

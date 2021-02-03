@@ -20,7 +20,7 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
       selectedTracks.push_back(&(*iTrack));
 
-      if (fabs(iTrack->eta()) > 2.5 || fabs(iTrack->eta()) < 1.3) continue;
+      if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.3) continue;
       if (iTrack->pt()<15) continue;
       if (iTrack->pt()>highendcaptrackpt)
       {
@@ -73,7 +73,7 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
 }
 
 bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
-
+  tracksToVertex.clear();
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));
   tracksToVertex.push_back(transientTrackBuilder->build(*MuonTrack));
 
@@ -89,7 +89,7 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
       TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
       TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
       one_momentum = one_TSCP.momentum();
-      if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
+      //if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
       two_momentum = two_TSCP.momentum();
 
       double total_energy = sqrt(one_momentum.mag2() + 0.106*0.106) + sqrt(two_momentum.mag2() + 0.106*0.106);
@@ -111,7 +111,7 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
 }
 
 bool Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
-
+  tracksToVertex.clear();
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));
   tracksToVertex.push_back(transientTrackBuilder->build(*MuonTrack));
 
@@ -127,7 +127,7 @@ bool Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrac
       TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
       TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
       one_momentum = one_TSCP.momentum();
-      if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
+      //if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
       two_momentum = two_TSCP.momentum();
 
       double total_energy = sqrt(one_momentum.mag2() + 0.106*0.106) + sqrt(two_momentum.mag2() + 0.106*0.106);

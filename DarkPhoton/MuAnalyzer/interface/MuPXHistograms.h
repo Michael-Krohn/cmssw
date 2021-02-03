@@ -49,6 +49,5 @@ class MuPXHistograms{
     //Multiple Paired Track Hists
     TH1F* m_SmallestCone;
     TH1F* m_AverageDr;
-        
 };
 #endif
