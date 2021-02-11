@@ -13,6 +13,7 @@
 #include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
+#include "DarkPhoton/MuAnalyzer/interface/MuPXEventInfo.h"
 
 class TH1F;
 class TH2F;
@@ -21,10 +22,10 @@ class MuPXHistograms{
   public:
     MuPXHistograms();
 
-    void book(edm::Service<TFileService> fs);
+    void book(TFileDirectory histFolder);
     void IncCutFlow();
     void ResetCutFlow();
-
+    void FillHists(MuPXEventInfo);
   public:
     TH1F* m_eventWeight;
     TH1F* m_eventCount;
@@ -49,5 +50,17 @@ class MuPXHistograms{
     //Multiple Paired Track Hists
     TH1F* m_SmallestCone;
     TH1F* m_AverageDr;
+    //Study Tag Muon selection
+    TH1F* m_TagProbeDr;
+    TH1F* m_TagTrackIso;
+    TH1F* m_TagHcalIso;
+    TH1F* m_TagEcalIso;
+    TH1F* m_NJets;
+    TH2F* m_CaloSumJetE;
+    TH2F* m_HCALIsoJetDr;
+    TH2F* m_ECALIsoJetDr;
+    TH1F* m_ProbeJetDr;
+    TH1F* m_JetPt;
+
 };
 #endif

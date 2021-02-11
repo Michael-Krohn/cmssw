@@ -93,11 +93,16 @@
 //Event Weights
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 
+//Jets
+#include "DataFormats/JetReco/interface/PFJet.h"
+#include "DataFormats/JetReco/interface/PFJetCollection.h"
+
 #include "DarkPhoton/MuAnalyzer/interface/MuPXHistograms.h"
 #include "DarkPhoton/MuAnalyzer/interface/CSC.h"
 #include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
 #include "DarkPhoton/MuAnalyzer/interface/Muons.h"
 #include "DarkPhoton/MuAnalyzer/interface/Tracks.h"
+#include "DarkPhoton/MuAnalyzer/interface/Jets.h"
 #include "DarkPhoton/MuAnalyzer/interface/HCAL.h"
 #include "DarkPhoton/MuAnalyzer/interface/ECAL.h"
 
@@ -126,7 +131,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MuPXHistograms);
-    bool MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, MuPXHistograms myHistograms, double FmuE, double minCSCdr);
+    bool MatchTrackToMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, Muons myMuons);
 
     edm::EDGetToken m_recoMuonToken;
     edm::EDGetToken m_simTracksToken;
@@ -145,11 +150,13 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label;
     edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
     edm::EDGetToken m_theSTAMuonLabel;
+    edm::EDGetToken m_pfJetCollection_label;
     bool m_isMC;
     double weight_;
     double standaloneE;
     MuPXHistograms myHistograms;
-
+    MuPXHistograms muProbe;
+    MuPXHistograms nonMuonProbe;
 };
 
 //
@@ -170,7 +177,8 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
   reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
-  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true))
+  m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
+  m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false))
 {
    //now do what ever initialization is needed
   if (m_isMC){
@@ -185,8 +193,9 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   usesResource("TFileService");
   edm::Service<TFileService> fs;
 
-  myHistograms.book(fs);
-
+  //myHistograms.book(fs->mkdir("allEvents"));
+  //muProbe.book(fs->mkdir("muProbe"));
+  nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
 }
 
 
@@ -210,11 +219,13 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
   Muons myMuons;
   EventInfo myEventInfo;
+  MuPXEventInfo info;
   Tracks myTracks;
+  Jets myJets;
   HCAL myHCAL;
   ECAL myECAL;
 
-  myHistograms.ResetCutFlow();
+  //myHistograms.ResetCutFlow();
 
   edm::ESHandle<MagneticField> theMGField;
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
@@ -226,18 +237,17 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      edm::Handle<GenEventInfoProduct> eventInfo;
      iEvent.getByToken(m_genInfoToken, eventInfo);
      weight_  = eventInfo->weight();
-     myHistograms.m_eventWeight->Fill(weight_);
   }
   else
   {
      weight_=1;
   }
-  myHistograms.m_eventCount->Fill(0.5,weight_);
   //if(!founddpho){return;}
-  myHistograms.IncCutFlow();
+  info.cutProgress++;
  
   myTracks.SelectTracks(iEvent, trackCollection_label);
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
+  myJets.SelectJets(iEvent, m_pfJetCollection_label);
 //  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
  
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
@@ -308,33 +318,27 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if(nPairs>0){nPairedTracks=nPairs;} 
      }
   
-  myHistograms.IncCutFlow();
+  info.cutProgress++;
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
- // myHistograms.IncCutFlow();
   if(myMuons.highmuonpt<26.){return;}
-  myHistograms.IncCutFlow();
-  myHistograms.m_NPassingProbe->Fill(nPairedTracks,weight_);
-  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_); 
+  info.cutProgress++;
+  info.eventWeight=weight_;
+  info.nPassingProbe=nPairedTracks;
+  info.nPassingTag=myMuons.selectedMuons.size();
+  info.paired=Paired;
   edm::Handle <reco::VertexCollection> vtxHandle;
   iEvent.getByToken(primaryVertices_Label, vtxHandle);
  
   if(Paired)
   {
-     myHistograms.m_ProbeTrackIso->Fill(myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt(),weight_);
-     myHistograms.m_ProbeEcalIso->Fill(myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
-     myHistograms.m_ProbeHcalIso->Fill(myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack)),weight_);
-     myHistograms.m_TagEta->Fill(selectedMuon->eta(),weight_);
-     myHistograms.m_TagPhi->Fill(selectedMuon->phi(),weight_);
-     myHistograms.m_TagEtaPhi->Fill(selectedMuon->eta(),selectedMuon->phi(),weight_);
-     myHistograms.m_TagProbeVtxChi->Fill(pairVtxChi,weight_);
-     myHistograms.m_TagPt->Fill(selectedMuon->pt(),weight_);
-     myHistograms.m_ProbePt->Fill(selectedTrack->pt(),weight_);
-     myHistograms.m_ProbeEta->Fill(selectedTrack->eta(),weight_);
-     myHistograms.m_ProbePhi->Fill(selectedTrack->phi(),weight_);
-     myHistograms.m_ProbeEtaPhi->Fill(selectedTrack->eta(),selectedTrack->phi(),weight_);
-     myHistograms.m_MuonTrackMass->Fill(muTrackMass,weight_);
-     myHistograms.IncCutFlow();
-
+     info.cutProgress++;
+     info.muonTrackMass=muTrackMass;
+     info.probeTrack=selectedTrack;
+     info.tagMuon=selectedMuon;
+     info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack);
+     info.probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack));
+     info.probeHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
+     info.tagProbeVtxChi=pairVtxChi;
      //Study multiple paired tracks
      double largestDR = 0;
      double drSum = 0;
@@ -354,26 +358,53 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      }
      if(drcount>0)
      {
-        myHistograms.m_SmallestCone->Fill(largestDR/2.,weight_);
-        myHistograms.m_AverageDr->Fill(drSum/drcount,weight_);
+        info.smallestCone=largestDR/2.;
+        info.averageDr=drSum/drcount;
      }
+     info.tagTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,selectedMuon->momentum().eta(),selectedMuon->momentum().phi(),0.3,vtxHandle,selectedMuon->innerTrack());
+     info.tagEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
+     info.tagHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
+
+    //Jet analysis
+    int njets=0;
+    double nearestJetDr=-1;
+    double nearestJetE;
+    for(std::vector<const reco::PFJet*>::const_iterator it = myJets.selectedJets.begin(); it!=myJets.selectedJets.end();++it)
+    {
+      njets++;
+      double jetDr=deltaR(selectedTrack->eta(),selectedTrack->phi(),(*it)->eta(),(*it)->phi());
+      if(jetDr<nearestJetDr||nearestJetDr<0)
+      {
+        nearestJetDr=jetDr;
+        nearestJetE=(*it)->energy();
+      }
+      //myHistograms.m_JetPt->Fill((*it)->pt(),weight_);
+    }
+    info.nearestJetE=nearestJetE;
+    info.nearestJetDr=nearestJetDr;
+    info.nJets=njets;
   }
+  //myHistograms.FillHists(info);
+  bool matched = MatchTrackToMuon(iEvent, selectedTrack, myMuons);
+  //if(matched){muProbe.FillHists(info);}
+  if(!matched){nonMuonProbe.FillHists(info);}
+
 }
 
-bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, MuPXHistograms myHistograms, double FmuE, double minCSCdr)
+bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selectedTrack, Muons myMuons)
 {
   bool matched = false;
-  double mindE = 1.;
+  double mindPt = 1.;
   if(myMuons.selectedMuons.size()==0){return matched;}
   for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
   {
-     //if(!(*iMuon)->isGlobalMuon()) {continue;}
-     double dR = deltaR((*iMuon)->eta(),(*iMuon)->phi(),mother.eta(),mother.phi());
-     double dEOverE =  std::abs(std::sqrt(pow((*iMuon)->p(),2)+pow(0.1056,2))-mother.E())/mother.E();
+     if(!(*iMuon)->isGlobalMuon()) {continue;}
+     double dR = deltaR((*iMuon)->eta(),(*iMuon)->phi(),selectedTrack->eta(),selectedTrack->phi());
+     double dPtOverPt =  std::abs(((*iMuon)->pt()-selectedTrack->pt())/selectedTrack->pt());
      if(dR > 0.2) continue;
-     if(dEOverE<mindE)
+     if(dPtOverPt<mindPt)
      {
-        mindE=dEOverE;
+        mindPt=dPtOverPt;
 	matched=true;
      }
   }

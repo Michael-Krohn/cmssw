@@ -17,10 +17,13 @@ def stack(name,lumi, xtitle,log, rebin=False):
    TTTo2L2NuCx=88.29
    DYJetsCx=6077.22
    DYJets10to50Cx=18610
-   
-   dataAnalyzed = ROOT.TFile(resultsDir+"/Data/hists/MuPxSkim_analyzed.root","READ")
+   WWCx=118.7 
+  
+   dataAnalyzed = ROOT.TFile(resultsDir+"/Data/hists/runD_analyzed.root","READ")
    wJetsMonitor = ROOT.TFile(resultsDir+"/WJets/hists/WJets_monitor.root","READ")
    wJetsAnalyzed = ROOT.TFile(resultsDir+"/WJets/hists/WJets_analyzed.root","READ")
+   WWMonitor = ROOT.TFile(resultsDir+"/WW/hists/WW_monitor.root","READ")
+   WWAnalyzed = ROOT.TFile(resultsDir+"/WW/hists/WW_analyzed.root","READ")
    TTBarMonitor = ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_monitor.root","READ")
    TTBarAnalyzed = ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_analyzed.root","READ")
    TTBar2LMonitor = ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_monitor.root","READ")
@@ -31,12 +34,14 @@ def stack(name,lumi, xtitle,log, rebin=False):
    DYJets10to50Analyzed = ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_analyzed.root","READ")
    
    wJetsEff = calcScaleFactor(wJetsMonitor,wJetsAnalyzed,name)
+   WWEff = calcScaleFactor(WWMonitor,WWAnalyzed,name)
    TTBarEff = calcScaleFactor(TTBarMonitor,TTBarAnalyzed,name)
    TTBar2LEff = calcScaleFactor(TTBar2LMonitor,TTBar2LAnalyzed,name)
    DYJetsEff = calcScaleFactor(DYJetsMonitor,DYJetsAnalyzed,name)
    DYJets10to50Eff = calcScaleFactor(DYJets10to50Monitor,DYJets10to50Analyzed,name)   
 
    wJetsNevents = WJetsCx*1000*float(arg.lumi)*wJetsEff
+   WWNevents = WWCx*1000*float(arg.lumi)*WWEff
    TTBarNevents = TTToSemiLeptonicCx*1000*float(arg.lumi)*TTBarEff
    TTBar2LNevents = TTToSemiLeptonicCx/4.*1000*float(arg.lumi)*TTBar2LEff
    DYJetsNevents = DYJetsCx*1000*float(arg.lumi)*DYJetsEff
@@ -48,6 +53,10 @@ def stack(name,lumi, xtitle,log, rebin=False):
    wJetsMass.Scale(wJetsNevents/wJetsMass.Integral())
    wJetsMass.SetFillColor(3)
    wJetsMass.SetLineWidth(0)
+   WWMass = WWAnalyzed.Get("demo/"+name)
+   WWMass.Scale(WWNevents/WWMass.Integral())
+   WWMass.SetFillColor(7)
+   WWMass.SetLineWidth(0)
    DYJetsMass = DYJetsAnalyzed.Get("demo/"+name)
    DYJetsMass.Scale(DYJetsNevents/DYJetsMass.Integral())
    DYJetsMass.SetFillColor(4)
@@ -67,13 +76,16 @@ def stack(name,lumi, xtitle,log, rebin=False):
 
    if(rebin):
       wJetsMass.Rebin(2)
+      WWMass.Rebin(2)
       DYJetsMass.Rebin(2)
+      DYJets10to50Mass.Rebin(2)
       TTBarMass.Rebin(2)
       TTBar2LMass.Rebin(2)
 
    stackplot.Add(TTBar2LMass)
    stackplot.Add(TTBarMass)
    stackplot.Add(wJetsMass)
+   stackplot.Add(WWMass)
    stackplot.Add(DYJetsMass)
    stackplot.Add(DYJets10to50Mass)   
 
@@ -86,10 +98,7 @@ def stack(name,lumi, xtitle,log, rebin=False):
    pad1.SetLeftMargin(0.13)
    pad1.Draw()
    pad1.cd()
-   
-   if(log):
-      pad1.SetLogy()
-   stackplot.Draw("hist")
+  
    dataMass = dataAnalyzed.Get("demo/"+name)
    dataMass.SetLineWidth(0)
    dataMass.SetLineColor(1)
@@ -97,11 +106,17 @@ def stack(name,lumi, xtitle,log, rebin=False):
    dataMass.SetMarkerSize(0.5)
    if(rebin):
       dataMass.Rebin(2)
+    
+   stackplot.Draw("hist")
    dataMass.Draw("psame")
+ 
+   if(log):
+      pad1.SetLogy()
    
    leg = ROOT.TLegend(0.6,0.6,0.85,0.85)
    leg.SetBorderSize(0)
    leg.AddEntry(wJetsMass, "WJets","f")
+   leg.AddEntry(WWMass, "WW","f")
    leg.AddEntry(TTBarMass, "TTBarSemiLeptonic","f")
    leg.AddEntry(TTBar2LMass, "TTBar2L2Nu","f")
    leg.AddEntry(DYJetsMass,"DYJets","f")
@@ -180,7 +195,7 @@ if not os.path.isdir(outDir):
      print "Output directory " + outDir + " does not exist!"
      quit()
 
-stack("MuonsTrackMass",arg.lumi,"Invariant Mass of Tag/Probe Pair (GeV)",False)
+stack("MuonsTrackMass",arg.lumi,"Invariant Mass of Tag/Probe Pair (GeV)",False,True)
 stack("TaggingMuonEta",arg.lumi,"Tagging Muon #eta",True)
 stack("TaggingMuonPt",arg.lumi,"Tagging Muon Pt",False,True)
 stack("TaggingMuonPhi",arg.lumi,"Tagging Muon #phi",False)
@@ -188,7 +203,11 @@ stack("ProbeTrackEta",arg.lumi,"Probe Track #eta",True)
 stack("ProbeTrackPt",arg.lumi,"Probe Track Pt",True)
 stack("ProbeTrackPhi",arg.lumi,"Probe Track #phi",True)
 stack("ProbeHcalIsolation",arg.lumi,"Probe Hcal Energy in #Delta R cone of 0.3 (GeV)",True)
-stack("ProbeTrackIsolation",arg.lumi,"Probe Track Isolation",True)
+stack("ProbeTrackIsolation",arg.lumi,"Probe Track Isolation",True,True)
 stack("ProbeEcalIsolation",arg.lumi,"Ecal Energy within cone (GeV)",False)
 stack("NumberOfMuonsPassingTag",arg.lumi,"Number of possible tag muons",True)
-
+stack("TagTrackIsolation",arg.lumi,"Tag Muon Track Isolation",True,True)
+stack("TagEcalIsolation",arg.lumi,"Tag Muon ECAL Isolation",False)
+stack("Njets",arg.lumi,"Number of Jets in Event",False)
+stack("ProbeJetDr",arg.lumi,"#Delta R between Probe and nearest jet",True)
+stack("JetPt",arg.lumi,"Pt of all Jets in Event",True)

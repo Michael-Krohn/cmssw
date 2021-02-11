@@ -72,6 +72,47 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
    return Isolation;
 }
 
+double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::TrackRef MainTrack)
+{
+   bool foundtrack = false;
+   unsigned int vtxindex = 0;
+   unsigned int trackindex = 0;
+   double Isolation = 0;
+   //double Isolation = 0;a
+   for(unsigned int i=0;i<vtxHandle->size();i++)
+   {
+      reco::VertexRef vtx(vtxHandle, i);
+      if(!vtx->isValid()){continue;}
+      for(unsigned int j=0; j<vtx->tracksSize();j++)
+      {
+         if(fabs(vtx->trackRefAt(j)->pt()-MainTrack->pt())<0.01)
+         {
+            vtxindex = i;
+            trackindex = j;
+            foundtrack = true;
+         }
+      }
+   }
+   if(!foundtrack)
+   {
+      return 10000;
+   }
+ 
+   reco::VertexRef primaryVtx(vtxHandle,vtxindex);
+    
+   for(unsigned int i=0;i<primaryVtx->tracksSize();i++)
+   {
+      if(i==trackindex){continue;}
+      reco::TrackBaseRef secondarytrack = primaryVtx->trackRefAt(i);
+      double dphi = fabs(phi-secondarytrack->phi());
+      if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
+      double Dr = sqrt( pow(eta-secondarytrack->eta(),2.0) + pow(dphi,2.0));
+      if(Dr>conesize){continue;}
+       Isolation += secondarytrack->pt();
+   }
+   return Isolation;
+}
+
 bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
   tracksToVertex.clear();
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));

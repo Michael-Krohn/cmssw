@@ -28,6 +28,7 @@ class Tracks{
     void PairSimTracks(const reco::Track* Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     bool PairTrackerTracks(std::vector<const reco::Track*>::const_iterator& Track, std::vector<const reco::Track*>::const_iterator& Track_2nd, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     double GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Track* MainTrack);
+    double GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::TrackRef MainTrack);
     std::vector<reco::TransientTrack> tracksToVertex;
     std::vector<const reco::Track*> selectedEndcapTracks;
     std::vector<const reco::Track*> selectedTracks;    
