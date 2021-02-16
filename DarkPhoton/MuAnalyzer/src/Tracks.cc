@@ -44,7 +44,7 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
       if(!vtx->isValid()){continue;}
       for(unsigned int j=0; j<vtx->tracksSize();j++)
       {
-         if(fabs(vtx->trackRefAt(j)->pt()-MainTrack->pt())<0.01)
+         if(vtx->trackRefAt(j)->pt()==MainTrack->pt()&&vtx->trackRefAt(j)->eta()==MainTrack->eta()&&vtx->trackRefAt(j)->phi()==MainTrack->phi())
          {
             vtxindex = i;
             trackindex = j;
@@ -54,7 +54,7 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
    }
    if(!foundtrack)
    {
-      return 10000;
+      return -1;
    }
  
    reco::VertexRef primaryVtx(vtxHandle,vtxindex);
@@ -86,6 +86,7 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
       for(unsigned int j=0; j<vtx->tracksSize();j++)
       {
          if(fabs(vtx->trackRefAt(j)->pt()-MainTrack->pt())<0.01)
+        // if((*vtx->trackRefAt(j))==(*MainTrack))
          {
             vtxindex = i;
             trackindex = j;
