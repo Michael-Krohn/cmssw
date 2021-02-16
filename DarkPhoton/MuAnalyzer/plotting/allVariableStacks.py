@@ -34,7 +34,7 @@ DYJets10to50Cx=18610
 WWCx=118.7
 
 mcFiles = []
-#mcFIle object hoes Skim File,Results File, Label, Cross Section, Fill Color
+#mcFIle object goes Skim File,Results File, Label, Cross Section, Fill Color
 #Histograms are stacked in the order they are added here
 mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WW/hists/WW_monitor.root","READ"),ROOT.TFile(resultsDir+"/WW/hists/WW_analyzedsplit.root","READ"), "WW",WWCx,7))
 mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_monitor.root","READ"),ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_analyzedsplit.root","READ"), "TTBar2L2Nu",TTTo2L2NuCx,2))
