@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if is MC dataset")
@@ -22,9 +22,10 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v11_L1v1')
+        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v15_L1v1')
+        #process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v15')
 else:
-        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v11_L1v1')
+        process.GlobalTag.globaltag = cms.string('106X_dataRun2_v32')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
@@ -32,21 +33,10 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
-import FWCore.Utilities.FileUtils as FileUtils
-mylist = FileUtils.loadListFromFile('WJetsToLNu.txt')
-readFiles = cms.untracked.vstring( *mylist )
-
 #Uncomment when running over condor
-process.source = cms.Source("PoolSource",
+process.source = cms.Source("PoolSource", fileNames = cms.untracked.vstring())
     # duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     # replace 'myfile.root' with the source file you want to use
-    fileNames = readFiles
-    
-)
-
-#if not(options.isMC):
-#        process.source.lumisToProcess = LumiList.LumiList(filename = 'Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON_MuonPhys.txt').getVLuminosityBlockRange()
-
 
 process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',
     recoMuons = cms.InputTag("muons"),
@@ -57,7 +47,7 @@ process.DiMuonFilter = cms.EDFilter('MuPlusXFilter_AOD',
     EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
     TriggerResultsTag = cms.InputTag("TriggerResults","","HLT"),
     genParticles = cms.InputTag("genParticles"),
-    isMC = cms.untracked.bool(True)
+    isMC = cms.untracked.bool(False)
 )
 
 process.USER = cms.OutputModule("PoolOutputModule",
