@@ -2,6 +2,7 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DarkPhoton/MuAnalyzer/interface/Tracks.h"
+#include "DataFormats/Math/interface/deltaR.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
@@ -34,8 +35,8 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
 double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Track* MainTrack)
 {
    bool foundtrack = false;
-   unsigned int vtxindex = 0;
-   unsigned int trackindex = 0;
+   int vtxindex = -1;
+   int trackindex = -1;
    double Isolation = 0;
    //double Isolation = 0;a
    for(unsigned int i=0;i<vtxHandle->size();i++)
@@ -44,29 +45,75 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
       if(!vtx->isValid()){continue;}
       for(unsigned int j=0; j<vtx->tracksSize();j++)
       {
-         if(fabs(vtx->trackRefAt(j)->pt()-MainTrack->pt())<0.01)
+         if(vtx->trackRefAt(j)->pt()==MainTrack->pt()&&vtx->trackRefAt(j)->eta()==MainTrack->eta()&&vtx->trackRefAt(j)->phi()==MainTrack->phi())
          {
-            vtxindex = i;
-            trackindex = j;
+            vtxindex = (int)i;
+            trackindex = (int)j;
             foundtrack = true;
          }
       }
    }
+   probeVtx = vtxindex;
    if(!foundtrack)
    {
-      return 10000;
+      return -1;
    }
  
    reco::VertexRef primaryVtx(vtxHandle,vtxindex);
     
    for(unsigned int i=0;i<primaryVtx->tracksSize();i++)
    {
-      if(i==trackindex){continue;}
+      if((int)i==trackindex){continue;}
       reco::TrackBaseRef secondarytrack = primaryVtx->trackRefAt(i);
       double dphi = fabs(phi-secondarytrack->phi());
       if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
       double Dr = sqrt( pow(eta-secondarytrack->eta(),2.0) + pow(dphi,2.0));
-      if(Dr>conesize){continue;}
+      if(Dr>conesize||Dr<0.01){continue;}
+       Isolation += secondarytrack->pt();
+   }
+   return Isolation;
+}
+
+double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::TrackRef MainTrack)
+{
+   bool foundtrack = false;
+   int vtxindex = -1;
+   int trackindex = -1;
+   double Isolation = 0;
+   //double Isolation = 0;
+   for(unsigned int i=0;i<vtxHandle->size();i++)
+   {
+      reco::VertexRef vtx(vtxHandle, i);
+      if(!vtx->isValid()){continue;}
+      for(unsigned int j=0; j<vtx->tracksSize();j++)
+      {
+         if(vtx->trackRefAt(j)->pt()==MainTrack->pt()&&vtx->trackRefAt(j)->eta()==MainTrack->eta()&&vtx->trackRefAt(j)->phi()==MainTrack->phi())
+
+        // if((*vtx->trackRefAt(j))==(*MainTrack))
+         {
+            vtxindex = (int)i;
+            trackindex = (int)j;
+            foundtrack = true;
+         }
+      }
+   }
+   tagVtx=vtxindex;
+   NVertices=(int)vtxHandle->size();
+   if(!foundtrack||vtxindex!=0)
+   {
+      return -1;
+   }
+ 
+   reco::VertexRef primaryVtx(vtxHandle,vtxindex);
+    
+   for(unsigned int i=0;i<primaryVtx->tracksSize();i++)
+   {
+      if((int)i==trackindex){continue;}
+      reco::TrackBaseRef secondarytrack = primaryVtx->trackRefAt(i);
+      double dphi = fabs(phi-secondarytrack->phi());
+      if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
+      double Dr = sqrt( pow(eta-secondarytrack->eta(),2.0) + pow(dphi,2.0));
+      if(Dr>conesize||Dr<0.01){continue;}
        Isolation += secondarytrack->pt();
    }
    return Isolation;
@@ -100,7 +147,7 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
     }else{
       MuonTrackMass = -10000;
     }
-
+    if (deltaR(one_momentum.eta(),one_momentum.phi(),two_momentum.eta(),two_momentum.phi())<0.2) return false;
     if (MuonTrackMass < 50 || MuonTrackMass > 150) return false;
   }else{
     return false;
@@ -138,7 +185,7 @@ bool Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrac
     }else{
       MuonTrackMass = -10000;
     }
-
+    if (deltaR(one_momentum.eta(),one_momentum.phi(),two_momentum.eta(),two_momentum.phi())<0.2) return false;
     if (MuonTrackMass < 50 || MuonTrackMass > 150) return false;
   }else{
     return false;
