@@ -61,6 +61,19 @@ class MuPXHistograms{
     TH2F* m_ECALIsoJetDr;
     TH1F* m_ProbeJetDr;
     TH1F* m_JetPt;
-
+    //Calo Jet 
+    TH1F* m_ProbeJetE;
+    TH1F* m_TagCaloJetE;
+    TH2F* m_CaloJetEcalE;
+    TH2F* m_CaloJetHcalE;
+    //Vtx Stuff
+    TH1F* m_ProbeVtx;
+    TH1F* m_TagVtx;
+    TH1F* m_NVertices;
+    TH2F* m_TagProbeVtx;
+    TH1F* m_TagProbeVtxd0;
+    TH1F* m_TagProbeVtxdz;
+    TH1F* m_PileupWeights;
+    TH1F* m_PUmean;
 };
 #endif

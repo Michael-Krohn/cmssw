@@ -61,10 +61,26 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_ECALIsoJetDr = histFolder.make<TH2F>("ECALIsoJetDr",";Probe ECAL Energy within cone (GeV);#Delta R from probe to nearest PF Jet; Events", 200,0,100,100,0,5);
   m_ProbeJetDr = histFolder.make<TH1F>("ProbeJetDr",";#Delta R between selected probe and nearest jet; Events", 120,-1,5);
   m_JetPt = histFolder.make<TH1F>("JetPt",";Jet Pt (GeV); Events", 100,0,150);  
+  m_ProbeJetE = histFolder.make<TH1F>("ProbeCaloJetE",";Calo Jet Pt (GeV); Events", 100, 0, 200);
+  m_TagCaloJetE = histFolder.make<TH1F>("TagCaloGetE","; Tag Muon Calo Jet E (GeV); Events", 100, 0, 200);
+  m_CaloJetEcalE = histFolder.make<TH2F>("CaloEmEcalIso",";Calo Jet Ecal E; Ecal Iso; Events", 100, 0, 200, 100,0, 200);
+  m_CaloJetHcalE = histFolder.make<TH2F>("CaloHadHcalIso",";Calo Jet Hcal E; Hcal Iso; Events", 100, 0, 200, 100,0, 200);
+  ///vtx stuff
+  m_ProbeVtx = histFolder.make<TH1F>("ProbeVtxIndex",";Probe Vertex Index; Events",10,-1.5,8.5);
+  m_TagVtx = histFolder.make<TH1F>("TagVtxIndex",";Tag Vertex Index; Events",10,-1.5,8.5);
+  m_NVertices = histFolder.make<TH1F>("NPV",";Number of PV in Event; Events",100,-0.5,99.5);
+  m_TagProbeVtx = histFolder.make<TH2F>("TagProbeVtxIndex",";Tag Vtx Index;Probe Vtx Index; Events",10,-1.5,8.5,10,-1.5,8.5);
+  m_TagProbeVtxd0 = histFolder.make<TH1F>("TagProbeVtxD0",";Vertex D0; Events",300,0,30);
+  m_TagProbeVtxdz = histFolder.make<TH1F>("TagProbeVtxdz",";Vertex dz; Events",300,0,30);
+  //Pileup
+  m_PileupWeights = histFolder.make<TH1F>("PileupWeights",";N Pileup Interactions; Weight", 100,0,100);
+  m_PUmean = histFolder.make<TH1F>("NPUMean",";MC N Pileup Mean; Events", 200,0,20);
 }
 
 void MuPXHistograms::FillHists(MuPXEventInfo info)
 {
+     m_PileupWeights->Fill(info.pileupWeight);
+     m_PUmean->Fill(info.nPUmean);
      m_eventWeight->Fill(info.eventWeight);
      m_eventCount->Fill(0.5,info.eventWeight);
      m_NPassingProbe->Fill(info.nPassingProbe,info.eventWeight);
@@ -98,6 +114,18 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_HCALIsoJetDr->Fill(info.probeHcalIso,info.nearestJetDr,info.eventWeight);
      m_ECALIsoJetDr->Fill(info.probeEcalIso,info.nearestJetDr,info.eventWeight);
      m_ProbeJetDr->Fill(info.nearestJetDr,info.eventWeight);
+     //Calo Jets
+     m_ProbeJetE->Fill(info.probeCaloJetE,info.eventWeight); 
+     m_TagCaloJetE->Fill(info.tagCaloJetE, info.eventWeight);
+     m_CaloJetEcalE->Fill(info.probeCaloJetEcal,info.probeEcalIso, info.eventWeight);
+     m_CaloJetHcalE->Fill(info.probeCaloJetHcal,info.probeHcalIso, info.eventWeight);
+     //Vtx Stuff
+     m_ProbeVtx->Fill(info.probeVtx,info.eventWeight);
+     m_TagVtx->Fill(info.tagVtx,info.eventWeight);
+     m_NVertices->Fill(info.nVtx,info.eventWeight);
+     m_TagProbeVtx->Fill(info.tagVtx,info.probeVtx,info.eventWeight);
+     m_TagProbeVtxd0->Fill(info.vtxd0,info.eventWeight);
+     m_TagProbeVtxdz->Fill(info.vtxdz,info.eventWeight);
 }
 
 void MuPXHistograms::IncCutFlow()

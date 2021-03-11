@@ -43,6 +43,9 @@ class Tracks{
     CachingVertex<5> fittedVertex;
     double highendcaptrackpt;
     const reco::Track* highptendcaptrack;
+    int tagVtx;
+    int probeVtx;
+    int NVertices;
 };
 
 #endif

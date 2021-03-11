@@ -10,6 +10,7 @@
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/TrackReco/interface/Track.h"  
+#include "TH1F.h"
 
 class MuPXEventInfo{
   public:
@@ -35,5 +36,20 @@ class MuPXEventInfo{
     int nJets;
     double nearestJetE;
     double nearestJetDr;   
+    double nearJetMaxE;
+    //Calo Jets
+    double probeCaloJetE;
+    double tagCaloJetE;
+    double probeCaloJetEcal;
+    double probeCaloJetHcal;
+    //vtx stuff
+    int probeVtx;
+    int tagVtx;
+    int nVtx;
+    double vtxd0;
+    double vtxdz;
+    //Pileup Weights
+    double pileupWeight;
+    double nPUmean;
 };
 #endif

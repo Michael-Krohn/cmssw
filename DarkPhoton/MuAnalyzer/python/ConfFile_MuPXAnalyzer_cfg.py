@@ -46,7 +46,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/rund2018.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/DYJets.txt')
 	else:
 	   mylist = FileUtils.loadListFromFile('datafiles/rund2018.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -71,6 +71,7 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
+    edmPileupInfo = cms.InputTag("mixData"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
@@ -79,6 +80,8 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
     HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     PFJets = cms.InputTag("ak4PFJetsCHS"),
+    TowerSource = cms.InputTag("caloStage2Digis","CaloTower"),
+    CaloJetSource = cms.InputTag("ak4CaloJets"),
     isMC = cms.untracked.bool(options.isMC),
 )
 

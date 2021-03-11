@@ -25,5 +25,10 @@ MuPXEventInfo::MuPXEventInfo()
     nJets=0;
     nearestJetE=-1;
     nearestJetDr=-1;
+    nearJetMaxE=-1;
+    probeCaloJetE=-1;
+    tagCaloJetE=-1;
+    probeCaloJetEcal=-1;
+    probeCaloJetHcal=-1;
 }
 
