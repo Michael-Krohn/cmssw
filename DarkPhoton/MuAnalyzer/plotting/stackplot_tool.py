@@ -29,12 +29,13 @@ class stackInfo:
       self.stack(basedir+"/ProbeEcalIsolation","Ecal Energy within cone (GeV)",False,tag,outDir)
       self.stack(basedir+"/NumberOfMuonsPassingTag","Number of possible tag muons",True,tag,outDir)
       self.stack(basedir+"/TagTrackIsolation","Tag Muon Track Isolation",True,tag,outDir,True)
-      self.stack(basedir+"/TagEcalIsolation","Tag Muon ECAL Isolation",False,tag,outDir)
+      self.stack(basedir+"/TagEcalIsolation","Tag Muon ECAL Isolation",True,tag,outDir)
       self.stack(basedir+"/Njets","Number of Jets in Event",False,tag,outDir)
       self.stack(basedir+"/ProbeJetDr","#Delta R between Probe and nearest jet",True,tag,outDir)
-      self.stack(basedir+"/JetPt","Pt of all Jets in Event",True,tag,outDir)
-
-   
+      self.stack(basedir+"/ProbeCaloJetE","Energy of Largest Calo Jet within #Delta R of 0.2 to probe", True, tag,outDir)
+      self.stack(basedir+"/TagCaloGetE","Energy of Largest Calo Jet within #Delta R of 0.2 to tag", True, tag, outDir, True)
+      self.stack(basedir+"/NPV","Number of Primary Vertices",False,tag,outDir)  
+      self.stack(basedir+"/TagVtxIndex","Index of Tag Muon Primary Vertex", True, tag, outDir)
 
    def calcScaleFactor(self,name,skimFile,resultFile):
       #Use # of muons passing tag for total weight because I know that there was no over/underflow
@@ -46,9 +47,11 @@ class stackInfo:
       leg = ROOT.TLegend(0.6,0.6,0.85,0.85)
       leg.SetBorderSize(0)
       hists = []
+      NtotalEvents=0
       for mcFile in self.mcFiles:
          eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
          Nevents = mcFile.cx*1000*float(self.lumi)*eff
+         NtotalEvents=NtotalEvents+Nevents
          hist=(mcFile.result.Get("demo/"+name).Clone())
          if(hist.Integral()>0):
             hist.Scale(Nevents/hist.Integral())
@@ -74,6 +77,7 @@ class stackInfo:
       pad1.cd()
      
       dataHist = self.dataFile.Get("demo/"+name).Clone()
+      print("Expected " + str(NtotalEvents)+" found " + str(dataHist.Integral())+".")
       dataHist.SetLineWidth(0)
       dataHist.SetLineColor(1)
       dataHist.SetMarkerStyle(21)
@@ -103,7 +107,7 @@ class stackInfo:
       leg.Draw()
       
       label = ROOT.TPaveText(0.4,0.95,0.99,0.99,"brNDC")
-      label.SetTextSize(14)
+      label.SetTextSize(12)
       label.AddText(tag)
       label.SetFillColor(0)
       label.SetBorderSize(0)

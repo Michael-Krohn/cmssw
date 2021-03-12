@@ -73,8 +73,8 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_TagProbeVtxd0 = histFolder.make<TH1F>("TagProbeVtxD0",";Vertex D0; Events",300,0,30);
   m_TagProbeVtxdz = histFolder.make<TH1F>("TagProbeVtxdz",";Vertex dz; Events",300,0,30);
   //Pileup
-  m_PileupWeights = histFolder.make<TH1F>("PileupWeights",";N Pileup Interactions; Weight", 100,0,100);
-  m_PUmean = histFolder.make<TH1F>("NPUMean",";MC N Pileup Mean; Events", 200,0,20);
+  m_PileupWeights = histFolder.make<TH1F>("PileupWeights",";N Pileup Interactions; Weight", 100,0,4);
+  m_PUmean = histFolder.make<TH1F>("NPUMean",";MC N Pileup Mean; Events", 100,0,100);
 }
 
 void MuPXHistograms::FillHists(MuPXEventInfo info)
