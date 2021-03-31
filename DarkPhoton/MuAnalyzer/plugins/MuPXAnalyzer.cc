@@ -47,6 +47,8 @@
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/EgammaCandidates/interface/Photon.h"
+#include "DataFormats/EgammaCandidates/interface/PhotonFwd.h"
 
 //for Standalone Muon Tracking
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
@@ -86,9 +88,7 @@
 #include "Geometry/CaloTopology/interface/CaloSubdetectorTopology.h"
 #include "Geometry/CaloTopology/interface/HcalTopology.h"
 #include "Geometry/HcalTowerAlgo/interface/HcalGeometry.h"
-#include "DataFormats/CaloTowers/interface/CaloTower.h"
 #include "DataFormats/JetReco/interface/CaloJet.h"
-#include "DataFormats/L1TCalorimeter/interface/CaloTower.h"
 #include "DataFormats/L1Trigger/interface/CaloSpare.h"
 #include "CondFormats/L1TObjects/interface/CaloParams.h"
 #include "CondFormats/DataRecord/interface/L1TCaloParamsRcd.h"
@@ -143,6 +143,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     double GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct);
 
     edm::EDGetToken m_recoMuonToken;
+    edm::EDGetToken m_recoPhotonToken;
     edm::EDGetToken m_simTracksToken;
     edm::EDGetToken m_simVerticesToken;
     edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
@@ -188,13 +189,13 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 //
 MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   m_recoMuonToken (consumes<std::vector<reco::Muon>> (iConfig.getParameter<edm::InputTag>("recoMuons"))),
+  m_recoPhotonToken (consumes<reco::PhotonCollection>(iConfig.getParameter<edm::InputTag>("photons"))),
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
   reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
   m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
-  m_caloTower_label(consumes<l1t::CaloTowerBxCollection>(iConfig.getParameter<edm::InputTag>("TowerSource"))),
   m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false))
 {
@@ -460,7 +461,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     info.nearJetMaxE=nearJetMaxE;
     info.nJets=njets;
     //Tower Isolation
-    edm::Handle<BXVector<l1t::CaloTower> > towerHandle;
     edm::Handle<CaloJetCollection> caloJets;
     iEvent.getByToken(m_caloJet_label, caloJets);
     double nearMuCaloJetE = 0;
@@ -497,20 +497,39 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        info.probeCaloJetEcal = nearProbeCaloJetEmE;
        info.probeCaloJetHcal = nearProbeCaloJetHadE;
     }
-/*
-    edm::Handle<l1t::CaloTowerBxCollection> towers;
-    iEvent.getByToken(m_caloTower_label,towers);
-    double TowerE = 0;
-    for(int ibx=towers->getFirstBX(); ibx<=towers->getLastBX(); ++ibx)
+    
+    //Nearby Photons
+    edm::Handle<reco::PhotonCollection> phoHandle;
+    iEvent.getByToken(m_recoPhotonToken, phoHandle);
+    const reco::PhotonCollection& photon = *(phoHandle.product());
+    double maxPhoEt=0;
+    math::XYZVector phoMomentum;
+    if(!photon.empty())
     {
-      for(auto tow=towers->begin(ibx); tow!=towers->end(ibx); tow++)
-      {
-         if(tow->hwPt()<=0) {continue;}
-         printf("Tower :\n  BX= %i, ipt= %i, ieta= %i, iphi= %i, etEm = %i, etHad = %i.\n", ibx, tow->hwPt(), tow->hwEta(), tow->hwPhi(), tow->hwEtEm(), tow->hwEtHad());
-         double dR = deltaR(selectedTrack->eta(), selectedTrack->phi(), tow->hwEta(), tow->hwPhi());
-         if(dR<0.5){TowerE+=tow->hwPt();} 
-      }
-    }*/
+       for(reco::PhotonCollection::const_iterator itr = photon.begin(); itr != photon.end(); ++itr)
+       {
+          if(deltaR(itr->eta(),itr->phi(),selectedTrack->eta(),selectedTrack->phi())<0.2)
+          {
+             if(itr->et()>maxPhoEt)
+             {
+                maxPhoEt=itr->et();
+                phoMomentum = itr->momentum();
+             }   
+          }
+       }
+    }
+    info.adjMuonTrackMass = info.muonTrackMass;
+    if(maxPhoEt>0)
+    {
+       math::XYZVector probeMomentum = selectedTrack->momentum();
+       math::XYZVector tagMomentum = selectedMuon->momentum();
+       probeMomentum = probeMomentum+phoMomentum;
+       double total_energy = sqrt(probeMomentum.mag2() + 0.106*0.106) + sqrt(tagMomentum.mag2() + 0.106*0.106);
+       double total_px = tagMomentum.x() + probeMomentum.x();
+       double total_py = tagMomentum.y() + probeMomentum.y();
+       double total_pz = tagMomentum.z() + probeMomentum.z();
+       info.adjMuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
+    }
   }
   myHistograms.FillHists(info);
   bool matched = false;

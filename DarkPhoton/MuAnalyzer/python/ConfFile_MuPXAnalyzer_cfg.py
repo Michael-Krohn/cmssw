@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -68,6 +68,7 @@ else:
 
 process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     recoMuons = cms.InputTag("muons"),
+    photons = cms.InputTag("photons"),
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),

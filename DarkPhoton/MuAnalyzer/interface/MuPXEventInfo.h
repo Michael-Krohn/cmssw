@@ -19,6 +19,7 @@ class MuPXEventInfo{
     int cutProgress;
     bool paired;
     double muonTrackMass;
+    double adjMuonTrackMass;
     const reco::Track* probeTrack;
     const reco::Muon* tagMuon;
     int nPassingProbe;

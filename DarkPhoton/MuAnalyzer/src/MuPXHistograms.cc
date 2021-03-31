@@ -31,6 +31,21 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
+  for(int i=0;i<100;i++)
+  {
+     std::string name = "EcalMuonsTrackMass"+std::to_string(i);
+     m_EcalSplitMuonTrackMass[i] = histFolder.make<TH1F>(name.c_str(), "; MuonTrackMass (GeV); Events", 100,50,150);
+     std::string adjname = "adj"+name; 
+     m_EcalSplitAdjMuonTrackMass[i] = histFolder.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
+  }
+  for(int i=0;i<100;i++)
+  {
+     std::string name = "TrackMuonsTrackMass"+std::to_string(i);
+     m_TrackSplitMuonTrackMass[i] = histFolder.make<TH1F>(name.c_str(), "; MuonTrackMass (GeV); Events", 100,50,150);
+     std::string adjname = "adj"+name;
+     m_TrackSplitAdjMuonTrackMass[i] = histFolder.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
+  }
+
   m_TagEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
   m_TagPt = histFolder.make<TH1F>("TaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
   m_TagPhi = histFolder.make<TH1F>("TaggingMuonPhi","; Tagging Muon phi; Events", 100, -3.15, 3.15);
@@ -46,6 +61,7 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_ProbeEcalIso = histFolder.make<TH1F>("ProbeEcalIsolation","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   m_ProbeCombinedIso = histFolder.make<TH2F>("ProbeCombinedIsolation","; Track Based Isolation; Hcal energy in matched hits (GeV); Events", 200, 0, 5, 200, 0, 8);
   m_NPassingProbe = histFolder.make<TH1F>("NTracksPassingProbe","; Tracks Passing Probe Selection; Events", 20, -0.5, 19.5);
+  m_AdjustedMuTrackMass = histFolder.make<TH1F>("AdjustedMuonTrackMass","; Adjusted Invariant Mass of Tag and Probe (GeV); Events", 110, 50, 160); 
   //Multiple Paired Tracks Histograms
   m_SmallestCone = histFolder.make<TH1F>("SmallestConeSize","; Smallest #Delta R Cone that contains all paired tracks; Events", 50, 0, 4);
   m_AverageDr = histFolder.make<TH1F>("AverageDr","; Average #Delta R between all paired tracks;", 100, 0, 5);
@@ -86,7 +102,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_NPassingProbe->Fill(info.nPassingProbe,info.eventWeight);
      m_NPassingTag->Fill(info.nPassingTag,info.eventWeight);
      for(int i=0; i<info.cutProgress;i++){IncCutFlow();} 
-     if(!info.paired) return;
+     if(!info.paired) return;  
      m_ProbeTrackIso->Fill(info.probeTrackIso/info.probeTrack->pt(),info.eventWeight);
      m_ProbeEcalIso->Fill(info.probeEcalIso,info.eventWeight);
      m_ProbeHcalIso->Fill(info.probeHcalIso,info.eventWeight);
@@ -100,6 +116,27 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_ProbePhi->Fill(info.probeTrack->phi(),info.eventWeight);
      m_ProbeEtaPhi->Fill(info.probeTrack->eta(),info.probeTrack->phi(),info.eventWeight);
      m_MuonTrackMass->Fill(info.muonTrackMass,info.eventWeight);
+     m_AdjustedMuTrackMass->Fill(info.adjMuonTrackMass,info.eventWeight);
+     if(info.probeEcalIso<100)
+     {
+       m_EcalSplitMuonTrackMass[(int)info.probeEcalIso]->Fill(info.muonTrackMass,info.eventWeight);
+       m_EcalSplitAdjMuonTrackMass[(int)info.probeEcalIso]->Fill(info.adjMuonTrackMass,info.eventWeight);
+     }
+     else
+     {
+       m_EcalSplitMuonTrackMass[99]->Fill(info.muonTrackMass,info.eventWeight);
+       m_EcalSplitAdjMuonTrackMass[99]->Fill(info.adjMuonTrackMass,info.eventWeight);
+     }
+     if(info.probeTrackIso<5)
+     {
+       m_TrackSplitMuonTrackMass[(int)(info.probeTrackIso/5*100)]->Fill(info.muonTrackMass,info.eventWeight);
+       m_TrackSplitAdjMuonTrackMass[(int)(info.probeTrackIso/5*100)]->Fill(info.adjMuonTrackMass,info.eventWeight);
+     }
+     else
+     {
+       m_TrackSplitMuonTrackMass[99]->Fill(info.muonTrackMass,info.eventWeight);
+       m_TrackSplitAdjMuonTrackMass[99]->Fill(info.adjMuonTrackMass,info.eventWeight);
+     }
      if(info.averageDr>0)
      {
         m_SmallestCone->Fill(info.smallestCone,info.eventWeight);

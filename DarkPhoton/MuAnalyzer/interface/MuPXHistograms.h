@@ -41,6 +41,11 @@ class MuPXHistograms{
     TH1F* m_TagPhi;
     TH2F* m_TagEtaPhi;
     TH1F* m_NPassingTag;
+    TH1F* m_EcalSplitMuonTrackMass[100];
+    TH1F* m_EcalSplitAdjMuonTrackMass[100];
+    TH1F* m_TrackSplitMuonTrackMass[100];
+    TH1F* m_TrackSplitAdjMuonTrackMass[100];
+    TH1F* m_AdjustedMuTrackMass;
     TH1F* m_TagProbeVtxChi;
     TH1F* m_ProbeTrackIso;
     TH1F* m_ProbeHcalIso;
