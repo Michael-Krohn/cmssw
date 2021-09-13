@@ -52,5 +52,14 @@ class MuPXEventInfo{
     //Pileup Weights
     double pileupWeight;
     double nPUmean;
+    double farMuE;
+    double farMuDr;
+    double farMuEta;
+    double genTagMuDr;
+    double genPdgId;
+    bool passLooseMatch;
+    int nonMuPdgId;
+    int nLooseMuons;
+    double tagPdgId;
 };
 #endif

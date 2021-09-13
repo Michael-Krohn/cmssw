@@ -61,6 +61,35 @@ void HCAL::CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   }
 }
 
+std::pair<double, int> HCAL::EnergyInCone(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint track){
+   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
+   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
+ 
+   edm::ESHandle<CaloGeometry> TheCALOGeometry;
+   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+   const CaloGeometry* caloGeom = TheCALOGeometry.product(); 
+   double energyInCone=0; 
+   int nhits=0;
+
+   if(!hcalRecHits.isValid()){
+ //    std::cout << "Could not find HCAL RecHits" << std::endl;
+   }else{
+     const HBHERecHitCollection *hbhe = hcalRecHits.product();
+     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++){
+        HcalDetId id(hbherechit->detid());
+ 
+        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
+        Global3DPoint hbhe_position = hbhe_cell->getPosition();
+        double trackDr = deltaR(hbhe_position.eta(),hbhe_position.phi(),track.eta(),track.phi());
+        if(trackDr<0.2&&hbherechit->energy()>0.)
+        {
+           energyInCone=energyInCone+hbherechit->energy();
+           nhits++;
+        }
+     }
+   }
+   return std::make_pair(energyInCone,nhits);
+}
 double HCAL::MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint){
 
   double MuonEta = MuonGlobalPoint.eta();
@@ -586,7 +615,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
-bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track){ 
+bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, SigEventInfo info, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track){ 
   double MuonEta = TrackGlobalPoint.eta();
   double MuonPhi = TrackGlobalPoint.phi();
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
@@ -613,8 +642,7 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   TrackiEta = ClosestCell.ieta();
   TrackiPhi = ClosestCell.iphi();
   int BremDepth = ClosestCell.depth();
-  myHistograms.m_BremDepth->Fill(BremDepth);
-  myHistograms.m_WeightedBremDepth->Fill(BremDepth, weight);
+  m_bremDepth=BremDepth;
   if(fabs(TrackiEta)<19){return false;}
   if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return false;}
   if(fabs(TrackiEta)>28){return false;}
@@ -677,7 +705,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   }
   else
   {
-    printf("Successfully found HCAL RecHits.\n");
     const HBHERecHitCollection *hbhe = hcalRecHits.product();
     double layerenergies[7],lowthreshadjacent[7];    
     for(int i=0;i<7;i++)
@@ -688,7 +715,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 
     for(HBHERecHitCollection::const_iterator hbherechit = hbhe->begin(); hbherechit != hbhe->end(); hbherechit++)
     {  
-       printf("Found an HCAL hit, energy is %f.\n",hbherechit->energy());
        HcalDetId id(hbherechit->detid());
        std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
 //       Global3DPoint hbhe_position = hbhe_cell->getPosition();
@@ -715,8 +741,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   	        //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
   	        layerenergies[id.depth()-1]+=hbherechit->energy();
   	      }
-              if(id.depth()==BremDepth){myHistograms.m_BremSpectrum->Fill(hbherechit->energy());}
-  	      myHistograms.m_HitDepth_MuonHCAL->Fill(id.depth());
 	   }
          }
 	 if(lowthreshmatch!=std::end(LowThreshAdjacentCells)&&centermatch==std::end(CenterCells)&&(hbherechit->energy()>lowthreshadjacent[id.depth()]))
@@ -734,7 +758,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
        {
           AdjacentE+=lowthreshadjacent[i];
        }
-       myHistograms.m_NStandaloneAdjacentHitEnergies->Fill(AdjacentE);
     }
     m_failAdjacent=false;
     for(int i=0;i<7;i++)
@@ -746,25 +769,20 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 	  {
 	     if(lowthreshadjacent[i]>Hit_Thresholds[i])
 	     {
-	        myHistograms.m_NThreshCut->Fill(0);
-                myHistograms.m_AdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);
-                if(standaloneE==0){myHistograms.m_NStandaloneAdjacentFailHitEnergy->Fill(lowthreshadjacent[i]);}
 	        m_failAdjacent=true;
 	     }
 	  }
        }
     }
-    myHistograms.m_NThreshCut->Fill(1);
     for(int i=0;i<7;i++) 
     {
        //if(layerenergies[i]!=0)
        //{
 	  if(layerenergies[i]>Hit_Thresholds[i]){hitsoverthresh++;}
 	  //if(BremDepth-1<i){myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);}
-          myHistograms.m_Depth_Spectra[i]->Fill(layerenergies[i]);
        //}
     }   
-    if(m_failAdjacent)
+/*    if(m_failAdjacent)
     {
       if(charge >0)
       {
@@ -820,21 +838,10 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
            if(TrackiEta<-20){myHistograms.m_BigEtaAlldEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
            else{myHistograms.m_SmallEtaAlldEtadPhiMuMinusEtaMinus->Fill(Tdeta,Tdphi);}
          }
-      }
-    myHistograms.m_ConeHits->Fill(Hits[0]);
-    myHistograms.m_HitsOverThresh->Fill(hitsoverthresh);
-    myHistograms.m_HitsOverThreshSplit[BremDepth-1]->Fill(hitsoverthresh);
-    myHistograms.m_ConeEnergy->Fill(Hits[1]);
-    myHistograms.m_ReducedHEConeEnergy->Fill(ReducedConeE);
-    ConeEnergy = Hits[1];
+      }*/
+    m_coneHits=Hits[0];
+    m_coneEnergy = Hits[1];
     m_HitsOverThresh = hitsoverthresh;
-    if(standaloneE==0){myHistograms.m_NMatchNStandaloneHitsOverThresh->Fill(hitsoverthresh);}
-    if(standaloneE!=0)
-    {
-       myHistograms.m_NonMatchedHEDeposit->Fill(Hits[1]);
-       myHistograms.m_NonMatchedHitsOverThresh->Fill(hitsoverthresh);
-    } 
-    if(standaloneE<80.){myHistograms.m_LowEHCAL->Fill(Hits[1]);}
   }
   return true;
 }

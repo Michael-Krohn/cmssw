@@ -63,8 +63,8 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/map1p0_13TeV.txt')
-           #mylist = FileUtils.loadListFromFile ('datafiles/DY_MC_Files.txt')
+	   #mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem.txt')
+           mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
         else:
 	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -87,11 +87,21 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
     g4SimHits = cms.InputTag("g4SimHits"),
+    dbremweighttag = cms.InputTag("g4SimHits","DBremEventWeight"),
+    dbremInitialETag = cms.InputTag("g4SimHits","DBremInitialEnergy"),
+    dbremFinalETag = cms.InputTag("g4SimHits","DBremFinalEnergy"),
+    dbremAngleTag = cms.InputTag("g4SimHits","DBremAngle"),
+    dbremXTag = cms.InputTag("g4SimHits","DBremLocationX"),
+    dbremYTag = cms.InputTag("g4SimHits","DBremLocationY"),
+    dbremZTag = cms.InputTag("g4SimHits","DBremLocationZ"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
+    CaloJetSource = cms.InputTag("ak4CaloJets"),
     StandAloneTracks = cms.InputTag("standAloneMuons"),
+    EERecHits = cms.InputTag("reducedEcalRecHitsEE"),
+    EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
 #    ReducedHBHERecHits = cms.InputTag("reducedHcalRecHits"),
     isMC = cms.untracked.bool(options.isMC),
     isSig = cms.untracked.bool(options.isSig),

@@ -16,6 +16,7 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
+#include "DarkPhoton/MuAnalyzer/interface/SigEventInfo.h"
 #include "TH1F.h"
 #include "TH2F.h"
 
@@ -23,15 +24,18 @@ class HCAL{
   public:
     HCAL();
     void CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
+    std::pair<double,int> EnergyInCone(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint track);
     double MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint);
     void HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, GlobalPoint RandGlobalPoint, bool GoodRand, Histograms myHistograms, double TrackPt, GlobalPoint VertexPosition);
-    bool FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, MCHistograms myHistograms, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track);
+    bool FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, SigEventInfo info, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track);
     double GetIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack); 
     double MuonHitEnergy;
     int    MuonHitDepth;
     double MuonMinDr;
     HcalDetId minHCALDetId;
-    double ConeEnergy;
+    double m_coneEnergy;
+    int m_coneHits;
+    int m_bremDepth;
     double BigConeEnergy;
     int m_HitsOverThresh;
     double m_hitEnergies[7];

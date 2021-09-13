@@ -17,6 +17,7 @@
 
 class TH1F;
 class TH2F;
+class TNtuple;
 
 class MuPXHistograms{
   public:
@@ -45,6 +46,8 @@ class MuPXHistograms{
     TH1F* m_EcalSplitAdjMuonTrackMass[100];
     TH1F* m_TrackSplitMuonTrackMass[100];
     TH1F* m_TrackSplitAdjMuonTrackMass[100];
+    TH1F* m_SplitMuonsTrackMass[20][20];
+    TNtuple* m_TupleSplitMuonsTrackMass[20][20];
     TH1F* m_AdjustedMuTrackMass;
     TH1F* m_TagProbeVtxChi;
     TH1F* m_ProbeTrackIso;
@@ -70,7 +73,10 @@ class MuPXHistograms{
     TH1F* m_ProbeJetE;
     TH1F* m_TagCaloJetE;
     TH2F* m_CaloJetEcalE;
+    TH1F* m_CaloJetEcalEnergy;
     TH2F* m_CaloJetHcalE;
+    TH1F* m_CaloJetHcalEnergy;
+    TH2F* m_CaloJetEcalHcal;
     //Vtx Stuff
     TH1F* m_ProbeVtx;
     TH1F* m_TagVtx;
@@ -80,5 +86,18 @@ class MuPXHistograms{
     TH1F* m_TagProbeVtxdz;
     TH1F* m_PileupWeights;
     TH1F* m_PUmean;
+    //Gen Matching
+    TH1F* m_GenProbeDr;
+    TH1F* m_GenProbeEta;
+    TH1F* m_GenTagDr;
+    TH1F* m_InTrackerGenProbeDr;
+    TH1F* m_GenProbePt;
+    TH1F* m_GenPdgId;
+    TH1F* m_PassLooseMatch;
+    TH1F* m_nonMuPdgId;
+    TH1F* m_nLooseMuons;
+    TH1F* m_TagPdgId;
+    TH1F* m_MotherMatch;
+    TH1F* m_LooseMatch[10][10];
 };
 #endif

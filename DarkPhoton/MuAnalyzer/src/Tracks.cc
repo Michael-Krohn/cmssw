@@ -19,12 +19,12 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
   highendcaptrackpt = 0;
   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
+      if(iTrack->pt()<20) continue;
       selectedTracks.push_back(&(*iTrack));
-
-      if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.3) continue;
-      if (iTrack->pt()<15) continue;
+      if(fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.3) continue;
+      if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
       if (iTrack->pt()>highendcaptrackpt)
-      {
+      { 
          highptendcaptrack = &(*iTrack);
          highendcaptrackpt = iTrack->pt();
       }
@@ -38,7 +38,6 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
    int vtxindex = -1;
    int trackindex = -1;
    double Isolation = 0;
-   //double Isolation = 0;a
    for(unsigned int i=0;i<vtxHandle->size();i++)
    {
       reco::VertexRef vtx(vtxHandle, i);

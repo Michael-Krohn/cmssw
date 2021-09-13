@@ -26,168 +26,164 @@ MCHistograms::MCHistograms()
    cutProgress = -0.5;
 }
 
-void MCHistograms::book(edm::Service<TFileService> fs){
+void MCHistograms::book(TFileDirectory histFolder){
 
-  m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
-  m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
+  m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
+  m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
+  m_signalCategory = histFolder.make<TH1F>("signalCategory",";Signal Category; Events", 3,-0.5,2.5);
+  m_DiMuonMass = histFolder.make<TH1F>("DiMuonInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 50, 150);
+  m_TagMuonEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
+  m_TagMuonPt = histFolder.make<TH1F>("TaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
+  m_nSelectedMuons = histFolder.make<TH1F>("NumberOfSelectedMuons","; # of Selected Muons; Events", 20, -0.5, 19.5);
+  m_nMatchedMuons = histFolder.make<TH1F>("NumberOfPairedProbes","; # of Paired Probes; Events", 20, -0.5, 19.5);
 
-  m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
-  m_SimInvMass = fs->make<TH1F>("SimMuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
-  m_DiMuonMass = fs->make<TH1F>("DiMuonInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 70, 110);
-  m_TagMuonEta = fs->make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
-  m_TagMuonPt = fs->make<TH1F>("TaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
-  m_NoBackupTagMuonEta = fs->make<TH1F>("NoBackupTaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
-  m_NoBackupTagMuonPt = fs->make<TH1F>("NoBackupTaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
-  m_nSelectedMuons = fs->make<TH1F>("NumberOfSelectedMuons","; # of Selected Muons; Events", 20, -0.5, 19.5);
-  m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
-  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
-  m_MuonEtaDist = fs->make<TH1F>("MuonEtaDist",";#eta; Events", 100,-10,10);
-  m_TrackPt = fs->make<TH1F>("SelectedTrackPt",";#Pt (GeV); Events", 200, 0, 100);
-  m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
-  m_DBremLocation = fs->make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
-  m_WeightedDBremLocation = fs->make<TH2F>("WeightedDarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
-  m_DeflectingAngle = fs->make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
-  m_initialMuE = fs->make<TH1F>("MuInitialE",";Energy (GeV);Events",800,0,800);
-  m_finalMuE = fs->make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,800);
-  m_initialMuPt = fs->make<TH1F>("MuInitialPt",";Pt (GeV);Events",200,0,400);
-  m_finalMuPt = fs->make<TH1F>("MuFinalPt",";Pt (GeV);Events",200,0,400);
-  m_dphoEnergy = fs->make<TH1F>("DarkPhotonEnergy",";Energy (GeV);Events",100,0,200);
-  m_TrackMotherdE = fs->make<TH1F>("MotherTrackdE",";#Delta E /E ;Events",100,0,1);
-  m_TrackMotherdR = fs->make<TH1F>("MotherTrackdR",";#Delta R ;Events",50,0,0.5);
-  m_FractionalELost = fs->make<TH1F>("FractionalELost",";Fraction of Energy Remaining;Events",100,0,1);
-  m_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
-  m_HitDepth_MuonHCAL = fs->make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
-  m_HitsOverThresh = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
-  m_BremDepth = fs->make<TH1F>("BremDepth", "; Depth of Dark Brem; Events", 8,-0.5,7.5);
-  m_WeightedBremDepth = fs->make<TH1F>("WeightedBremDepth", "; Depth of Dark Brem; Events", 8,-0.5,7.5);
-  for(int i=0;i<7;i++)
-  {
-    std::string name = "Depth"+std::to_string(i+1)+"HitsOverThresh";
-    std::string specname = "Depth"+std::to_string(i+1)+"Spectra";
-    m_HitsOverThreshSplit[i] = fs->make<TH1F>(name.c_str(), "; Hits Over Threshold; Events", 8,-0.5,7.5);
-    m_Depth_Spectra[i] = fs->make<TH1F>(specname.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
-  }
-  m_BremSpectrum = fs->make<TH1F>("BremSpectrum","; Energy of Nearest Depth to Brem; Events", 200,0,10);
-  m_CSC_dR = fs->make<TH1F>("dRtoNearestCSC","; dR from Projected Track to Nearest CSC hit; Events", 140,0,7);
-  m_NThreshCut = fs->make<TH1F>("NPassAdjacentCut","; Fail cut in bin zero, pass in bin 1; Events", 2,-0.5,1.5);
-  m_TrackerVGlobal = fs->make<TH1F>("TrackerVGlobalMuons","; Only global in bin one, only tracker in two, both in three, neither in four; Muons", 4,0.5,4.5);
-  m_MuonMotherdE = fs->make<TH1F>("MuonMotherdE","; #Delta E / E; Events",100,0,1);
-  m_MuonMotherdR = fs->make<TH1F>("MuonMotherdR","; #Delta R; Events",200,0,4);
-  m_CSCHitChiSq = fs->make<TH1F>("CSCChiSquared","; #Chi^2; Events",200,0,10);
-  m_CSCHitAngleChange = fs->make<TH1F>("CSCDeflection","; #Theta; Events", 200, 0, 3.15);
-  m_StandaloneMuonE = fs->make<TH1F>("StandaloneMuonE","; Energy (GeV); Events", 200, 0, 200);
-  m_GlobalMuonE = fs->make<TH1F>("GlobaldMuonE","; #Delta E over E; Events",200,0,200);
-  m_StandalonedE = fs->make<TH1F>("StandaloneMuondEoverE","; (Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
-  m_NonMatchedE = fs->make<TH1F>("NoMatchDeflectedE","; Deflected Muon Energy; Events", 200, 0, 200);
-  m_NonMatchedLocation = fs->make<TH2F>("NonMatchedLocation",";Z;#rho;Events",150,0,600,150,0,600);
-  m_MatchedLocation = fs->make<TH2F>("MatchedLocation",";#eta; #phi; Events", 200, -2.4,2.4, 100, -3.2, 3.2);
-  m_NonMatchedLocationEtaPhi = fs->make<TH2F>("NonMatchedEtaPhi",";#eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
-  m_NonMatchedHitsOverThresh = fs->make<TH1F>("NonMatchedHitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
-  m_NonMatchedHEDeposit = fs->make<TH1F>("NonMatchedConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
-  m_NonMatchedCSC = fs->make<TH1F>("NonMatcheddRtoNearestCSC","; dR from Projected Track to Nearest CSC hit; Events", 140,0,7);
-  m_NHitStandalonedR = fs->make<TH1F>("NHitStandalonedR","; #DeltaR; Events", 200, 0, 4);
-  m_NHitStandaloneMuonE = fs->make<TH1F>("NHitStandaloneMuonE","; Energy (GeV); Events", 200, 0, 200);
-  m_NHitStandalonedE = fs->make<TH1F>("NHitStandaloneMuondEoverE","; (Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
-  m_BigCSCLocations = fs->make<TH2F>("BigCSCEtaPhi",";#eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
-  m_LowEHCAL = fs->make<TH1F>("SmallMuonHCALEnergies",";HCAL Energy (GeV); Events", 200,0,200);
-  m_NStandalone = fs->make<TH1F>("NumberOfStandaloneMuons",";Number of Standalone Muons; Events", 5,-0.5,4.5);
-  m_NMatchStandaloneDr = fs->make<TH1F>("NonMatcheddRtoNearestStandalone","; dR from Projected Track to Nearest Standalone Muon; Events", 140,0,7);
-  m_NMatchStandaloneDE = fs->make<TH1F>("NonMatchedDeltaEOverENearestStandalone","; #Delta E /E; Events", 200, -1,1);
-  m_NMatchStandaloneE = fs->make<TH1F>("NonMatchedStandaloneE","; Energy (GeV); Events", 200, 0, 200);
-  m_StandalonePlusHCALDE = fs->make<TH1F>("StandaloneMuonPlusHCALDEOverE","; (Standalone Energy + HCAL deposits)/Truth Energy); Events", 200,-1,1);
-  m_NMatchNHitLocation = fs->make<TH2F>("NoMatchNoStandaloneLocation","; #eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
-  m_NMatchNHitEnergy = fs->make<TH1F>("NonMatchedNoStandaloneE","; Energy (GeV); Events", 200, 0, 200);
-  m_NMatchNHitHCALEnergy = fs->make<TH1F>("NonMatchNStandaloneConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
-  m_NMatchVertexOffset = fs->make<TH1F>("NonMatchClosestApproach","; Distance of Closest Approach; Events", 200, 0, 10);
-  m_AllVertexOffset = fs->make<TH1F>("AllClosestApproach","; Distance of Closest Approach; Events", 200, 0, 10);
-  m_NStandaloneAdjacentHitEnergies = fs->make<TH1F>("NonMatchAdjacentEnergies","; Energy in Adjacent Hits; Events", 200, 0, 200);  
-  m_AdjacentFailHitEnergy = fs->make<TH1F>("FailAdjacentHitEnergy","; Energy in adjacent hit (Gev); Events", 200, 0, 20);
-  m_NStandaloneAdjacentFailHitEnergy = fs->make<TH1F>("NStandaloneFailAdjacentHitEnergy","; Energy in adjacent hit (Gev); Events", 200, 0, 20);
-  m_EventWeights = fs->make<TH1F>("EventWeights","; Weight; Number of Events", 200, 0, 10);
-  m_SignalSelectionCuts = fs->make<TH1F>("SignalCuts","; Event Category; Events", 3, -0.5, 2.5);
-  m_WeightedSignalSelectionCuts = fs->make<TH1F>("WeightedSignalCuts","; Event Category; Events", 3, -0.5, 2.5);
-  m_DBremR = fs->make<TH1F>("Dark Brem R","; Dark Brem R; Events", 300,0, 600);
-  m_WeightedDBremR = fs->make<TH1F>("Weighted Dark Brem R","; Dark Brem R; Events", 300,0, 600);
-  m_NMatchNStandaloneHitsOverThresh = fs->make<TH1F>("NSHitsOverThresh","; Hits Over Threshold; Events", 8, -0.5, 7.5);
-  m_PassSigEta = fs->make<TH1F>("PassSigEta","; Eta; Number of Events", 100, -2.4, 2.4);
-  m_PassSigHEHits = fs->make<TH1F>("PassSigHEHits","; Hits in HE; Number of Events", 8, -0.5, 7.5);
-  m_PassSigHEEnergy = fs->make<TH1F>("PassSigHEEnergy","; Cone energy in HE (GeV); Number of Events", 200, 0, 100);
-  m_PassSigHEHitByDepth = fs->make<TH1F>("PassSigHEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
-  m_PassSigDrtoCSC = fs->make<TH1F>("PassSigDrtoCSC","; #Delta R to Nearest CSC; Number of Events", 140, 0, 0.5);
-  m_PassSigDrtoStandalone = fs->make<TH1F>("PassSigDrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
-  m_PassSigLocation = fs->make<TH2F>("PassSigLocation","; #eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
-  m_PassSigVtxZ = fs->make<TH1F>("PassSigVtxZ","; Vertex z position; Events", 100,-20,20);
-  m_NPassSigVtxZ = fs->make<TH1F>("NPassSigVtxZ","; Vertex z position; Events", 100,-20,20);
-  m_NPassSigLocation = fs->make<TH2F>("NPassSigLocation","; #eta; #phi; Events", 200, -2.4, 2.4, 100, -3.2, 3.2);
-  m_NPassSigEta = fs->make<TH1F>("NPassSigEta","; Eta; Number of Events", 100, -2.4, 2.4);
-  m_NPassSigHEHits = fs->make<TH1F>("NPassSigHEHits","; Hits in HE; Number of Events", 8, -0.5, 7.5);
-  m_NPassSigHEEnergy = fs->make<TH1F>("NPassSigHEEnergy","; Cone energy in HE (GeV); Number of Events", 200, 0, 100);
-  m_NPassSigHEHitByDepth = fs->make<TH1F>("NPassSigHEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
-  m_NPassSigDrtoCSC = fs->make<TH1F>("NPassSigDrtoCSC","; #Delta R to Nearest CSC; Number of Events", 140, 0, 0.5);
-  m_NPassSigDrtoStandalone = fs->make<TH1F>("NPassSigDrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
-  m_FailAdjVtxZ = fs->make<TH1F>("FailAdjVtxZ","; Vertex Z position; Events", 100, -20, 20);
-  m_HECellsFound = fs->make<TH1F>("NHECellsFound","; Cells found in HE; Number of Events", 30,0,30);
-  m_BigEtaAdjFaildEtadPhiMuPlusEtaPlus = fs->make<TH2F>("BMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAdjFaildEtadPhiMuPlusEtaMinus = fs->make<TH2F>("BMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAdjFaildEtadPhiMuMinusEtaPlus = fs->make<TH2F>("BMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAdjFaildEtadPhiMuMinusEtaMinus = fs->make<TH2F>("BMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAlldEtadPhiMuPlusEtaPlus = fs->make<TH2F>("BAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAlldEtadPhiMuPlusEtaMinus = fs->make<TH2F>("BAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAlldEtadPhiMuMinusEtaPlus = fs->make<TH2F>("BAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigEtaAlldEtadPhiMuMinusEtaMinus = fs->make<TH2F>("BAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAdjFaildEtadPhiMuPlusEtaPlus = fs->make<TH2F>("SMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAdjFaildEtadPhiMuPlusEtaMinus = fs->make<TH2F>("SMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAdjFaildEtadPhiMuMinusEtaPlus = fs->make<TH2F>("SMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAdjFaildEtadPhiMuMinusEtaMinus = fs->make<TH2F>("SMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAlldEtadPhiMuPlusEtaPlus = fs->make<TH2F>("SAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAlldEtadPhiMuPlusEtaMinus = fs->make<TH2F>("SAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAlldEtadPhiMuMinusEtaPlus = fs->make<TH2F>("SAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_SmallEtaAlldEtadPhiMuMinusEtaMinus = fs->make<TH2F>("SAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BigCSCdrEta = fs->make<TH1F>("BigCSCdrEta","; #eta; Events", 200, -2.4,2.4);
-  m_NMatchedMuons = fs->make<TH1F>("NMatchedMuons", "; Number of tagging muons matching track; Events", 10,-0.5,9.5);
-  m_MinCSCImpactParameter = fs->make<TH1F>("CSCMinImpact", "; CSC Min Impact Parameter; Events", 300, 0, 1000);
-  m_EventsWithDpho = fs->make<TH1F>("EventsWithDpho", "; Bin; Events", 2,0,2);
-  m_PairVtxChi = fs->make<TH1F>("PairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
-  m_SimVtxChi = fs->make<TH1F>("SimPairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
-  m_BigConeEnergy = fs->make<TH1F>("BigConeEnergy", "; Energy of hits within #Delta R of 0.3 to Probe Muon; Events", 100, 0, 20);
-  m_SimProbeTrackPt = fs->make<TH1F>("SimProbeTrackPt", "; Pt of Probe Track from Z decay; Events", 100, 0, 120);
-  m_SimProbeTrackEta = fs->make<TH1F>("SimProbeTrackEta", "; #eta of Potential Probe Tracks; Events", 100, -2.6, 2.6);
-  m_ReducedHEConeEnergy = fs->make<TH1F>("ReducedHEConeEnergy", "; Energy of hits >0.8 GeV Along Probe Muon Path; Events", 100, 0, 20);
-  m_TrackIsolation = fs->make<TH1F>("TrackIsolation","; Track Based Isolation; Events",200,0,5);
+  m_ConeHits = histFolder.make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
+  m_ConeEnergy = histFolder.make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
+  m_NMatchNHitHCALEnergy = histFolder.make<TH1F>("NMatchNHitConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
+  m_NMatchNHitLocation = histFolder.make<TH2F>("NMatchNHitLocation",";Z;#rho;Events",150,0,600,150,0,600);
+  m_ProbeTrackPt = histFolder.make<TH1F>("ProbeTrackPt",";#Pt (GeV); Events", 200, 0, 100);
+  m_ProbeTrackEta = histFolder.make<TH1F>("ProbeTrackEta",";#eta; Events", 200, -4, 4);
+  m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
+  m_DeflectingAngle = histFolder.make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
+  m_initialMuE = histFolder.make<TH1F>("MuInitialE",";Energy (GeV);Events",800,0,800);
+  m_finalMuE = histFolder.make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,800);
+  m_DBremScalingDistance = histFolder.make<TH1F>("DarkBremScalingDistance",";Initial E/Sampled E; Events", 100,0,4);
+  m_ProbeEcalIsolation = histFolder.make<TH1F>("ProbeEcalIsolation",";Ecal Isolation; Events", 100,0,100);
+  m_TrackMotherdE = histFolder.make<TH1F>("MotherTrackdE",";#Delta E /E ;Events",100,0,1);
+  m_TrackMotherdR = histFolder.make<TH1F>("MotherTrackdR",";#Delta R ;Events",50,0,0.5);
+  m_FractionalELost = histFolder.make<TH1F>("FractionalELost",";Fraction of Energy Remaining;Events",100,0,1);
+  m_HitsOverThresh = histFolder.make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_BremDepth = histFolder.make<TH1F>("BremDepth", "; Depth of Dark Brem; Events", 8,-0.5,7.5);
+  m_CSC_dR = histFolder.make<TH1F>("dRtoNearestCSC","; dR from Projected Track to Nearest CSC hit; Events", 400,0,4);
+  m_MuonMotherdE = histFolder.make<TH1F>("MuonMotherdE","; #Delta E / E; Events",100,0,1);
+  m_MuonMotherdR = histFolder.make<TH1F>("MuonMotherdR","; #Delta R; Events",200,0,4);
+  m_CSCHitChiSq = histFolder.make<TH1F>("CSCChiSquared","; #Chi^2; Events",200,0,10);
+  m_CSCHitAngleChange = histFolder.make<TH1F>("CSCDeflection","; #Theta; Events", 200, 0, 3.15);
+  m_StandaloneMuonE = histFolder.make<TH1F>("StandaloneMuonE","; Energy (GeV); Events", 200, 0, 200);
+  m_GlobalMuonE = histFolder.make<TH1F>("GlobaldMuonE","; #Delta E over E; Events",200,0,200);
+  m_StandalonedE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
+  m_MatchedLocation = histFolder.make<TH2F>("MatchedLocation",";#eta; #phi; Events", 200, -2.4,2.4, 100, -3.2, 3.2);
+  m_AllVertexOffset = histFolder.make<TH1F>("AllClosestApproach","; Distance of Closest Approach; Events", 200, 0, 10);
+  m_EventWeights = histFolder.make<TH1F>("EventWeights","; Weight; Number of Events", 200, 0, 10);
+  m_DBremR = histFolder.make<TH1F>("Dark Brem R","; Dark Brem R; Events", 300,0, 600);
+  m_HEHitByDepth = histFolder.make<TH1F>("HEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
+  m_DrtoStandalone = histFolder.make<TH1F>("DrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
+  m_CaloJetEcalE = histFolder.make<TH1F>("CaloJetEcalE",";Calo Jet Ecal E (GeV); Events", 100,0,100);
+  m_CaloJetHcalE = histFolder.make<TH1F>("CaloJetHcalE",";Calo Jet Ecal E (GeV); Events", 100,0,100);
+  m_CaloJetTotalE = histFolder.make<TH1F>("CaloJetTotalE",";Calo Jet Total E (GeV); Events", 100,0,100);
+  m_CaloConeEnergy = histFolder.make<TH1F>("CaloConeEnergy",";Calo Cone Total E (geV); Events", 100,0,100);
+  m_CaloConeHits = histFolder.make<TH1F>("CaloConeHits",";Calo Cone Hits; Events",20,-0.5,19.5);
+
+  m_HECellsFound = histFolder.make<TH1F>("NHECellsFound","; Cells found in HE; Number of Events", 30,0,30);
+/*
+  m_BigEtaAdjFaildEtadPhiMuPlusEtaPlus = histFolder.make<TH2F>("BMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuPlusEtaMinus = histFolder.make<TH2F>("BMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuMinusEtaPlus = histFolder.make<TH2F>("BMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAdjFaildEtadPhiMuMinusEtaMinus = histFolder.make<TH2F>("BMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuPlusEtaPlus = histFolder.make<TH2F>("BAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuPlusEtaMinus = histFolder.make<TH2F>("BAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuMinusEtaPlus = histFolder.make<TH2F>("BAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_BigEtaAlldEtadPhiMuMinusEtaMinus = histFolder.make<TH2F>("BAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuPlusEtaPlus = histFolder.make<TH2F>("SMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuPlusEtaMinus = histFolder.make<TH2F>("SMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuMinusEtaPlus = histFolder.make<TH2F>("SMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAdjFaildEtadPhiMuMinusEtaMinus = histFolder.make<TH2F>("SMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuPlusEtaPlus = histFolder.make<TH2F>("SAllMuPlusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuPlusEtaMinus = histFolder.make<TH2F>("SAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuMinusEtaPlus = histFolder.make<TH2F>("SAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_SmallEtaAlldEtadPhiMuMinusEtaMinus = histFolder.make<TH2F>("SAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);*/
+  m_MinCSCImpactParameter = histFolder.make<TH1F>("CSCMinImpact", "; CSC Min Impact Parameter; Events", 300, 0, 1000);
+  m_PairVtxChi = histFolder.make<TH1F>("PairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
+  m_TrackIsolation = histFolder.make<TH1F>("TrackIsolation","; Track Based Isolation; Events",200,0,5);
+  m_TrackQuality = histFolder.make<TH1F>("TrackQuality","; Track Quality; N Tracks",3,-0.5,2.5);
+  m_TrackReducedChi = histFolder.make<TH1F>("TrackReducedChi","; Track Reduced #chi^{2}; Events",100,0,30);
+  m_HcalPlusEcal = histFolder.make<TH1F>("HcalPlusEcalE","; Ecal Cone + Hcal cone (GeV); Events",100,0,100);
+  m_Probedxy = histFolder.make<TH1F>("ProbeTrackdxy","; Probe Track dxy; Events",200,-0.3,0.3);
+  m_Probedsz = histFolder.make<TH1F>("ProbeTrackdsz","; Probe Track dsz; Events",200,-7,7);
 }
 
-void MCHistograms::IncCutFlow()
+void MCHistograms::FillHists(SigEventInfo info)
+{
+   m_eventCount->Fill(0.5,info.eventWeight);
+   m_EventWeights->Fill(info.eventWeight);
+   m_signalCategory->Fill(info.sigCat,info.eventWeight);
+   m_DBremLocation->Fill(info.vtxZ,info.vtxPerp,info.eventWeight);
+   m_DBremR->Fill(info.bremR,info.eventWeight); 
+   double scales[10] = {1,2,10,20,30,50,100,150,250,500};
+   int scaleindex=0;
+   while(scales[scaleindex]<(info.dbremInitialE)&&scaleindex<9){scaleindex++;}
+   float scaleDistance = info.dbremInitialE/scales[scaleindex];
+   m_DBremScalingDistance->Fill(scaleDistance,info.eventWeight);
+   m_nSelectedMuons->Fill(info.nTagMuons,info.eventWeight);
+   m_nMatchedMuons->Fill(info.nPairedProbes,info.eventWeight);
+   m_TrackIsolation->Fill(info.probeTrackIso,info.eventWeight);
+   m_HcalPlusEcal->Fill(info.caloConeE+info.probeEcalIso,info.eventWeight);
+   m_Probedxy->Fill(info.dxy,info.eventWeight);
+   m_Probedsz->Fill(info.dsz,info.eventWeight);
+   if(info.isLoose){m_TrackQuality->Fill(0.1,info.eventWeight);}
+   if(info.isTight){m_TrackQuality->Fill(1.1,info.eventWeight);}
+   if(info.isHighPurity){m_TrackQuality->Fill(2.1,info.eventWeight);}
+   m_TrackReducedChi->Fill(info.probeReducedChi,info.eventWeight);
+   m_TagMuonEta->Fill(info.tagMuonEta,info.eventWeight);
+   m_PairVtxChi->Fill(info.pairVtxChi,info.eventWeight);
+   m_ProbeEcalIsolation->Fill(info.probeEcalIso,info.eventWeight);
+   m_TagMuonPt->Fill(info.tagMuonPt,info.eventWeight); 
+   m_ProbeTrackPt->Fill(info.probeTrackPt,info.eventWeight);
+   m_ProbeTrackEta->Fill(info.probeTrackEta,info.eventWeight);
+   m_DiMuonMass->Fill(info.diMuonMass,info.eventWeight);
+   m_DeflectingAngle->Fill(info.deflectingAngle,info.eventWeight);
+   m_FractionalELost->Fill(info.dbremFinalE/info.dbremInitialE,info.eventWeight);
+   m_initialMuE->Fill(info.dbremInitialE,info.eventWeight);
+   m_finalMuE->Fill(info.dbremFinalE,info.eventWeight);
+   m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter,info.eventWeight);
+   m_CSC_dR->Fill(info.cscMinDR,info.eventWeight);
+   m_CSCHitChiSq->Fill(info.cscChiSq,info.eventWeight);
+   if(info.cscHitAngleChange<10)
+   {
+      m_CSCHitAngleChange->Fill(info.cscHitAngleChange,info.eventWeight);
+      m_MatchedLocation->Fill(info.probeTrackEta,info.probeTrackPhi,info.eventWeight);   
+      m_MuonMotherdE->Fill(info.probeMuondE,info.eventWeight);
+      m_MuonMotherdR->Fill(info.probeMuondR,info.eventWeight);
+      m_StandaloneMuonE->Fill(info.standaloneE,info.eventWeight);
+      m_GlobalMuonE->Fill(info.globalMuonE,info.eventWeight);
+      m_StandalonedE->Fill(info.standaloneDEoverE,info.eventWeight);
+   }
+   m_AllVertexOffset->Fill(info.closestApproach,info.eventWeight);  
+   m_HECellsFound->Fill(info.nCellsFound,info.eventWeight);
+   if(info.staMinDr>0.5&&info.cscHitAngleChange>10)
+   {
+      m_NMatchNHitHCALEnergy->Fill(info.coneEnergy,info.eventWeight);
+      if(info.coneEnergy<10){m_NMatchNHitLocation->Fill(info.probeTrackEta,info.probeTrackPhi,info.eventWeight);}
+   }   
+   for(int i=0;i<7;i++)
+   {
+      if(info.hitEnergies[i]>0.1){m_HEHitByDepth->Fill(i+1,info.eventWeight);}
+   }
+   m_DrtoStandalone->Fill(info.staMinDr,info.eventWeight);
+   m_CaloJetEcalE->Fill(info.caloJetEcalE,info.eventWeight);
+   m_CaloJetHcalE->Fill(info.caloJetHcalE,info.eventWeight);
+   m_CaloJetTotalE->Fill(info.caloJetTotalE,info.eventWeight);
+   m_CaloConeEnergy->Fill(info.caloConeE,info.eventWeight);
+   m_CaloConeHits->Fill(info.caloConeHits,info.eventWeight);
+   m_TrackMotherdR->Fill(info.genProbeMatchdR,info.eventWeight);
+   m_TrackMotherdE->Fill(info.genProbeMatchdE,info.eventWeight);
+   m_BremDepth->Fill(info.bremDepth,info.eventWeight);
+   m_ConeEnergy->Fill(info.coneEnergy,info.eventWeight);
+   m_ConeHits->Fill(info.coneHits,info.eventWeight);
+   m_HitsOverThresh->Fill(info.hitsOverThresh,info.eventWeight);
+   
+   
+}
+
+void MCHistograms::IncCutFlow(double weight)
 {
    cutProgress++;
-   m_cutProgress->Fill(cutProgress);
+   m_cutProgress->Fill(cutProgress,weight);
    return;
 }
 
 void MCHistograms::ResetCutFlow()
 {
    cutProgress = -0.5;
-}
-
-void MCHistograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label)
-{
-
-  edm::Handle<CSCSegmentCollection> TheCSCSegments;
-  iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
-
-  edm::ESHandle<CSCGeometry> TheCSCGeometry;
-  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
-
-  if ((TheCSCSegments.isValid())&&(m_CSCHits_EtaPhi->GetEntries()==0))
-  {
-     for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++)
-     {
-        //CSCDetId iDetId = (CSCDetId)(*iSegment).cscDetId();
-	//if(iDetId.station() != 1) continue;
-        DetId TheDetUnitId(iSegment->cscDetId());
-	const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
-	m_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());
-     }
-  }
-	
 }
 

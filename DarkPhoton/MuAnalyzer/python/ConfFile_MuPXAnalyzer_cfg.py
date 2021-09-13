@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  False,
+                                  True,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -15,6 +15,12 @@ options.register( 'runLocally',
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if running locally")
+
+options.register( 'signalRegion',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if running on MC in isolated region")
 
 options.parseArguments()
 
@@ -46,7 +52,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/DYJets.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/DYJets_SignalRegion.txt')
 	else:
 	   mylist = FileUtils.loadListFromFile('datafiles/rund2018.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -84,6 +90,7 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     TowerSource = cms.InputTag("caloStage2Digis","CaloTower"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),
     isMC = cms.untracked.bool(options.isMC),
+    signalRegion = cms.untracked.bool(options.signalRegion)
 )
 
 process.TFileService = cms.Service("TFileService",

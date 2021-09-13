@@ -30,5 +30,14 @@ MuPXEventInfo::MuPXEventInfo()
     tagCaloJetE=-1;
     probeCaloJetEcal=-1;
     probeCaloJetHcal=-1;
+    farMuE=0;
+    farMuDr=0;
+    farMuEta=0;
+    genTagMuDr=0;
+    genPdgId=0;
+    tagPdgId=0;
+    passLooseMatch=false;
+    nonMuPdgId=0;
+    nLooseMuons=0;
 }
 
