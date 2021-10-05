@@ -24,7 +24,7 @@ void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToke
     //PFIso Loose requirement
     if(!(iMuon->passed(reco::Muon::PFIsoTight))) continue;
     //Track iso
-    if(!(iMuon->passed(reco::Muon::TkIsoTight))) continue;
+//    if(!(iMuon->passed(reco::Muon::TkIsoTight))) continue;
 //    if ((iMuon->pfIsolationR04().sumChargedHadronPt + TMath::Max(0., iMuon->pfIsolationR04().sumNeutralHadronEt + iMuon->pfIsolationR04().sumPhotonEt - 0.5*iMuon->pfIsolationR04().sumPUPt))/iMuon->pt() > 0.25) continue;
 
     //pT above trigger turnon

@@ -8,6 +8,7 @@ SigEventInfo::SigEventInfo()
    eventWeight = 1;
    dbremZ = -1;
    dbremPerp = -1;
+   sigCat = -1;
    bremDepth = -1;
    dbremInitialE = -1;
    dbremFinalE = -1;

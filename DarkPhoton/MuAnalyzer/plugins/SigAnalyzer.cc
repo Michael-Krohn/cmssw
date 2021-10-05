@@ -157,11 +157,13 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool m_isMC;
     bool m_isSig;
     bool m_hasDpho;
+    double m_scaleFactor;
     bool m_runRandomTrackEfficiency;
     double standaloneE;
     double weight_;
 
     MCHistograms allEvents;
+    MCHistograms preSelectedEvents;
     MCHistograms failSig;
     MCHistograms passTight;
     MCHistograms failAdjacent;
@@ -192,6 +194,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
   m_isSig (iConfig.getUntrackedParameter<bool>("isSig",false)),
   m_hasDpho (iConfig.getUntrackedParameter<bool>("hasDpho",false)),
+  m_scaleFactor (iConfig.getUntrackedParameter<double>("scaleFactor",2000)),
   m_runRandomTrackEfficiency (iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency",false))
 {
    //now do what ever initialization is neededa
@@ -219,6 +222,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   edm::Service<TFileService> fs;
 
   allEvents.book(fs->mkdir("allEvents"));
+  preSelectedEvents.book(fs->mkdir("preSelected"));
   failSig.book(fs->mkdir("failSig"));
   passTight.book(fs->mkdir("passTight"));
   failAdjacent.book(fs->mkdir("failAdjacent"));
@@ -270,10 +274,13 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
        iEvent.getByToken(m_dbremXToken,dbremX);
        iEvent.getByToken(m_dbremYToken,dbremY);
        iEvent.getByToken(m_dbremZToken,dbremZ);
-       weight_ = *dbremweight*40000;
+       weight_ = *dbremweight*m_scaleFactor;
+       if(weight_>10){return;}
      }
      else{return;}
   }
+  info.eventWeight=weight_;
+  allEvents.IncCutFlow(info.eventWeight); 
   edm::Handle<reco::TrackCollection> staTracks;
   iEvent.getByToken(m_theSTAMuonLabel, staTracks);
   edm::Handle<reco::VertexCollection> vtxHandle;
@@ -283,7 +290,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
   if (!m_hasDpho){weight_ = 1.;}
-  info.eventWeight = weight_;
   myTracks.SelectTracks(iEvent, trackCollection_label);
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
   double nstandalone = staTracks->size(); 
@@ -299,7 +305,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      info.dbremInitialE=*dbremInitialE;
   //   }
   }
-  if(info.bremR==0){info.bremR=450;}
+  if(info.bremR==0){info.bremR=525;}
   //Find deflected muon or the initial muon if there was no deflection
   double FmuE = 0;
   math::XYZTLorentzVectorD FinalMu;
@@ -319,19 +325,26 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   double tageta = 0;
   double tagpt = -1.;
   double pairVtxChi = -1.;
+  double cutpro=0;
   //Pair our dark brem candidate track with a tagging muon to reconstruct a Z
   for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
   {
      if(myMuons.selectedMuons.size()<1){continue;}
+     if(cutpro<1){cutpro=1;}
      if(myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
+     if(cutpro<2){cutpro=2;}
      if(!myMuons.highPtSelectedMuon->isGlobalMuon()) continue;
+     if(cutpro<3){cutpro=3;}
      if(fabs((*iTrack)->dxy())>0.05) continue;
+     if(cutpro<4){cutpro=4;}
      if(myTracks.PairTracks(iTrack, myMuons.highPtSelectedMuon->globalTrack(), transientTrackBuilder))
      {
        double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
        double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-       if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
+       if((probeTrackIso/(*iTrack)->pt())>0.05||probeEcalIso>10.) continue;
+       if(cutpro<5){cutpro=5;}
        if(probeTrackIso<0){continue;}
+       if(cutpro<6){cutpro=6;}
        SiblingMatched=true;
        nMatches++;
        pairVtxChi=myTracks.pairvertexchi;
@@ -347,15 +360,21 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
      {
         if(myMuons.selectedMuons.size()<1){continue;}
+        if(cutpro<1){cutpro=1;}
         if(myMuons.secondhighPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
+        if(cutpro<2){cutpro=2;}
         if(!myMuons.secondhighPtSelectedMuon->isGlobalMuon()) continue;
+        if(cutpro<3){cutpro=3;}
         if(fabs((*iTrack)->dxy())>0.05) continue;
+        if(cutpro<4){cutpro=4;}
         if(myTracks.PairTracks(iTrack, myMuons.secondhighPtSelectedMuon->globalTrack(), transientTrackBuilder))
         {       
           double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
           double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-          if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
+          if((probeTrackIso/(*iTrack)->pt())>0.05||probeEcalIso>10.) continue;
+          if(cutpro<5){cutpro=5;}
           if(probeTrackIso<0){continue;}
+          cutpro=6;
           SiblingMatched=true;
           nMatches++;
           pairVtxChi=myTracks.pairvertexchi;
@@ -386,6 +405,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 
     mother.SetPxPyPzE(selectedTrack->momentum().x(),selectedTrack->momentum().y(),selectedTrack->momentum().z(),selectedTrack->p());
   }
+  cutpro++;
+  for(int i=0;i<cutpro;i++) {allEvents.IncCutFlow(info.eventWeight);}
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   if(myMuons.highmuonpt<26.){return;}
   info.nPairedProbes = nMatches;  
@@ -458,7 +479,11 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         info.standaloneDEoverE = stadEoverE;
      }
      info.staMinDr=staMinDr;
-     if(!myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, info, info.standaloneE, weight_, selectedTrack->dsz(), selectedTrack->charge(), transientTrackBuilder->build(selectedTrack))){return;}
+     if(!myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, info, info.standaloneE, weight_, selectedTrack->dsz(), selectedTrack->charge(), transientTrackBuilder->build(selectedTrack)))
+     {
+        allEvents.FailLocation(myHCAL.ieta,myHCAL.iphi, weight_);
+        return;
+     }
      allEvents.IncCutFlow(info.eventWeight);
      info.nCellsFound=myHCAL.CellsFound;
      //Signal categories
@@ -516,25 +541,33 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
            }
         }
      }
+     bool passPreSelection=false;
      if(myHCAL.m_coneEnergy<10&&selectedTrack->eta()>-2.35&&nearProbeCaloJetHadE<0)
      {
+        passPreSelection=true;
         if(staMinDr>0.5&&myCSCs.minDR>0.05)
 	{
-          info.sigCat = 2;
+          info.sigCat = 3;
 	  passSigCuts = true;
           passTight.FillHists(info);
 	}
-        if(staMinDr<0.5)
+        else if(staMinDr<0.5)
         {
-           if(info.standaloneDEoverE<-0.8||myHCAL.m_coneEnergy<2)
+           if(stadEoverE<-0.8&&myHCAL.m_coneEnergy<1.)
            {
               info.sigCat = 1;
            }
+           else if(stadEoverE<-0.6&&myHCAL.m_coneEnergy<2.)
+           {
+              info.sigCat = 2;
+	   }
+           else{info.sigCat=0;}
         }
+        else{info.sigCat = 0;}
      }
+     else{info.sigCat=0;}
      if(!passSigCuts)
      {
-        info.sigCat = 0;
         failSig.FillHists(info);
      }
      if(myHCAL.m_failAdjacent)
@@ -542,6 +575,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         failAdjacent.FillHists(info);
         if(passSigCuts){failAdjacentPassTight.FillHists(info);}
      }
+     if(passPreSelection){preSelectedEvents.FillHists(info);}
      allEvents.FillHists(info);
   }
 }

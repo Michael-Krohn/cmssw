@@ -33,30 +33,27 @@ GetOptions(
 print "$#ARGV\n";
 $nargs = $#ARGV;
 
-if ($#ARGV!=3 && $#ARGV!=6) {
-    print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] [isMC=True/False] [runRandomTrack=True/False] [runLocally=True/False] [isSig=True/False] [hasDpho=True/False]\n\n";
-    print "    --batch (number of files per jobs) (default $batch)\n";
-    print "    --start (output file number for first job) (default $startPoint)\n";
-    print "    --jobname (name of the job) (default based on base config)\n";
-    print "    --prodSpace (production space) (default $prodSpace)\n";
-    print "    --nosubmit (don't actually submit, just make files)\n";
-    print "    --xrootd (use xrootd for file access)\n";
-    print "    --nice (set nice_user=true)\n";
-    exit(1);
-}
+#if ($#ARGV!=3 && $#ARGV!=6) {
+#    print "Usage: [BASE CONFIG] [NAME OF FILE CONTAINING LIST OF FILENAMES] [isMC=True/False] [runRandomTrack=True/False] [runLocally=True/False] [isSig=True/False] [hasDpho=True/False]\n\n";
+#    print "    --batch (number of files per jobs) (default $batch)\n";
+#    print "    --start (output file number for first job) (default $startPoint)\n";
+#    print "    --jobname (name of the job) (default based on base config)\n";
+#    print "    --prodSpace (production space) (default $prodSpace)\n";
+#    print "    --nosubmit (don't actually submit, just make files)\n";
+#    print "    --xrootd (use xrootd for file access)\n";
+#    print "    --nice (set nice_user=true)\n";
+#    exit(1);
+#}
 
 $basecfg=shift @ARGV;
 $filelist=shift @ARGV;
 $cmsRunArguments=shift @ARGV;
-$cmsRunArguments2nd=shift @ARGV;
-if($nargs==6) {
-  $cmsRunArguments4th=shift @ARGV;
-  $cmsRunArguments5th=shift @ARGV;
-  print "cmsRun Arguments: $cmsRunArguments, $cmsRunArguments2nd, $cmsRunArguments3rd, $cmsRunArguments4th, and $cmsRunArguments5th\n";
+for(my $i = 0; $i <= $nargs-3; $i++)
+{  
+   $nextArg=shift @ARGV;
+   $cmsRunArguments=$cmsRunArguments." ".$nextArg;    
 }
-if($nargs==3) {
-  print "cmsRun Arguments: $cmsRunArguments and $cmsRunArguments2nd\n";
-}
+print "cmsRun Arguments: $cmsRunArguments\n";
 
 if ($jobBase eq "default") {
     my $stub3=$basecfg;
@@ -106,12 +103,7 @@ if ($nosubmit) {
     open(SUBMIT,"|condor_submit");
 }
 print(SUBMIT "Executable = $executable\n");
-if($nargs==3) {
-  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd\"\n");
-}
-if($nargs==6) {
-  print(SUBMIT "Arguments = \"$cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\"\n");
-}
+print(SUBMIT "Arguments = \"$cmsRunArguments\"\n");
 print(SUBMIT "Universe = vanilla\n");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
 print(SUBMIT "Error = $prodSpace/logs/error\n");
@@ -119,8 +111,8 @@ print(SUBMIT "request_memory = 2048\n");
 print(SUBMIT "Requirements = (Arch==\"X86_64\")");
 # Zebras are for remote login, not cluster computing
 print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"zebra04.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
-print(SUBMIT " && (Machine != \"scorpion24.spa.umn.edu\" && Machine != \"scorpion20.spa.umn.edu\" && Machine != \"scorpion44.spa.umn.edu\" && Machine != \"scorpion5.spa.umn.edu\")");
-print(SUBMIT " && (Machine != \"scorpion42.spa.umn.edu\" && Machine != \"scorpion43.spa.umn.edu\" && Machine != \"scorpion45.spa.umn.edu\" && Machine != \"scorpion46.spa.umn.edu\")");
+print(SUBMIT " && (Machine != \"scorpion24.spa.umn.edu\" && Machine != \"scorpion17.spa.umn.edu\" && Machine != \"scorpion23.spa.umn.edu\" && Machine != \"scorpion21.spa.umn.edu\" && Machine != \"scorpion1.spa.umn.edu\" && Machine != \"scorpion6.spa.umn.edu\" && Machine != \"scorpion20.spa.umn.edu\" && Machine != \"scorpion44.spa.umn.edu\" && Machine != \"scorpion9.spa.umn.edu\" && Machine != \"scorpion5.spa.umn.edu\")");
+print(SUBMIT " && (Machine != \"scorpion42.spa.umn.edu\" && Machine != \"scorpion43.spa.umn.edu\" && Machine != \"scorpion45.spa.umn.edu\" && Machine != \"scorpion16.spa.umn.edu\" && Machine != \"scorpion18.spa.umn.edu\" && Machine != \"scorpion46.spa.umn.edu\")");
 
 # These machines are VMs that run the grid interface
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\" && Machine != \"nova2.spa.umn.edu\")");
@@ -170,12 +162,7 @@ while ($i<=$#flist) {
     $log="$prodSpace/$jobBase/log/$stub.log";
     $elog="$prodSpace/$jobBase/log/$stub.err";
     $sleep=(($ii*2) % 60)+2;  # Never sleep more than a ~minute, but always sleep at least 2
-    if($nargs==3) {
-      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd\n");
-    }
-    if($nargs==6) {
-      print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments $cmsRunArguments2nd $cmsRunArguments3rd $cmsRunArguments4th $cmsRunArguments5th\n");
-    }
+    print(SUBMIT "Arguments = $arch $rt $prodSpace/$jobBase $jobCfg $log $elog $fname $sleep $jobf[0] $cmsRunArguments\n");
     print(SUBMIT "Queue\n");
 }
 

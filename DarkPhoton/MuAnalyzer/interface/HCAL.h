@@ -41,6 +41,8 @@ class HCAL{
     double m_hitEnergies[7];
     bool m_failAdjacent;
     int CellsFound;
+    int ieta;
+    int iphi;
 
   private:
     const double Hit_Thresholds[7] = {0.1,0.1,0.1,0.1,0.1,0.1,0.1};

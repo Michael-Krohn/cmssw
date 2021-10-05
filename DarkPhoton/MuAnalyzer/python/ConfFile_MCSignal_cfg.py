@@ -33,6 +33,13 @@ options.register( 'hasDpho',
                                   VarParsing.varType.bool,
                                   "True if dark brem particle is present")
 
+options.register( 'scaleFactor',
+                                  2000,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.float,
+                                  "Reweighting factor for dark brem process")
+				
+
 options.parseArguments()
 
 
@@ -64,7 +71,8 @@ if(options.runLocally):
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
 	   #mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem.txt')
-           mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
+           #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
+           mylist = FileUtils.loadListFromFile ('filetest.txt')
         else:
 	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -106,6 +114,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     isMC = cms.untracked.bool(options.isMC),
     isSig = cms.untracked.bool(options.isSig),
     hasDpho = cms.untracked.bool(options.hasDpho),
+    scaleFactor = cms.untracked.double(options.scaleFactor),
     runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 

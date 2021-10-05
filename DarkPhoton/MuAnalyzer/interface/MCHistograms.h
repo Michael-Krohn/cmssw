@@ -26,6 +26,7 @@ class MCHistograms{
     void FillHists(SigEventInfo info);
     void Normalize();
     void IncCutFlow(double weight);
+    void FailLocation(double ieta, double iphi, double weight);
     void ResetCutFlow();
   public:
     TH1F* m_eventCount;
@@ -46,6 +47,7 @@ class MCHistograms{
     TH1F* m_DBremScalingDistance;
     TH1F* m_ProbeTrackIsolation;
     TH1F* m_ProbeEcalIsolation;
+    TH2F* m_IsolationVariables;
     TH1F* m_TrackMotherdE;
     TH1F* m_TrackMotherdR;
     TH1F* m_FractionalELost;
@@ -76,6 +78,8 @@ class MCHistograms{
     TH1F* m_CaloConeEnergy;
     TH1F* m_CaloConeHits;
     TH1F* m_HECellsFound;
+    TH2F* m_HEEnergyStandaloneDEoverE;
+    TH2F* m_FailLocation;
 /*    TH2F* m_BigEtaAdjFaildEtadPhiMuPlusEtaPlus;
     TH2F* m_BigEtaAdjFaildEtadPhiMuPlusEtaMinus;
     TH2F* m_BigEtaAdjFaildEtadPhiMuMinusEtaPlus;

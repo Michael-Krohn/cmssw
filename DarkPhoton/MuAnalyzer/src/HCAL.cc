@@ -643,6 +643,8 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   TrackiPhi = ClosestCell.iphi();
   int BremDepth = ClosestCell.depth();
   m_bremDepth=BremDepth;
+  ieta = TrackiEta;
+  iphi = TrackiPhi;
   if(fabs(TrackiEta)<19){return false;}
   if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return false;}
   if(fabs(TrackiEta)>28){return false;}
