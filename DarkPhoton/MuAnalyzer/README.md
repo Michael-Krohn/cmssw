@@ -10,7 +10,6 @@ Preselection:
 	-Muons:
         	reco CutBasedIdTight
         	PFIsoTight
-        	TkIsoTight        !!Need to remove one of Iso reqs, keep forgetting to do so!!
         	pt>26 GeV
         	|eta|<2.4
         	GlobalMuon
