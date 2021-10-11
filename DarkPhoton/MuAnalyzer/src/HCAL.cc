@@ -285,7 +285,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(TrackGlobalPoint); 
   TrackiEta = ClosestCell.ieta();
   TrackiPhi = ClosestCell.iphi();
-  if(fabs(TrackiEta)<19){return;}
+  if(fabs(TrackiEta)<17){return;}
   if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return;}
   if(fabs(TrackiEta)>28){return;}
   const int Ndepths = 7;
@@ -645,7 +645,7 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   m_bremDepth=BremDepth;
   ieta = TrackiEta;
   iphi = TrackiPhi;
-  if(fabs(TrackiEta)<19){return false;}
+  if(fabs(TrackiEta)<17){return false;}
   if(TrackiEta<-16&&TrackiPhi>52&&TrackiPhi<64){return false;}
   if(fabs(TrackiEta)>28){return false;}
   const int Ndepths = 7;

@@ -14,7 +14,7 @@ class Muons{
   public:
     Muons();
 
-    void SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken);
+    int SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken);
 
     std::vector<const reco::Muon*> selectedMuons;
     std::vector<const reco::Muon*> selectedEndcapMuons;

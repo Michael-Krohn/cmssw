@@ -11,8 +11,8 @@ Muons::Muons()
   secondhighmuonpt=0;
 }
 
-void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken){
-
+int Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken){
+  int cutPro=0;
   edm::Handle<std::vector<reco::Muon>> recoMuons;
   iEvent.getByToken(m_recoMuonToken, recoMuons);
 
@@ -21,15 +21,19 @@ void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToke
     //Tight ID
 //    if (!(iMuon->isPFMuon() && iMuon->isGlobalMuon() )) continue;
     if(!(iMuon->passed(reco::Muon::CutBasedIdTight))) continue;
+    if(cutPro==0){cutPro=1;}
     //PFIso Loose requirement
     if(!(iMuon->passed(reco::Muon::PFIsoTight))) continue;
+    if(cutPro==1){cutPro=2;}
     //Track iso
 //    if(!(iMuon->passed(reco::Muon::TkIsoTight))) continue;
 //    if ((iMuon->pfIsolationR04().sumChargedHadronPt + TMath::Max(0., iMuon->pfIsolationR04().sumNeutralHadronEt + iMuon->pfIsolationR04().sumPhotonEt - 0.5*iMuon->pfIsolationR04().sumPUPt))/iMuon->pt() > 0.25) continue;
 
     //pT above trigger turnon
     if (iMuon->pt() < 26 || fabs(iMuon->eta()) > 2.4) continue;
-     
+    if(cutPro==2){cutPro=3;} 
+    if(!iMuon->isGlobalMuon()) continue;
+    if(cutPro==3){cutPro=4;}
     selectedMuons.push_back(&(*iMuon));
 
     if(selectedMuons.size() == 1){
@@ -64,5 +68,5 @@ void Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToke
        }
     }
   }
-
+  return cutPro;
 }

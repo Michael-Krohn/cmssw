@@ -30,6 +30,7 @@ MuPXHistograms::MuPXHistograms()
 void MuPXHistograms::book(TFileDirectory histFolder){
   m_eventWeight = histFolder.make<TH1F>("eventWeight",";Weight; Events",200, -100, 100);
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
+  m_SigCat = histFolder.make<TH1F>("Signal Category", "; Signal Category", 2, -0.5, 1.5);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
   for(int i=0;i<100;i++)
@@ -139,6 +140,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_NPassingTag->Fill(info.nPassingTag,info.eventWeight);
      for(int i=0; i<info.cutProgress;i++){IncCutFlow();} 
      if(!info.paired) return;  
+     m_SigCat->Fill(info.sigCat,info.eventWeight);
      m_ProbeTrackIso->Fill(info.probeTrackIso/info.probeTrack->pt(),info.eventWeight);
      m_ProbeEcalIso->Fill(info.probeEcalIso,info.eventWeight);
      m_ProbeHcalIso->Fill(info.probeHcalIso,info.eventWeight);

@@ -17,6 +17,7 @@ class MuPXEventInfo{
     MuPXEventInfo();
     double eventWeight;
     int cutProgress;
+    int sigCat;
     bool paired;
     double muonTrackMass;
     double adjMuonTrackMass;

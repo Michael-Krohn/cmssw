@@ -29,7 +29,7 @@ MCHistograms::MCHistograms()
 void MCHistograms::book(TFileDirectory histFolder){
 
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
-  m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 20, -.5, 19.5);
+  m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 40, -.5, 39.5);
   m_signalCategory = histFolder.make<TH1F>("signalCategory",";Signal Category; Events", 4,-0.5,3.5);
   m_DiMuonMass = histFolder.make<TH1F>("DiMuonInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 50, 150);
   m_TagMuonEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
@@ -49,7 +49,7 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_finalMuE = histFolder.make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,800);
   m_DBremScalingDistance = histFolder.make<TH1F>("DarkBremScalingDistance",";Initial E/Sampled E; Events", 100,0,4);
   m_ProbeEcalIsolation = histFolder.make<TH1F>("ProbeEcalIsolation",";Ecal Isolation; Events", 100,0,100);
-  m_IsolationVariables = histFolder.make<TH2F>("IsolationVars",";Track Isolation;Ecal Isolation; Events",6,0,30,8,0,0.2);
+  m_IsolationVariables = histFolder.make<TH2F>("IsolationVars",";ECAL Isolation;Track Isolation; Events",6,0,30,8,0,0.2);
   m_TrackMotherdE = histFolder.make<TH1F>("MotherTrackdE",";#Delta E /E ;Events",100,0,1);
   m_TrackMotherdR = histFolder.make<TH1F>("MotherTrackdR",";#Delta R ;Events",50,0,0.5);
   m_FailLocation = histFolder.make<TH2F>("FailLocation",";i#eta; i#phi; Events", 57, -30.5, 30.5, 76, 0.5, 72.5);
@@ -110,7 +110,6 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_eventCount->Fill(0.5,info.eventWeight);
    m_EventWeights->Fill(info.eventWeight);
    m_signalCategory->Fill(info.sigCat,info.eventWeight);
-   printf("Signal event in cat %i.\n",info.sigCat);
    m_DBremLocation->Fill(info.vtxZ,info.vtxPerp,info.eventWeight);
    m_DBremR->Fill(info.bremR,info.eventWeight); 
    double scales[10] = {1,2,10,20,30,50,100,150,250,500};
@@ -131,7 +130,7 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_TagMuonEta->Fill(info.tagMuonEta,info.eventWeight);
    m_PairVtxChi->Fill(info.pairVtxChi,info.eventWeight);
    m_ProbeEcalIsolation->Fill(info.probeEcalIso,info.eventWeight);
-   m_IsolationVariables->Fill(info.probeTrackIso,info.probeEcalIso,info.eventWeight);
+   m_IsolationVariables->Fill(info.probeEcalIso, info.probeTrackIso,info.eventWeight);
    m_TagMuonPt->Fill(info.tagMuonPt,info.eventWeight); 
    m_ProbeTrackPt->Fill(info.probeTrackPt,info.eventWeight);
    m_ProbeTrackEta->Fill(info.probeTrackEta,info.eventWeight);
@@ -186,8 +185,8 @@ void MCHistograms::FillHists(SigEventInfo info)
 
 void MCHistograms::IncCutFlow(double weight)
 {
-   cutProgress++;
    m_cutProgress->Fill(cutProgress,weight);
+   cutProgress++;
    return;
 }
 

@@ -9,6 +9,7 @@ MuPXEventInfo::MuPXEventInfo()
     cutProgress=0;
     paired=false;
     muonTrackMass=-1;
+    sigCat=-1;
     probeTrack=NULL;
     tagMuon=NULL;
     nPassingProbe=0;

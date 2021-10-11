@@ -180,6 +180,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     MuPXHistograms nonMuonProbe;
     MuPXHistograms genMatched;
     MuPXHistograms nonGenMatched;
+    MuPXHistograms passSig;
 };
 //
 // constants, enums and typedefs
@@ -235,6 +236,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
   genMatched.book(fs->mkdir("genMatched"));
   nonGenMatched.book(fs->mkdir("nonGenMatched"));
+  passSig.book(fs->mkdir("passSig"));
 }
 
 
@@ -315,8 +317,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   double MuonTrackMass=0;
 
 
-  //Looping over vertices and verifying there is at least 1 good one. Might be unnecessary since vertex fitting is performed later.
-
   for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
      {
         double hightrackpt=0;
@@ -326,15 +326,17 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         {
            if((*iMuon)->charge()==(*iTrack)->charge()) continue;
            if((*iMuon)->pt()<highpt){continue;}
+           if(fabs((*iTrack)->dxy())>0.05) continue;
            if((*iMuon)->isGlobalMuon())
            {
               if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
               {
-                double probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
+                double probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,*iTrack);
                 double probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
                 if(m_signalRegion)
                 {
                    if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30) continue;
+                   if(probeTrackIso<0) continue;
                 }
                 if(!m_signalRegion)
                 {
@@ -386,7 +388,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      info.muonTrackMass=muTrackMass;
      info.probeTrack=selectedTrack;
      info.tagMuon=selectedMuon;
-     info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack);
+     info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedTrack);
      info.probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack));
      info.probeHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
      info.nPUmean=nPUmean_;
@@ -413,7 +415,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         info.smallestCone=largestDR/2.;
         info.averageDr=drSum/drcount;
      }
-     info.tagTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,selectedMuon->momentum().eta(),selectedMuon->momentum().phi(),0.3,vtxHandle,selectedMuon->innerTrack());
+     info.tagTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedMuon->innerTrack());
      info.tagVtx=myTracks.tagVtx;
      info.nVtx=myTracks.NVertices;
      info.probeVtx=myTracks.probeVtx;
@@ -458,7 +460,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         nearestJetE=it->energy();
       }
       
-      //myHistograms.m_JetPt->Fill((*it)->pt(),weight_);
     }
     info.nearestJetE=nearestJetE;
     info.nearestJetDr=nearestJetDr;
@@ -468,7 +469,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     edm::Handle<CaloJetCollection> caloJets;
     iEvent.getByToken(m_caloJet_label, caloJets);
     double nearMuCaloJetE = 0;
-    double nearProbeCaloJetHadE = 0;
+    double nearProbeCaloJetHadE = -1;
     double nearProbeCaloJetEmE = 0;
     bool foundmu = false;
     bool foundprobe = false;
@@ -501,7 +502,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        info.probeCaloJetHcal = nearProbeCaloJetHadE;
        //if(info.probeCaloJetE>80){info.paired=false;}
     }
-    
+    if(selectedTrack->eta()>-2.35&&nearProbeCaloJetHadE<0)
+    {
+       info.sigCat=1;
+    }
+    else{info.sigCat=0;}
     //Nearby Photons
     edm::Handle<reco::PhotonCollection> phoHandle;
     iEvent.getByToken(m_recoPhotonToken, phoHandle);
@@ -560,10 +565,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         info.tagPdgId = genInfoTwo[6];
         info.nonMuPdgId = genInfoTwo[7];
         info.passLooseMatch=loosegenmatched;
-//        if(!info.passLooseMatch)
- //       {
-        nonGenMatched.FillHists(info);   
-//        }
+        if(!info.passLooseMatch)
+        {
+           nonGenMatched.FillHists(info);   
+           if(info.sigCat==1){passSig.FillHists(info);}
+        }
       }
     } 
     if(matched)

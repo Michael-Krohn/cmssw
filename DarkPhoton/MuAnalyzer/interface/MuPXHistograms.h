@@ -30,6 +30,7 @@ class MuPXHistograms{
   public:
     TH1F* m_eventWeight;
     TH1F* m_eventCount;
+    TH1F* m_SigCat;
     TH1F* m_cutProgress;
     TH1F* m_MuonTrackMass;
     TH1F* m_ProbeEta;

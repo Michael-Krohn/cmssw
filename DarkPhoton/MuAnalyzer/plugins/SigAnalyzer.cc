@@ -130,6 +130,7 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MCHistograms);
     bool MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, SigEventInfo info);
     bool MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, SigEventInfo info, double FmuE, double minCSCdr);
+    int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
 
     edm::EDGetToken m_recoMuonToken;
     edm::EDGetToken m_simTracksToken;
@@ -161,13 +162,14 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool m_runRandomTrackEfficiency;
     double standaloneE;
     double weight_;
+    double pairVtxChi;
+    double diMuonMass;
 
     MCHistograms allEvents;
     MCHistograms preSelectedEvents;
     MCHistograms failSig;
     MCHistograms passTight;
-    MCHistograms failAdjacent;
-    MCHistograms failAdjacentPassTight;
+    MCHistograms tempTestsPassTight;
 };
 
 //
@@ -225,8 +227,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   preSelectedEvents.book(fs->mkdir("preSelected"));
   failSig.book(fs->mkdir("failSig"));
   passTight.book(fs->mkdir("passTight"));
-  failAdjacent.book(fs->mkdir("failAdjacent"));
-  failAdjacentPassTight.book(fs->mkdir("failAdjacentPassTight"));
+  tempTestsPassTight.book(fs->mkdir("tempTestsPassTight"));
 }
 
 
@@ -256,13 +257,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   SigEventInfo info;
   allEvents.ResetCutFlow();
   edm::Handle<SimTrackContainer> simtracks;
-  edm::Handle<float> dbremweight;
-  edm::Handle<float> dbremInitialE;
-  edm::Handle<float> dbremFinalE;
-  edm::Handle<float> dbremAngle;
-  edm::Handle<float> dbremX;
-  edm::Handle<float> dbremY;
-  edm::Handle<float> dbremZ;
+  edm::Handle<float> dbremweight, dbremInitialE, dbremFinalE, dbremAngle, dbremX, dbremY, dbremZ;
   if(m_hasDpho)
   {
      iEvent.getByToken(m_dbremweighttoken,dbremweight);
@@ -279,6 +274,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      }
      else{return;}
   }
+  else{weight_ = 1.;}
   info.eventWeight=weight_;
   allEvents.IncCutFlow(info.eventWeight); 
   edm::Handle<reco::TrackCollection> staTracks;
@@ -289,12 +285,14 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
-  if (!m_hasDpho){weight_ = 1.;}
-  myTracks.SelectTracks(iEvent, trackCollection_label);
-  myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  double nstandalone = staTracks->size(); 
-  math::XYZTLorentzVectorD dpho, mother, tagmu;
-  //find dark brem vertexaa
+  int trackProgress = myTracks.SelectTracks(iEvent, trackCollection_label);
+  for(int i=0;i<trackProgress;i++){allEvents.IncCutFlow(info.eventWeight);}
+  if(trackProgress<4){return;}
+  int muProgress = myMuons.SelectMuons(iEvent, m_recoMuonToken);
+  for(int i=0;i<muProgress;i++){allEvents.IncCutFlow(info.eventWeight);}
+  if(muProgress<4){return;}
+  math::XYZTLorentzVectorD mother;
+  //find dark brem vertex
   if(m_isMC&&m_hasDpho)
   {
      GlobalPoint vtx(*dbremX/10.,*dbremY/10.,*dbremZ/10.);
@@ -308,83 +306,35 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   if(info.bremR==0){info.bremR=525;}
   //Find deflected muon or the initial muon if there was no deflection
   double FmuE = 0;
-  math::XYZTLorentzVectorD FinalMu;
   if(m_isMC&&m_hasDpho)
   {
      FmuE=*dbremFinalE;
   }
-  edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
-  iEvent.getByToken(trackCollection_label,thePATTrackHandle);  
 
   bool SiblingMatched = false;
-  edm::Handle<std::vector<reco::Muon>> recoMuons;
-  iEvent.getByToken(m_recoMuonToken, recoMuons);
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
   int nMatches =0;
-  double tageta = 0;
-  double tagpt = -1.;
-  double pairVtxChi = -1.;
-  double cutpro=0;
   //Pair our dark brem candidate track with a tagging muon to reconstruct a Z
-  for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
+  int pairingPro = PairTagAndProbe(iEvent,iSetup,myTracks,myMuons.highPtSelectedMuon,myECAL,transientTrackBuilder,trackCollection_label, vtxHandle,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label);
+  if(pairingPro==7)
   {
-     if(myMuons.selectedMuons.size()<1){continue;}
-     if(cutpro<1){cutpro=1;}
-     if(myMuons.highPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
-     if(cutpro<2){cutpro=2;}
-     if(!myMuons.highPtSelectedMuon->isGlobalMuon()) continue;
-     if(cutpro<3){cutpro=3;}
-     if(fabs((*iTrack)->dxy())>0.05) continue;
-     if(cutpro<4){cutpro=4;}
-     if(myTracks.PairTracks(iTrack, myMuons.highPtSelectedMuon->globalTrack(), transientTrackBuilder))
-     {
-       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
-       double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-       if((probeTrackIso/(*iTrack)->pt())>0.05||probeEcalIso>10.) continue;
-       if(cutpro<5){cutpro=5;}
-       if(probeTrackIso<0){continue;}
-       if(cutpro<6){cutpro=6;}
        SiblingMatched=true;
        nMatches++;
-       pairVtxChi=myTracks.pairvertexchi;
-       tageta=myMuons.highPtSelectedMuon->eta();
-       tagpt=myMuons.highPtSelectedMuon->pt();
-       selectedTrack = (*iTrack); 
-       selectedMuon = myMuons.highPtSelectedMuon;
-     } 
+       diMuonMass=myTracks.MuonTrackMass;
   }
   info.nTagMuons = myMuons.selectedMuons.size();
   if(!SiblingMatched)
-  {  
-     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
+  {    
+     int backupPairingPro = PairTagAndProbe(iEvent,iSetup,myTracks,myMuons.secondhighPtSelectedMuon,myECAL,transientTrackBuilder,trackCollection_label, vtxHandle,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label);
+     if(backupPairingPro>pairingPro){pairingPro=backupPairingPro;}
+     if(backupPairingPro==7)
      {
-        if(myMuons.selectedMuons.size()<1){continue;}
-        if(cutpro<1){cutpro=1;}
-        if(myMuons.secondhighPtSelectedMuon->charge()==(*iTrack)->charge()) continue;
-        if(cutpro<2){cutpro=2;}
-        if(!myMuons.secondhighPtSelectedMuon->isGlobalMuon()) continue;
-        if(cutpro<3){cutpro=3;}
-        if(fabs((*iTrack)->dxy())>0.05) continue;
-        if(cutpro<4){cutpro=4;}
-        if(myTracks.PairTracks(iTrack, myMuons.secondhighPtSelectedMuon->globalTrack(), transientTrackBuilder))
-        {       
-          double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
-          double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-          if((probeTrackIso/(*iTrack)->pt())>0.05||probeEcalIso>10.) continue;
-          if(cutpro<5){cutpro=5;}
-          if(probeTrackIso<0){continue;}
-          cutpro=6;
           SiblingMatched=true;
           nMatches++;
-          pairVtxChi=myTracks.pairvertexchi;
-          tageta=myMuons.secondhighPtSelectedMuon->eta();
-          tagpt=myMuons.secondhighPtSelectedMuon->pt();
-          selectedTrack = (*iTrack); 
-          selectedMuon = myMuons.secondhighPtSelectedMuon;
-        } 
      }
   }
+  for(int i=0;i<pairingPro;i++){allEvents.IncCutFlow(info.eventWeight);}
   if(SiblingMatched)
   {
      for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack)
@@ -394,7 +344,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         if(fabs((*iTrack)->dxy())>0.05) continue;
         if(myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder))
         {       
-          double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,(*iTrack)->momentum().eta(),(*iTrack)->momentum().phi(),0.3,vtxHandle,*iTrack);
+          double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
           double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
           if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
           if(probeTrackIso<0){continue;}
@@ -402,32 +352,28 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           nMatches++;
         } 
      }
-
     mother.SetPxPyPzE(selectedTrack->momentum().x(),selectedTrack->momentum().y(),selectedTrack->momentum().z(),selectedTrack->p());
   }
-  cutpro++;
-  for(int i=0;i<cutpro;i++) {allEvents.IncCutFlow(info.eventWeight);}
-  if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
-  if(myMuons.highmuonpt<26.){return;}
+//  if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   info.nPairedProbes = nMatches;  
   if(SiblingMatched)
   {
      allEvents.IncCutFlow(info.eventWeight); 
-     info.probeTrackIso = myTracks.GetIsolation(iEvent,trackCollection_label,selectedTrack->momentum().eta(),selectedTrack->momentum().phi(),0.3,vtxHandle,selectedTrack)/selectedTrack->pt();
+     info.probeTrackIso = myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedTrack)/selectedTrack->pt();
      info.isLoose = selectedTrack->quality(reco::Track::qualityByName("loose"));
      info.isTight = selectedTrack->quality(reco::Track::qualityByName("tight"));
      info.isHighPurity = selectedTrack->quality(reco::Track::qualityByName("highPurity"));
      info.probeReducedChi = selectedTrack->chi2()/selectedTrack->ndof();
-     info.tagMuonEta = tageta;
+     info.tagMuonEta = selectedMuon->eta();
      info.pairVtxChi = pairVtxChi;
      info.probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(selectedTrack));
-     info.tagMuonPt = tagpt;
+     info.tagMuonPt = selectedMuon->pt();
      info.probeTrackEta = selectedTrack->eta();
      info.probeTrackPt = selectedTrack->pt();
      info.probeTrackPhi = selectedTrack->phi();
      info.dxy = selectedTrack->dxy();
      info.dsz = selectedTrack->dsz();
-     info.diMuonMass = myTracks.MuonTrackMass;
+     info.diMuonMass = diMuonMass;
    // this wraps tracks with additional methods that are used in vertex-calculation
      GlobalPoint FillerPoint; 
      myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack,transientTrackBuilder->build(selectedTrack),  FillerPoint);
@@ -453,7 +399,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      double stadEoverE = 10.;
      double staE = -10;
      double closestapproach = 100.;
-     if(nstandalone>0)
+
+     if(staTracks->size()>0)
      {
        for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
        {
@@ -542,7 +489,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         }
      }
      bool passPreSelection=false;
-     if(myHCAL.m_coneEnergy<10&&selectedTrack->eta()>-2.35&&nearProbeCaloJetHadE<0)
+     if(myHCAL.m_coneEnergy<10&&nearProbeCaloJetHadE<0)
      {
         passPreSelection=true;
         if(staMinDr>0.5&&myCSCs.minDR>0.05)
@@ -555,11 +502,11 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         {
            if(stadEoverE<-0.8&&myHCAL.m_coneEnergy<1.)
            {
-              info.sigCat = 1;
+              info.sigCat = 2;
            }
            else if(stadEoverE<-0.6&&myHCAL.m_coneEnergy<2.)
            {
-              info.sigCat = 2;
+              info.sigCat = 1;
 	   }
            else{info.sigCat=0;}
         }
@@ -569,11 +516,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      if(!passSigCuts)
      {
         failSig.FillHists(info);
-     }
-     if(myHCAL.m_failAdjacent)
-     {
-        failAdjacent.FillHists(info);
-        if(passSigCuts){failAdjacentPassTight.FillHists(info);}
      }
      if(passPreSelection){preSelectedEvents.FillHists(info);}
      allEvents.FillHists(info);
@@ -610,6 +552,34 @@ bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentz
   }
 
   return matched;
+}
+
+int SigAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label)
+{
+  int cutpro = 0;
+  for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
+  {
+     if(deltaR(Tag->eta(),Tag->phi(),(*iTrack)->eta(),(*iTrack)->phi())<0.2) continue;
+     if(cutpro<1){cutpro=1;}
+     if(Tag->charge()==(*iTrack)->charge()) continue;
+     if(cutpro<2){cutpro=2;}
+     int pairingResult = myTracks.PairTracks(iTrack, Tag->globalTrack(), transientTrackBuilder);
+     if(pairingResult>(cutpro-2)){cutpro=pairingResult+2;}
+     if(pairingResult==3)
+     {
+       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
+       double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
+       if((probeTrackIso/(*iTrack)->pt())>0.05||probeEcalIso>10.) continue;
+       if(cutpro<6){cutpro=6;}
+       if(probeTrackIso<0){continue;}
+       if(cutpro<7){cutpro=7;}
+       selectedTrack = (*iTrack); 
+       selectedMuon = Tag;
+       diMuonMass = myTracks.MuonTrackMass;
+       pairVtxChi = myTracks.pairvertexchi;
+     } 
+  }
+  return cutpro;
 }
 
 bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, SigEventInfo info, double FmuE, double minCSCdr)

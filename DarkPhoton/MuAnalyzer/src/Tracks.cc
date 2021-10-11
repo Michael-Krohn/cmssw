@@ -13,16 +13,21 @@
 
 Tracks::Tracks(){}
 
-void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label){
-
+int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label){
+  int cutProgress = 0;
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
   highendcaptrackpt = 0;
   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
       if(iTrack->pt()<20) continue;
+      if(cutProgress==0){cutProgress=1;}
       selectedTracks.push_back(&(*iTrack));
       if(fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.3) continue;
+      if(cutProgress==1){cutProgress=2;}
       if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
+      if(cutProgress==2){cutProgress=3;}
+      if(iTrack->dxy()>0.05) continue;
+      if(cutProgress==3){cutProgress=4;}
       if (iTrack->pt()>highendcaptrackpt)
       { 
          highptendcaptrack = &(*iTrack);
@@ -30,9 +35,10 @@ void Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector
       }
       selectedEndcapTracks.push_back(&(*iTrack));
   }
+  return cutProgress;
 }
 
-double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Track* MainTrack)
+double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Track* MainTrack)
 {
    bool foundtrack = false;
    int vtxindex = -1;
@@ -64,16 +70,16 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
    {
       if((int)i==trackindex){continue;}
       reco::TrackBaseRef secondarytrack = primaryVtx->trackRefAt(i);
-      double dphi = fabs(phi-secondarytrack->phi());
+      double dphi = fabs(MainTrack->phi()-secondarytrack->phi());
       if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
-      double Dr = sqrt( pow(eta-secondarytrack->eta(),2.0) + pow(dphi,2.0));
+      double Dr = sqrt( pow(MainTrack->eta()-secondarytrack->eta(),2.0) + pow(dphi,2.0));
       if(Dr>conesize||Dr<0.01){continue;}
        Isolation += secondarytrack->pt();
    }
    return Isolation;
 }
 
-double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double eta, double phi, double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::TrackRef MainTrack)
+double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,double conesize, edm::Handle<reco::VertexCollection> vtxHandle, const reco::TrackRef MainTrack)
 {
    bool foundtrack = false;
    int vtxindex = -1;
@@ -109,16 +115,16 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
    {
       if((int)i==trackindex){continue;}
       reco::TrackBaseRef secondarytrack = primaryVtx->trackRefAt(i);
-      double dphi = fabs(phi-secondarytrack->phi());
+      double dphi = fabs(MainTrack->phi()-secondarytrack->phi());
       if(dphi>ROOT::Math::Pi()) dphi -= 2*ROOT::Math::Pi();
-      double Dr = sqrt( pow(eta-secondarytrack->eta(),2.0) + pow(dphi,2.0));
+      double Dr = sqrt( pow(MainTrack->eta()-secondarytrack->eta(),2.0) + pow(dphi,2.0));
       if(Dr>conesize||Dr<0.01){continue;}
-       Isolation += secondarytrack->pt();
+      Isolation += secondarytrack->pt();
    }
    return Isolation;
 }
 
-bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
+int Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
   tracksToVertex.clear();
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));
   tracksToVertex.push_back(transientTrackBuilder->build(*MuonTrack));
@@ -144,19 +150,19 @@ bool Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track, 
       double total_pz = one_momentum.z() + two_momentum.z();
       MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
     }else{
-      MuonTrackMass = -10000;
+      return 1;
     }
-    if (deltaR(one_momentum.eta(),one_momentum.phi(),two_momentum.eta(),two_momentum.phi())<0.2) return false;
-    if (MuonTrackMass < 50 || MuonTrackMass > 150) return false;
+    if (MuonTrackMass < 50 || MuonTrackMass > 150) return 2;
   }else{
-    return false;
+    return 0;
   }
   pairvertexchi=fittedVertex.totalChiSquared()/fittedVertex.degreesOfFreedom();
-  return true;
+  return 3;
 
 }
 
-bool Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
+int Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
+  
   tracksToVertex.clear();
   tracksToVertex.push_back(transientTrackBuilder->build(*Track));
   tracksToVertex.push_back(transientTrackBuilder->build(*MuonTrack));
@@ -182,15 +188,14 @@ bool Tracks::PairTracks(const reco::Track* Track, const reco::TrackRef  MuonTrac
       double total_pz = one_momentum.z() + two_momentum.z();
       MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
     }else{
-      MuonTrackMass = -10000;
+      return 1;
     }
-    if (deltaR(one_momentum.eta(),one_momentum.phi(),two_momentum.eta(),two_momentum.phi())<0.2) return false;
-    if (MuonTrackMass < 50 || MuonTrackMass > 150) return false;
+    if (MuonTrackMass < 50 || MuonTrackMass > 150) return 2;
   }else{
-    return false;
+    return 0;
   }
 
-  return true;
+  return 3;
 
 }
 
