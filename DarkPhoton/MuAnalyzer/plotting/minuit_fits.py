@@ -125,9 +125,12 @@ func = ROOT.TF1()
 
 label = ""
 if function=="expo":
-   func = ROOT.TF1('func', "[3]+[0]*(x-[1])*e**([2]*(x))",50,150)
-   func.SetParameters(12000,37,-0.03,5000)
-   label = "f(x) = A + B(x-C)e^{-Dx}"
+   func = ROOT.TF1('func', "[0]*(x-[1])*e**([2]*(x))",50,150)
+   func.SetParameters(100,34,-0.04)
+   func.SetParLimits(3,0,6000)
+#   func.SetParLimits(1,20,45)
+#   func.SetParLimits(2,-1,0)
+   label = "f(x) = A(x-B)e^{-Cx}"
 if function=="erf":
    func = ROOT.TF1('func', str(opt_offset)+"+[0]*(erf([1]*x))*e**([2]*(x))",50,150)
    label = "f(x) = A + B(erf(x))e^{-Cx}"
@@ -200,7 +203,7 @@ plottitle.SetTextSize(14)
 if arg.mc:
    plottitle.AddText("MC, Probe Not Matched to Muon")
 else:
-   plottitle.AddText("Run A+D Data, Probe Not Matched to Muon")
+   plottitle.AddText("2018  Data, Probe Not Matched to Muon")
 plottitle.SetFillColor(0)
 plottitle.SetBorderSize(0)
 plottitle.Draw()
@@ -218,12 +221,12 @@ tag2.SetTextSize(0.04)
 tag1.Draw()
 tag2.Draw()
 
-tag3 = ROOT.TLatex(0.6,0.6,label)
+tag3 = ROOT.TLatex(0.6,0.7,label)
 tag3.SetTextFont(52)
 tag3.SetTextSize(0.04)
 tag3.SetNDC()
 tag3.Draw()
-chitag = ROOT.TLatex(0.6,0.55,"Reduced #chi^{2}= "+str(round(chi2/finalfunc.GetNDF(),2)))
+chitag = ROOT.TLatex(0.6,0.65,"Reduced #chi^{2}= "+str(round(chi2/finalfunc.GetNDF(),2)))
 chitag.SetTextFont(52)
 chitag.SetTextSize(0.04)
 chitag.SetNDC()
@@ -237,16 +240,9 @@ pad2.Draw()
 pad2.cd()
 ratio = data.Clone("h3")
 ratio.SetStats(0)
-if not arg.mc:
-   ratio.Divide(finalfunc)
-if arg.mc:
-   for i in range(0,ratio.GetNbinsX()):
-      if(ratio.GetBinContent(i)>0):
-         ratio.SetBinContent(i,(ratio.GetBinContent(i)-finalfunc.Eval(ratio.GetBinLowEdge(i)+0.5))/math.sqrt(finalfunc.Eval(ratio.GetBinLowEdge(i)+0.5)))
-   totalpull=0
-   for i in range(0,ratio.GetNbinsX()):
-      totalpull=totalpull+ratio.GetBinContent(i)
-      ratio.SetBinContent(i,totalpull)
+for i in range(0,ratio.GetNbinsX()):
+   if(ratio.GetBinContent(i)>0 and func.Eval(ratio.GetBinLowEdge(i)+0.5)>0):
+      ratio.SetBinContent(i,(ratio.GetBinContent(i)-finalfunc.Eval(ratio.GetBinLowEdge(i)+0.5))/math.sqrt(finalfunc.Eval(ratio.GetBinLowEdge(i)+0.5)))
 ratio.SetLineColor(1)
 ratio.GetFunction("func").Delete()
 ratio.Draw("p")
@@ -259,9 +255,9 @@ ratio.SetTitle("")
 if arg.mc:
    ratio.GetYaxis().SetTitle("Integrated Obs-Ex/sqrt(Ex)")
 else:
-   ratio.GetYaxis().SetTitle("Data/Fit")
-ratio.SetMinimum(-99.9)
-ratio.SetMaximum(99.9)
+   ratio.GetYaxis().SetTitle("Pull")
+ratio.SetMinimum(-9.9)
+ratio.SetMaximum(9.9)
 ratio.GetYaxis().CenterTitle()
 ratio.GetYaxis().SetTitleSize(15)
 ratio.GetYaxis().SetTitleFont(43)

@@ -72,6 +72,10 @@ class MCHistograms{
     TH1F* m_HEHitByDepth;
     TH1F* m_DrtoStandalone;
     TH1F* m_VtxZ;
+    TH1F* m_ProbePFJetE;
+    TH1F* m_ProbePFJetDr;
+    TH1F* m_ProbePFJetMaxE;
+    TH1F* m_CaloJetMinDr;
     TH1F* m_CaloJetEcalE;
     TH1F* m_CaloJetHcalE;
     TH1F* m_CaloJetTotalE;

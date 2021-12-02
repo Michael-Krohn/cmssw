@@ -58,7 +58,12 @@ class SigEventInfo{
     double vtxZ;
     double vtxPerp;
     int bremDepth;
+    //Pf Jets
+    double nearestJetDr;
+    double nearJetMaxE;
+    double nearestJetE;
     //Calo Jets
+    double minCaloJetDr;
     double caloJetHcalE;
     double caloJetEcalE;
     double caloJetTotalE;
@@ -71,6 +76,7 @@ class SigEventInfo{
     double probeMuondR;
     double standaloneE;
     double globalMuonE;
-
+    int particlePDG;
+    double minMuDr;
 };
 #endif

@@ -18,6 +18,7 @@ MuPXEventInfo::MuPXEventInfo()
     probeTrackIso=-1;
     probeHcalIso=-1;
     probeEcalIso=-1;
+    probeDCA=-1;
     smallestCone=-1;
     averageDr=-1;
     tagTrackIso=-1;
@@ -25,12 +26,15 @@ MuPXEventInfo::MuPXEventInfo()
     tagEcalIso=-1;
     nJets=0;
     nearestJetE=-1;
+    minProbeCaloJetDr=-1;
     nearestJetDr=-1;
     nearJetMaxE=-1;
     probeCaloJetE=-1;
     tagCaloJetE=-1;
     probeCaloJetEcal=-1;
     probeCaloJetHcal=-1;
+    staMinDr=10;
+    standaloneE=-1;
     farMuE=0;
     farMuDr=0;
     farMuEta=0;
@@ -38,7 +42,6 @@ MuPXEventInfo::MuPXEventInfo()
     genPdgId=0;
     tagPdgId=0;
     passLooseMatch=false;
-    nonMuPdgId=0;
     nLooseMuons=0;
 }
 

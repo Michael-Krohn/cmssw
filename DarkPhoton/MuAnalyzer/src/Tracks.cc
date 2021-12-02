@@ -13,7 +13,7 @@
 
 Tracks::Tracks(){}
 
-int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label){
+int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,edm::Handle<reco::VertexCollection> vtxHandle){
   int cutProgress = 0;
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
@@ -22,12 +22,27 @@ int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<
       if(iTrack->pt()<20) continue;
       if(cutProgress==0){cutProgress=1;}
       selectedTracks.push_back(&(*iTrack));
-      if(fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.3) continue;
+      if(fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.45) continue;
       if(cutProgress==1){cutProgress=2;}
       if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
       if(cutProgress==2){cutProgress=3;}
-      if(iTrack->dxy()>0.05) continue;
+      //if(fabs(iTrack->dxy())>0.05) continue;
       if(cutProgress==3){cutProgress=4;}
+      bool foundtrack = false;
+      for(unsigned int i=0;i<vtxHandle->size();i++)
+      {
+         reco::VertexRef vtx(vtxHandle, i);
+         if(!vtx->isValid()){continue;}
+         for(unsigned int j=0; j<vtx->tracksSize();j++)
+         {
+            if(vtx->trackRefAt(j)->pt()==iTrack->pt()&&vtx->trackRefAt(j)->eta()==iTrack->eta()&&vtx->trackRefAt(j)->phi()==iTrack->phi())
+            {
+               foundtrack = true;
+            }
+         }
+      }
+      if(!foundtrack) continue;
+      if(cutProgress==4){cutProgress=5;} 
       if (iTrack->pt()>highendcaptrackpt)
       { 
          highptendcaptrack = &(*iTrack);

@@ -23,10 +23,10 @@ class MuPXHistograms{
   public:
     MuPXHistograms();
 
-    void book(TFileDirectory histFolder);
-    void IncCutFlow();
+    void book(TFileDirectory histFolder, bool binIso=false);
+    void IncCutFlow(double weight);
     void ResetCutFlow();
-    void FillHists(MuPXEventInfo);
+    void FillHists(MuPXEventInfo, bool binIso=false, bool makeTuples = false);
   public:
     TH1F* m_eventWeight;
     TH1F* m_eventCount;
@@ -72,6 +72,7 @@ class MuPXHistograms{
     TH1F* m_JetPt;
     //Calo Jet 
     TH1F* m_ProbeJetE;
+    TH1F* m_ProbeCaloJetDr;
     TH1F* m_TagCaloJetE;
     TH2F* m_CaloJetEcalE;
     TH1F* m_CaloJetEcalEnergy;
@@ -96,9 +97,19 @@ class MuPXHistograms{
     TH1F* m_GenPdgId;
     TH1F* m_PassLooseMatch;
     TH1F* m_nonMuPdgId;
+    TH1F* m_highPtNonMuPdgId;
     TH1F* m_nLooseMuons;
     TH1F* m_TagPdgId;
     TH1F* m_MotherMatch;
     TH1F* m_LooseMatch[10][10];
+    TH1F* m_staMinDr;
+    TH1F* m_standaloneE;
+    TH1F* m_PreDXY;
+    TH1F* m_PreDXYPhi;
+    TH1F* m_PostDXY;
+    TH1F* m_PostDXYPhi;
+    TH2F* m_ProbePhiDXY;
+    TH1F* m_ProbeDCA;
+    TH2F* m_ProbeDCAPhi;
 };
 #endif

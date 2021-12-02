@@ -11,12 +11,13 @@ class mcFile:
       self.color=fillcolor
 
 class stackInfo:
-   def __init__(self, mc, data, lumi):
+   def __init__(self, mc, lumi,data=None):
       self.mcFiles=mc
       self.dataFile=data
       self.lumi=lumi
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Rebin
+      self.stack(basedir+"/cutProgress","CutProgress",True,tag,outDir,False)
       self.stack(basedir+"/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
       self.stack(basedir+"/TaggingMuonEta","Tagging Muon #eta",True,tag,outDir)
       self.stack(basedir+"/TaggingMuonPt","Tagging Muon Pt",False,tag,outDir,True)
@@ -36,23 +37,32 @@ class stackInfo:
       self.stack(basedir+"/TagCaloGetE","Energy of Largest Calo Jet within #Delta R of 0.2 to tag", True, tag, outDir, True)
       self.stack(basedir+"/NPV","Number of Primary Vertices",False,tag,outDir)  
       self.stack(basedir+"/TagVtxIndex","Index of Tag Muon Primary Vertex", True, tag, outDir)
+      self.stack(basedir+"/AdjustedMuonTrackMass","Adjusted Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
+      self.stack(basedir+"/Non Muon Pdg Id","PDG ID of Closest Non-muon to probe",True,tag,outDir,False)
 
-   def calcScaleFactor(self,name,skimFile,resultFile):
+   def calcScaleFactor(self,name,skimFile,resultFile,noEff=False):
       #Use # of muons passing tag for total weight because I know that there was no over/underflow
       eff = resultFile.Get("demo/"+name).Integral()/skimFile.Get("DiMuonFilter/allEvents/NumberOfMuonsPassingTag").Integral()
+      #Adjust efficiency to account for failed jobs
+      eff = eff* resultFile.Get("demo/allEvents/eventCount").Integral()/skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()
       return eff
 
-   def stack(self, name, xtitle, log, tag, outDir,rebin=False):
+   def stack(self, name, xtitle, log, tag, outDir,rebin=False,noEff=False):
       stackplot = ROOT.THStack("stack","")     
-      leg = ROOT.TLegend(0.6,0.6,0.85,0.85)
+      leg = ROOT.TLegend(0.8,0.6,0.95,0.85)
       leg.SetBorderSize(0)
       hists = []
       NtotalEvents=0
+      #nextname = name[:-1]+str(int(name[-1])+1)
+      #print nextname
       for mcFile in self.mcFiles:
-         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
+         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result,noEff)
+         #neff = self.calcScaleFactor(nextname,mcFile.skim,mcFile.result)
          Nevents = mcFile.cx*1000*float(self.lumi)*eff
-         NtotalEvents=NtotalEvents+Nevents
+         #Nevents = Nevents+mcFile.cx*1000*float(self.lumi)*neff
+         #NtotalEvents=NtotalEvents+Nevents
          hist=(mcFile.result.Get("demo/"+name).Clone())
+         #hist.Add(mcFile.result.Get("demo/"+nextname))
          if(hist.Integral()>0):
             hist.Scale(Nevents/hist.Integral())
          hist.SetFillColor(mcFile.color)
@@ -75,35 +85,45 @@ class stackInfo:
       pad1.SetLeftMargin(0.13)
       pad1.Draw()
       pad1.cd()
-     
-      dataHist = self.dataFile.Get("demo/"+name).Clone()
-      print("Expected " + str(NtotalEvents)+" found " + str(dataHist.Integral())+".")
-      dataHist.SetLineWidth(0)
-      dataHist.SetLineColor(1)
-      dataHist.SetMarkerStyle(21)
-      dataHist.SetMarkerSize(0.5)
-      if(rebin):
-         dataHist.Rebin(2)
-       
-      dataHist.SetStats(0)
+      if self.dataFile is not None:
+         dataHist = self.dataFile.Get("demo/"+name).Clone()
+         print dataHist.Integral()
+         #dataHist.Add(self.dataFile.Get("demo/"+nextname))
+         #print dataHist.Integral()
+         #print("Expected " + str(NtotalEvents)+" found " + str(dataHist.Integral())+".")
+         dataHist.SetLineWidth(0)
+         dataHist.SetLineColor(1)
+         dataHist.SetMarkerStyle(21)
+         dataHist.SetMarkerSize(0.5)
+         if(rebin):
+            dataHist.Rebin(2)
+          
+         dataHist.SetStats(0)
+         dataHist.Draw("psame") 
       stackplot.Draw("hist")
-      dataHist.Draw("psame") 
       if(log):
          pad1.SetLogy()
          ROOT.gPad.SetLogy()
-      maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
-      minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
-      if(minimum==0):
+      if self.dataFile is not None:
+         maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
+         minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
+      else:
+         maximum=stackplot.GetMaximum()
+         minimum=stackplot.GetMinimum()
+      if(minimum==0 and self.dataFile is not None):
          minimum=dataHist.GetMinimum(0)
       if not log:
          minimum=0      
-      
+      if log and minimum==0:
+         minimum=0.5     
+ 
       stackplot.SetMaximum(maximum*1.2)
       stackplot.SetMinimum(minimum*0.2)
       stackplot.Draw("hist")
-      dataHist.Draw("psame") 
+      if self.dataFile is not None:
+         dataHist.Draw("psame") 
   
-      leg.AddEntry(dataHist, "Data", "p") 
+         leg.AddEntry(dataHist, "Data", "p") 
       leg.Draw()
       
       label = ROOT.TPaveText(0.4,0.95,0.99,0.99,"brNDC")
@@ -147,4 +167,4 @@ class stackInfo:
       img.FromPad(plot)
       img.WriteImage(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.png")
       plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.pdf")
-      plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")
+      #plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")

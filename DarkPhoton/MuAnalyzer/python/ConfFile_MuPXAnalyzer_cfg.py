@@ -22,12 +22,25 @@ options.register( 'signalRegion',
                                   VarParsing.varType.bool,
                                   "True if running on MC in isolated region")
 
+options.register( 'makeTuples',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if making tuple of split invariant masses")
+
+options.register( 'makeSplits',
+                                  True,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if binned invariant masses for mu+x fits")
+
 options.parseArguments()
 
 
 process = cms.Process("TEST")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.destinations = cms.untracked.vstring('messages')
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
@@ -52,9 +65,9 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/DYJets_SignalRegion.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/WJets_SignalRegion.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/rund2018.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/2018_all.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -89,8 +102,11 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     PFJets = cms.InputTag("ak4PFJetsCHS"),
     TowerSource = cms.InputTag("caloStage2Digis","CaloTower"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),
+    StandAloneTracks = cms.InputTag("standAloneMuons"),
     isMC = cms.untracked.bool(options.isMC),
-    signalRegion = cms.untracked.bool(options.signalRegion)
+    signalRegion = cms.untracked.bool(options.signalRegion),
+    makeTuples = cms.untracked.bool(options.makeTuples),
+    makeSplits = cms.untracked.bool(options.makeSplits)
 )
 
 process.TFileService = cms.Service("TFileService",

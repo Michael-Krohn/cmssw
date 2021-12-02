@@ -217,11 +217,14 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
   }
 
+  edm::Handle <reco::VertexCollection> vtxHandle;    
+  iEvent.getByToken(primaryVertices_Label, vtxHandle);
+
   cutProgress++;
 
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
 
-  myTracks.SelectTracks(iEvent, trackCollection_label);
+  myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle);
 
   int anyMuonPass = 0;
   int anyTrackPass = 0;

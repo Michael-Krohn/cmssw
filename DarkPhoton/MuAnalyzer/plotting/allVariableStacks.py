@@ -12,6 +12,7 @@ parser.add_argument("--l", "--lumi", dest="lumi", help="luminosity", default=0)
 parser.add_argument("--t", "--title", dest="label", help="Data label", default="Mu+X Data Skim")
 arg = parser.parse_args()
 
+ROOT.gROOT.SetBatch()
 resultsDir = arg.resultsDir
 #Check for trailing slash on results dir and delete
 if arg.resultsDir.split("/")[-1] =="": resultsDir = arg.resultsDir[:-1]
@@ -43,11 +44,11 @@ mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WJets/hists/WJets_monitor.ro
 mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets/hists/DYJets_monitor.root","READ"),ROOT.TFile(resultsDir+"/DYJets/hists/DYJets_analyzedsplit.root","READ"), "DYJets",DYJetsCx,4))
 mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_monitor.root","READ"),ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_analyzedsplit.root","READ"), "DYJets_10to50",DYJets10to50Cx,6))
 
-dataFile = ROOT.TFile(resultsDir+"/Data/hists/runA+D_analyzedsplit.root","READ")
-info = stack.stackInfo(mcFiles,dataFile, arg.lumi)
-info.plotAll("allEvents","RunA+D Non-Isolated Events",outDir)
-info.plotAll("muProbe","RunA+D Non-Isolated Events, Probe Matched to Muon",outDir)
-info.plotAll("nonMuonProbe","RunA+D Non-Isolated Events, Probe Not Matched to Muon",outDir)
+dataFile = ROOT.TFile(resultsDir+"/Data/hists/2018_analyzedsplit.root","READ")
+info = stack.stackInfo(mcFiles,arg.lumi,dataFile)
+info.plotAll("allEvents","2018 Data Non-Isolated Events",outDir)
+info.plotAll("muProbe","2018 Data Non-Isolated Events, Probe Matched to Muon",outDir)
+info.plotAll("nonMuonProbe","2018 Data Non-Isolated Events, Probe Not Matched to Muon",outDir)
 
 dataFile.Close()
 
