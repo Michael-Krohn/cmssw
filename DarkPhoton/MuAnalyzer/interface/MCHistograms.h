@@ -112,5 +112,11 @@ class MCHistograms{
     TH1F* m_HcalPlusEcal;
     TH1F* m_Probedxy;
     TH1F* m_Probedsz;
+    TH1F* m_ProbeDCA;
+    TH1F* m_ProbeLongDCA;
+    TH2F* m_ProbeDCAphi;
+    TH1F* m_nEle;
+    TH1F* m_nExtraEle;
+    TH1F* m_nExtraMuon;
 };
 #endif

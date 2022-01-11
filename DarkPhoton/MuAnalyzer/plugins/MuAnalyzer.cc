@@ -224,7 +224,11 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   myMuons.SelectMuons(iEvent, m_recoMuonToken);
 
-  myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle);
+   // this wraps tracks with additional methods that are used in vertex-calculation
+  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
+
+  myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle, myMuons.highPtSelectedMuon, transientTrackBuilder);
 
   int anyMuonPass = 0;
   int anyTrackPass = 0;
@@ -235,9 +239,6 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   int nTracksNoMuon = 0;
   int nMuonsPairedPerEvent = 0;
 
-   // this wraps tracks with additional methods that are used in vertex-calculation
-  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
 
   myCSCs.minTotalImpactParameter = 1000;
   myCSCs.minDR = 1000;

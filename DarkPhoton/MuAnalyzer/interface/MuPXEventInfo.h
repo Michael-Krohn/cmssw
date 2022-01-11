@@ -36,6 +36,7 @@ class MuPXEventInfo{
     double tagHcalIso;
     double tagEcalIso;
     double probeDCA;
+    double probeLongDCA;
     int nJets;
     double nearestJetE;
     double nearestJetDr;   
@@ -67,5 +68,8 @@ class MuPXEventInfo{
     double tagPdgId;
     double staMinDr;
     double standaloneE;
+    int nEle;
+    int nExtraEle;
+    int nExtraMuon;
 };
 #endif

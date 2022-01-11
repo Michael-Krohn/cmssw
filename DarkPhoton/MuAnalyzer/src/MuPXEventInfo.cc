@@ -19,6 +19,7 @@ MuPXEventInfo::MuPXEventInfo()
     probeHcalIso=-1;
     probeEcalIso=-1;
     probeDCA=-1;
+    probeLongDCA=-1;
     smallestCone=-1;
     averageDr=-1;
     tagTrackIso=-1;
@@ -43,5 +44,8 @@ MuPXEventInfo::MuPXEventInfo()
     tagPdgId=0;
     passLooseMatch=false;
     nLooseMuons=0;
+    nEle=0;
+    nExtraEle=0;
+    nExtraMuon=0;
 }
 

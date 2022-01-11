@@ -74,8 +74,9 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_PostDXYPhi = histFolder.make<TH1F>("PostDXYPhi", "; #phi of ProbeTrack; Events", 100, -3.15, 3.15);
   m_PreDXY = histFolder.make<TH1F>("PreDXY","; dxy of Track;Events",200,-2,2);
   m_PostDXY = histFolder.make<TH1F>("PostDXY","; dxy of Track;Events",200,-2,2);
-  m_ProbeDCA = histFolder.make<TH1F>("ProbeDCA","; Probe Distance of Closest Approach;Events",200,0,2);
-  m_ProbeDCAPhi = histFolder.make<TH2F>("ProbeDCAPhi","; Probe Distance of Closest Approach;Probe Phi;Events",200,0,2,100,-3.15,3.15);
+  m_ProbeDCA = histFolder.make<TH1F>("ProbeDCA","; Probe Distance of Closest Approach;Events",200,0,0.05);
+  m_ProbeLongDCA = histFolder.make<TH1F>("ProbeLongDCA","; Probe Longitudinal Distance of Closest Approach;Events",200,0,0.3);
+  m_ProbeDCAPhi = histFolder.make<TH2F>("ProbeDCAPhi","; Probe Distance of Closest Approach;Probe Phi;Events",200,0,0.2,100,-3.15,3.15);
 
   m_ProbeEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi","; Probe Track #eta; Probe Track #phi; Events", 100, -2.6,2.6, 100, -3.15, 3.15);
   m_ProbeTrackIso = histFolder.make<TH1F>("ProbeTrackIsolation","; Track Based Isolation; Events",200,0,5);
@@ -140,6 +141,10 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   }
   m_staMinDr = histFolder.make<TH1F>("staMinDr",";Min #Delta R from Probe to Standalone Muon; Events", 100,0,5);
   m_standaloneE = histFolder.make<TH1F>("standaloneE",";Energy of nearest standalone muon to probe (GeV);Events",100,0,100);
+  m_nEle = histFolder.make<TH1F>("nElectrons",";Number of Veto electrons > 10 GeV; Events",20,0,20);
+  m_nExtraEle = histFolder.make<TH1F>("nExtraElectrons",";Number of Extra Electrons in Event; Events",20,0,20);
+  m_nExtraMuon = histFolder.make<TH1F>("nExtraMuons",";Number of Extra Muons in Event; Events",20,0,20);
+
 }
 
 void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
@@ -153,6 +158,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
      //for(int i=0; i<info.cutProgress;i++){IncCutFlow();} 
      if(!info.paired) return;  
      m_ProbeDCA->Fill(info.probeDCA,info.eventWeight);
+     m_ProbeLongDCA->Fill(info.probeLongDCA,info.eventWeight);
      m_ProbeDCAPhi->Fill(info.probeDCA,info.probeTrack->phi(),info.eventWeight);
      m_SigCat->Fill(info.sigCat,info.eventWeight);
      m_staMinDr->Fill(info.staMinDr,info.eventWeight);
@@ -171,6 +177,9 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
      m_ProbeEtaPhi->Fill(info.probeTrack->eta(),info.probeTrack->phi(),info.eventWeight);
      m_MuonTrackMass->Fill(info.muonTrackMass,info.eventWeight);
      m_AdjustedMuTrackMass->Fill(info.adjMuonTrackMass,info.eventWeight);
+     m_nEle->Fill(info.nEle,info.eventWeight);
+     m_nExtraEle->Fill(info.nExtraEle,info.eventWeight);
+     m_nExtraMuon->Fill(info.nExtraMuon,info.eventWeight);
      int ecalbin = (int)(info.probeEcalIso/5.);
      if(ecalbin>19){ecalbin=19;}
      int tkbin = (int)(info.probeTrackIso/info.probeTrack->pt()*40.);

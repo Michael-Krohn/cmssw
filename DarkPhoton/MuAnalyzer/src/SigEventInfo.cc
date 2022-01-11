@@ -56,5 +56,8 @@ SigEventInfo::SigEventInfo()
    probeMuondE=-1;
    standaloneE=-1;
    globalMuonE=-1; 
+   nEle=0;
+   nExtraEle=0;
+   nExtraMuon=0;
 }
 

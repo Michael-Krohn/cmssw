@@ -110,6 +110,10 @@ class MuPXHistograms{
     TH1F* m_PostDXYPhi;
     TH2F* m_ProbePhiDXY;
     TH1F* m_ProbeDCA;
+    TH1F* m_ProbeLongDCA;
     TH2F* m_ProbeDCAPhi;
+    TH1F* m_nEle;
+    TH1F* m_nExtraEle;
+    TH1F* m_nExtraMuon;
 };
 #endif

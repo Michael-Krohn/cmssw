@@ -39,15 +39,20 @@ class stackInfo:
       self.stack(basedir+"/TagVtxIndex","Index of Tag Muon Primary Vertex", True, tag, outDir)
       self.stack(basedir+"/AdjustedMuonTrackMass","Adjusted Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
       self.stack(basedir+"/Non Muon Pdg Id","PDG ID of Closest Non-muon to probe",True,tag,outDir,False)
+      self.stack(basedir+"/ProbeDCA","Probe Transverse IP",True,tag,outDir,False)
+      self.stack(basedir+"/ProbeLongDCA","Probe Longitudinal IP",True,tag,outDir,False)
+      self.stack(basedir+"/nExtraElectrons","Extra Electrons",True,tag,outDir,False)
+      self.stack(basedir+"/nExtraMuons","Extra Muons",True,tag,outDir,False)
+      self.cutFlowText(basedir+"/cutProgress",outDir)
 
-   def calcScaleFactor(self,name,skimFile,resultFile,noEff=False):
+   def calcScaleFactor(self,name,skimFile,resultFile):
       #Use # of muons passing tag for total weight because I know that there was no over/underflow
       eff = resultFile.Get("demo/"+name).Integral()/skimFile.Get("DiMuonFilter/allEvents/NumberOfMuonsPassingTag").Integral()
       #Adjust efficiency to account for failed jobs
-      eff = eff* resultFile.Get("demo/allEvents/eventCount").Integral()/skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()
+      eff = eff* skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()/resultFile.Get("demo/allEvents/cutProgress").GetBinContent(2)
       return eff
 
-   def stack(self, name, xtitle, log, tag, outDir,rebin=False,noEff=False):
+   def stack(self, name, xtitle, log, tag, outDir,rebin=False):
       stackplot = ROOT.THStack("stack","")     
       leg = ROOT.TLegend(0.8,0.6,0.95,0.85)
       leg.SetBorderSize(0)
@@ -56,7 +61,7 @@ class stackInfo:
       #nextname = name[:-1]+str(int(name[-1])+1)
       #print nextname
       for mcFile in self.mcFiles:
-         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result,noEff)
+         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
          #neff = self.calcScaleFactor(nextname,mcFile.skim,mcFile.result)
          Nevents = mcFile.cx*1000*float(self.lumi)*eff
          #Nevents = Nevents+mcFile.cx*1000*float(self.lumi)*neff
@@ -151,7 +156,7 @@ class stackInfo:
       xlabel.Draw()
       
       lab_x0 = 0.20
-      lab_y0 = 0.96
+      lab_y0 = 0.90
       tag1 = ROOT.TLatex(lab_x0,lab_y0,"CMS")
       tag1.SetNDC()
       tag1.SetTextFont(62)
@@ -168,3 +173,59 @@ class stackInfo:
       img.WriteImage(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.png")
       plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.pdf")
       #plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")
+
+   def cutFlowText(self, name, outDir):
+      outfile = open(outDir+"/CutProgress.txt","w")
+      cutList = [ 'All Events',
+                  'Tight ID muon',
+                  'Tight PF Iso muon',
+                  'Muon pt > 26 GeV and |eta|<2.',
+                  'Muon is global',
+                  'Track With >20 GeV pt >0.2 dR from muon',
+                  'Track |eta|>1.45 and <2.4',
+                  'Track is High Purity',
+                  'Track Belongs to PV',
+                  'Track Longitudinal Impact Parameter <0.05',
+                  'Track Transverse Impact Parameter <0.005',
+                  'Tag and Probe Opposite Charge',
+                  'Tag and Probe valid fitted vertex',
+                  'Fitted vtx reduced chi^2<3.0',
+                  'Tag Probe Invariant Mass >50  <150 GeV',
+                  'Probe track ecal iso > 30 GeV or tk iso>0.1',
+                  'No other probes with dR>0.3 pair with track']
+     
+      hists = [] 
+      for mcFile in self.mcFiles:
+         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
+         #neff = self.calcScaleFactor(nextname,mcFile.skim,mcFile.result)
+         Nevents = mcFile.cx*1000*float(self.lumi)*eff
+         #Nevents = Nevents+mcFile.cx*1000*float(self.lumi)*neff
+         #NtotalEvents=NtotalEvents+Nevents
+         hist=(mcFile.result.Get("demo/"+name).Clone())
+         #hist.Add(mcFile.result.Get("demo/"+nextname))
+         if(hist.Integral()>0):
+            hist.Scale(Nevents/hist.Integral())
+         hists.append(hist)
+
+      stackplot = hists[0].Clone()    
+      for hist in hists:
+         if(hist!=hists[0]):
+            stackplot.Add(hist)
+
+      outfile.write("Cut Name,WW,TTTo2L2Nu,TTToSemiLeptonic,WJets,DYJets,DYJets_10to50\n")
+      for n in range(2,len(cutList)+2):
+         outfile.write(cutList[n-2])
+         for hist in hists:
+            if(hist.GetBinContent(n)>0):
+               outfile.write(","+str(hist.GetBinContent(n)))
+            else:
+               outfile.write(",0")
+         outfile.write("\n")
+
+#      outfile.write("Data:\n")
+#      dataHist=self.dataFile.Get("demo/allEvents/cutProgress").Clone()
+#      for n in range(1,len(cutList)+2):
+#         if(dataHist.GetBinContent(n)>0):
+#            outfile.write(cutList[n-2]+","+str(dataHist.GetBinContent(n))+"\n")
+    
+      outfile.close()

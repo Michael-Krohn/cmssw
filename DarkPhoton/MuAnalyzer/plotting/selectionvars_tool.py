@@ -28,10 +28,14 @@ class stackInfo:
       self.stack("allEvents/TrackIsolation","Relative Track Isolation (Track pt / #Sigma pt in 0.3 #Delta R)", True, tag, outDir,False,False,0.3)
       self.stack("allEvents/MinCaloJetDr","#Delta R from Probe to Nearest Calo Jet", False, tag, outDir,False,False,3)
       self.stack("allEvents/ProbePFJetDr","#Delta R from Probe to Nearest PF Jet", True, tag, outDir)
+      self.stack("allEvents/ProbeTrackDCA","Transverse Impact Paramter", True, tag,outDir)
+      self.stack("allEvents/ProbeTrackLongDCA","Longitudinal Impact Parameter", True, tag,outDir)
+      self.stack("allEvents/nExtraElectrons","Extra Electrons in Event", True, tag, outDir)
+      self.stack("allEvents/nExtraMuons","Extra Muons in Event", True, tag, outDir)
       self.cutFlowText(outDir)
 
    def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1):
-      leg = ROOT.TLegend(0.7,0.35,0.95,0.45)
+      leg = ROOT.TLegend(0.7,0.25,0.95,0.35)
       leg.SetBorderSize(0)
       hists = []
       NtotalEvents=0
@@ -182,27 +186,27 @@ class stackInfo:
    def cutFlowText(self, outDir):
       outfile = open(outDir+"/CutProgress.txt","w")
       cutList = [ 'AllEvents',
-                  'Probe Track with >20 GeV pt',
-                  'Probe Track is in endcap',
-                  'Probe Track is high purity',
-                  'Probe Track dxy<0.05',
-                  'Probe Track Belongs to Primary Vertex',
-                  'Tag Muon passes tight ID',
-                  'Tag Muon passes tight PF Iso',
-                  'Tag Muon pt >26 GeV and |eta|<2.4',
-                  'Tag Muon is global muon',
-                  'DR between tag and probe >0.2',
+                  'Tight ID muon',
+                  'Tight PF Iso muon',
+                  'Muon pt > 26 GeV and |eta|<2.',
+                  'Muon is global',
+                  'Track With >20 GeV pt >0.2 dR from muon',
+                  'Track |eta|>1.45 and <2.4',
+                  'Track is high purity',
+                  'Track Belongs to Primary Vertex',
+                  'Probe Longitudinal Impact Parameter <0.05',
+                  'Probe Transverse Impact Parameter < 0.005',
                   'Tag and Probe have opposite charge',
                   'Fitted tag/probe vertex is valid',
                   'Fitted tag/probe vertex has chi^2/ndof<3',
                   'Invariant mass of pair between 50 and 150 GeV',
                   'Probe track isolation <0.05',
                   'Probe ecal isolation <10 GeV',
+                  'No calo jet within DR of 1.0',
                   'No other probes more than 0.3 DR from selected probe pair with tag',
                   'Closest HE cell to probe trajectory between 18 and 28',
                   '>2 hits along trajectory in HE >0.1 GeV',
                   '<10 GeV in HE hits along trajectory',
-                  'No calo jet within DR of 1.0',
                   'DR to nearest CSC hit >0.05',
                   'DR to nearest Standalone muon >0.5']
 
@@ -225,5 +229,10 @@ class stackInfo:
           if(hist.GetBinContent(n)>0):
               outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
 
-      outfile.close()          
+      hist=self.mcFiles[1].mcfile.Get("demo/genAccepted/cutProgress").Clone()
+      outfile.write("\n")
+      for n in range(1,len(cutList)+1):
+          if(hist.GetBinContent(n)>0):
+              outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
 
+      outfile.close()          

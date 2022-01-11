@@ -49,6 +49,8 @@ class SigEventInfo{
     double standaloneDEoverE;
     double dxy;
     double dsz;
+    double dca;
+    double dcal;
     //HCAL
     int nCellsFound;
     double coneEnergy;
@@ -78,5 +80,8 @@ class SigEventInfo{
     double globalMuonE;
     int particlePDG;
     double minMuDr;
+    int nEle;
+    int nExtraEle;
+    int nExtraMuon;
 };
 #endif

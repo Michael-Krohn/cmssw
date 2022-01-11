@@ -13,12 +13,13 @@
 
 Tracks::Tracks(){}
 
-int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,edm::Handle<reco::VertexCollection> vtxHandle){
+int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
   int cutProgress = 0;
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
   iEvent.getByToken(trackCollection_label,thePATTrackHandle);
   highendcaptrackpt = 0;
   for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
+      if(deltaR(iTrack->eta(),iTrack->phi(),Tag->eta(),Tag->phi())<0.2) continue;
       if(iTrack->pt()<20) continue;
       if(cutProgress==0){cutProgress=1;}
       selectedTracks.push_back(&(*iTrack));
@@ -26,9 +27,8 @@ int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<
       if(cutProgress==1){cutProgress=2;}
       if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
       if(cutProgress==2){cutProgress=3;}
-      //if(fabs(iTrack->dxy())>0.05) continue;
-      if(cutProgress==3){cutProgress=4;}
       bool foundtrack = false;
+      GlobalPoint tkVtx;
       for(unsigned int i=0;i<vtxHandle->size();i++)
       {
          reco::VertexRef vtx(vtxHandle, i);
@@ -38,11 +38,21 @@ int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<
             if(vtx->trackRefAt(j)->pt()==iTrack->pt()&&vtx->trackRefAt(j)->eta()==iTrack->eta()&&vtx->trackRefAt(j)->phi()==iTrack->phi())
             {
                foundtrack = true;
+               GlobalPoint vert(vtx->x(), vtx->y(), vtx->z());
+               tkVtx = vert;
             }
          }
       }
       if(!foundtrack) continue;
-      if(cutProgress==4){cutProgress=5;} 
+      if(cutProgress==3){cutProgress=4;} 
+      reco::TransientTrack tk = transientTrackBuilder->build(*iTrack);
+      TrajectoryStateClosestToPoint  traj = tk.trajectoryStateClosestToPoint(tkVtx);
+      double transDCA = traj.perigeeParameters().transverseImpactParameter();
+      double longDCA = traj.perigeeParameters().longitudinalImpactParameter();
+      if(longDCA>0.05) continue;
+      if(cutProgress==4){cutProgress=5;}
+      if(transDCA>0.005) continue;
+      if(cutProgress==5){cutProgress=6;}
       if (iTrack->pt()>highendcaptrackpt)
       { 
          highptendcaptrack = &(*iTrack);
@@ -70,6 +80,8 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
             vtxindex = (int)i;
             trackindex = (int)j;
             foundtrack = true;
+            GlobalPoint vert(vtx->x(), vtx->y(), vtx->z());
+            probeVertPoint = vert;
          }
       }
    }
@@ -114,6 +126,8 @@ double Tracks::GetIsolation(const edm::Event& iEvent, edm::EDGetTokenT<std::vect
             vtxindex = (int)i;
             trackindex = (int)j;
             foundtrack = true;
+            GlobalPoint vert(vtx->x(), vtx->y(), vtx->z());
+            probeVertPoint = vert;
          }
       }
    }
