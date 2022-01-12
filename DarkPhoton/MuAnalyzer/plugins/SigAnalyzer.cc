@@ -346,7 +346,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         {       
           double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
           double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-          if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
+          //if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
+          if(probeEcalIso>30.) continue;
+          if((probeTrackIso/(*iTrack)->pt())<0.2) continue;
           if(probeTrackIso<0){continue;}
           SiblingMatched=false;
           nMatches++;

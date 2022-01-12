@@ -62,5 +62,11 @@ class MuPXEventInfo{
     int nonMuPdgId;
     int nLooseMuons;
     double tagPdgId;
+    double nHitsInCone;
+    double ProbeConeEnergy;
+
+    double globalMuonEplusCaloJetHadEplusEcalE;
+    double matchedProbeGlobalMuonE;
+
 };
 #endif

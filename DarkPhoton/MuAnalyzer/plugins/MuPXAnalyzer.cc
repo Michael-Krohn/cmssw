@@ -139,7 +139,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MuPXHistograms);
-    bool MatchTrackToMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken);
+    bool MatchTrackToMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info);
     bool MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo);
     bool LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo);
 
@@ -175,6 +175,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     TH1F* fPUDataHist_;
     TH1F* fPUMCHist_;
     TH1F* puWeightHist_;
+    MuPXHistograms myHistogramsNoCuts;
     MuPXHistograms myHistograms;
     MuPXHistograms muProbe;
     MuPXHistograms nonMuonProbe;
@@ -198,6 +199,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   m_recoPhotonToken (consumes<reco::PhotonCollection>(iConfig.getParameter<edm::InputTag>("photons"))),
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
+  CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
   reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
@@ -231,6 +233,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   fPUDataHist_->Divide(fPUMCHist_);
   puWeightHist_=(TH1F*)fPUDataHist_->Clone();
 
+  myHistogramsNoCuts.book(fs->mkdir("allEventsNoCuts"));
   myHistograms.book(fs->mkdir("allEvents"));
   muProbe.book(fs->mkdir("muProbe"));
   nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
@@ -264,6 +267,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   Jets myJets;
   HCAL myHCAL;
   ECAL myECAL;
+  CSC myCSCs;
+
+  myCSCs.minTotalImpactParameter = 1000;
+  myCSCs.minDR = 1000;
+  myCSCs.minTotalImpactParameter_Muon = 1000;
+  myCSCs.minDR_Muon = 1000;
 
   info.cutProgress=0;
   //myHistograms.ResetCutFlow();
@@ -315,7 +324,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   double muTrackMass=0;
   //Pair our candidate track with a tagging muon to reconstruct a Z
   double MuonTrackMass=0;
+  std::vector<double> HCALisolationInfo;
 
+  GlobalPoint MatchedGlobalPoint, VertexPosition;
+
+  myHistogramsNoCuts.FillHists(info);
 
   for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
      {
@@ -324,35 +337,48 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         //if((*iMuon)->pt()<highpt) continue;
         for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
         {
+	   std::cout << "Looping over tracks" << std::endl;
            if((*iMuon)->charge()==(*iTrack)->charge()) continue;
            if((*iMuon)->pt()<highpt){continue;}
            if(fabs((*iTrack)->dxy())>0.05) continue;
            if((*iMuon)->isGlobalMuon())
+	   std::cout << "Pass basic selection" << std::endl;
            {
               if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
               {
+	        std::cout << "Paired track and muon" << std::endl;
                 double probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,*iTrack);
                 double probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
+                HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
                 if(m_signalRegion)
                 {
-                   if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30) continue;
+//                   if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30) continue;
+                   if((probeTrackIso/(*iTrack)->pt())>0.05) continue;
+                   if(probeEcalIso>10) continue;
                    if(probeTrackIso<0) continue;
+                   if(HCALisolationInfo[0] < 30) continue;
+	           std::cout << "Passes HardBrem selection" << std::endl;
                 }
                 if(!m_signalRegion)
                 {
                    if((probeTrackIso/(*iTrack)->pt())<0.2&&probeEcalIso<30) continue;
                 }
                 Paired=true;
+		std::cout << "Paired: " << Paired << std::endl;
                 if(nPairs==0){pairedTracks.clear();}
                 nPairs++;
                 pairedTracks.push_back((*iTrack));
+		std::cout << "(*iTrack)->pt(): " << (*iTrack)->pt() << std::endl;
                 if((*iTrack)->pt()>hightrackpt)
                 {
+		   std::cout << "myTracks.MuonTrackMass: " << myTracks.MuonTrackMass << std::endl;
                    highpt=(*iMuon)->pt();
                    pairVtxChi=myTracks.pairvertexchi;
                    muTrackMass=myTracks.MuonTrackMass;
                    selectedMuon = (*iMuon);
                    selectedTrack = (*iTrack); 
+                   //hightrackpt = (*iTrack)->pt();
+                   myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
                 }
               }
            } 
@@ -361,6 +387,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      }
 
   //Check for other tracks that would have passed the global selection.
+  std::cout << "2nd check, Paired: " << Paired << std::endl;
   if(Paired==true)
   {
      for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack)
@@ -370,10 +397,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if(selectedMuon->charge()==(*iTrack)->charge()) continue;
         if(myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder))
         {
+	   std::cout << "Setting Paired to false" << std::endl;
            Paired=false;   
         }
      }
   }
+  std::cout << "3rd check, Paired: " << Paired << std::endl;
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
 //  if(myMuons.highmuonpt<26.){return;}
   if(myMuons.highmuonpt>26.){info.cutProgress++;}
@@ -390,7 +419,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      info.tagMuon=selectedMuon;
      info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedTrack);
      info.probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack));
-     info.probeHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
+     std::cout << "check #2" << std::endl;
+     HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
+     std::cout << "HCALisolationInfo[1]: " << HCALisolationInfo[1] << std::endl;
+     std::cout << "check #3" << std::endl;
+     info.probeHcalIso=HCALisolationInfo[0];
+     info.nHitsInCone=HCALisolationInfo[1];
      info.nPUmean=nPUmean_;
      info.tagProbeVtxChi=pairVtxChi;
      //Study multiple paired tracks
@@ -420,7 +454,9 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      info.nVtx=myTracks.NVertices;
      info.probeVtx=myTracks.probeVtx;
      info.tagEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
-     info.tagHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
+     std::vector<double> HCALisolationInfo2;
+     HCALisolationInfo2=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
+     info.tagHcalIso=HCALisolationInfo2[0];
 
     //Jet analysis
     edm::Handle<reco::PFJetCollection> pfjetHandle;
@@ -542,7 +578,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   }
   if(Paired)
   {
-    bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken);
+    bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken, info);
     if(m_isMC)
     {
       double genInfo[4];
@@ -574,14 +610,27 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     } 
     if(matched)
     {
+      info.globalMuonEplusCaloJetHadEplusEcalE = info.matchedProbeGlobalMuonE + info.probeHcalIso + info.probeEcalIso;
       muProbe.FillHists(info);
     }
     else{nonMuonProbe.FillHists(info);} 
+
+    MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
+    VertexPosition = myCSCs.TrackVertex;
+    double randphi = MatchedGlobalPoint.phi()+2.0;
+    GlobalPoint RandGlobalPoint(GlobalPoint::Polar(MatchedGlobalPoint.theta(),randphi,MatchedGlobalPoint.mag()));
+    bool GoodRand=true;
+
+    std::cout << "Going into myHCAL.HitsPlots" << std::endl;
+    info.ProbeConeEnergy = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, selectedTrack->pt(), VertexPosition);
+    std::cout << "selectedTrack->eta(): " << selectedTrack->eta() << std::endl;
+
   }
+  std::cout << "Filling allEvents" << std::endl;
   myHistograms.FillHists(info);
 }
 
-bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken)
+bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info)
 {
   edm::Handle<std::vector<reco::Muon>> recoMuons;
   iEvent.getByToken(m_recoMuonToken, recoMuons);
@@ -599,7 +648,8 @@ bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* 
      {
         mindPt=dPtOverPt;
 	matched=true;
-     }
+        info.matchedProbeGlobalMuonE = iMuon->energy();
+    }
   }
   return matched;
 }

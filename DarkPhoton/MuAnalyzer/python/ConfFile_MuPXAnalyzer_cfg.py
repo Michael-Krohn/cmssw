@@ -5,7 +5,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -17,7 +17,7 @@ options.register( 'runLocally',
                                   "True if running locally")
 
 options.register( 'signalRegion',
-                                  False,
+                                  True,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if running on MC in isolated region")
@@ -52,9 +52,9 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/DYJets_SignalRegion.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/HardBrem_RECO/dataFiles_DYJetsToLL_2nd_0000_test.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/rund2018.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/dataFiles_2018D.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -64,8 +64,9 @@ process.options = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
-    #fileNames = cms.untracked.vstring("file:RECOdata_Test.root")
-    fileNames = readFiles
+    #fileNames = cms.untracked.vstring("file:RECO_RAW2DIGI_L1Reco_RECO_ALCA_EI_PAT_DQM_99.root")
+    fileNames = cms.untracked.vstring("file:ConfFile_MuPXAnalyzer_HardBrem_Run2018D_RAWRECO_BadTrackIso_018.root")
+#    fileNames = readFiles
 )
 if(options.isMC):
    process.source.duplicateCheckMode = cms.untracked.string("noDuplicateCheck")
@@ -85,7 +86,8 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     #HBHERecHits = cms.InputTag("hbhereco"),
     EERecHits = cms.InputTag("reducedEcalRecHitsEE"),
     EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
-    HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    HBHERecHits = cms.InputTag("hbhereco"),
     PFJets = cms.InputTag("ak4PFJetsCHS"),
     TowerSource = cms.InputTag("caloStage2Digis","CaloTower"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),

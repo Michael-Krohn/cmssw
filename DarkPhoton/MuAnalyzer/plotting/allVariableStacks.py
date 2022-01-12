@@ -29,25 +29,27 @@ if not os.path.isdir(outDir):
 WJetsCx=61527.6
 TTToSemiLeptonicCx=365.34
 TTTo2L2NuCx=88.29
-DYJetsCx=6077.22
+#DYJetsCx=6077.22
+DYJetsCx=1586
 DYJets10to50Cx=18610
 WWCx=118.7
 
 mcFiles = []
 #mcFIle object goes Skim File,Results File, Label, Cross Section, Fill Color
 #Histograms are stacked in the order they are added here
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WW/hists/WW_monitor.root","READ"),ROOT.TFile(resultsDir+"/WW/hists/WW_analyzedsplit.root","READ"), "WW",WWCx,7))
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_monitor.root","READ"),ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_analyzedsplit.root","READ"), "TTBar2L2Nu",TTTo2L2NuCx,2))
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_monitor.root","READ"),ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_analyzedsplit.root","READ"), "TTBarSemiLeptonic",TTToSemiLeptonicCx,5))
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WJets/hists/WJets_monitor.root","READ"), ROOT.TFile(resultsDir+"/WJets/hists/WJets_analyzedsplit.root","READ"), "WJets", WJetsCx,3))
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets/hists/DYJets_monitor.root","READ"),ROOT.TFile(resultsDir+"/DYJets/hists/DYJets_analyzedsplit.root","READ"), "DYJets",DYJetsCx,4))
-mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_monitor.root","READ"),ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_analyzedsplit.root","READ"), "DYJets_10to50",DYJets10to50Cx,6))
+#mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WW/hists/WW_monitor.root","READ"),ROOT.TFile(resultsDir+"/WW/hists/WW_analyzedsplit.root","READ"), "WW",WWCx,7))
+#mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_monitor.root","READ"),ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_analyzedsplit.root","READ"), "TTBar2L2Nu",TTTo2L2NuCx,2))
+#mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_monitor.root","READ"),ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_analyzedsplit.root","READ"), "TTBarSemiLeptonic",TTToSemiLeptonicCx,5))
+#mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/WJets/hists/WJets_monitor.root","READ"), ROOT.TFile(resultsDir+"/WJets/hists/WJets_analyzedsplit.root","READ"), "WJets", WJetsCx,3))
+mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets/hists/DYJetsToLL_RECO_hists_HighHcalE.root","READ"),ROOT.TFile(resultsDir+"/DYJets/hists/DYJetsToLL_RECO_hists_HighHcalE.root","READ"), "DYJets",DYJetsCx,4))
+#mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_monitor.root","READ"),ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10to50_analyzedsplit.root","READ"), "DYJets_10to50",DYJets10to50Cx,6))
 
-dataFile = ROOT.TFile(resultsDir+"/Data/hists/runA+D_analyzedsplit.root","READ")
+#dataFile = ROOT.TFile(resultsDir+"/Data/hists/SingleMuon2018D_RECO_hists_BadTrackIso.root","READ")
+dataFile = ROOT.TFile(resultsDir+"/Data/hists/SingleMuon2018D_RECO_hists_HighHcalE.root","READ")
 info = stack.stackInfo(mcFiles,dataFile, arg.lumi)
 info.plotAll("allEvents","RunA+D Non-Isolated Events",outDir)
-info.plotAll("muProbe","RunA+D Non-Isolated Events, Probe Matched to Muon",outDir)
-info.plotAll("nonMuonProbe","RunA+D Non-Isolated Events, Probe Not Matched to Muon",outDir)
+#info.plotAll("muProbe","RunA+D Non-Isolated Events, Probe Matched to Muon",outDir)
+#info.plotAll("nonMuonProbe","RunA+D Non-Isolated Events, Probe Not Matched to Muon",outDir)
 
 dataFile.Close()
 

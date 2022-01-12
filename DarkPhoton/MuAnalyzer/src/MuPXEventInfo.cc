@@ -40,5 +40,8 @@ MuPXEventInfo::MuPXEventInfo()
     passLooseMatch=false;
     nonMuPdgId=0;
     nLooseMuons=0;
+    nHitsInCone = -1;
+    ProbeConeEnergy = -1;
+
 }
 

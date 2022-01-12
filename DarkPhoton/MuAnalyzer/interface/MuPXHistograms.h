@@ -53,6 +53,7 @@ class MuPXHistograms{
     TH1F* m_TagProbeVtxChi;
     TH1F* m_ProbeTrackIso;
     TH1F* m_ProbeHcalIso;
+    TH1F* m_HcalHitsInCone;
     TH1F* m_ProbeEcalIso;
     TH2F* m_ProbeCombinedIso;     
     double cutProgress;
@@ -100,5 +101,9 @@ class MuPXHistograms{
     TH1F* m_TagPdgId;
     TH1F* m_MotherMatch;
     TH1F* m_LooseMatch[10][10];
+    TH1F* m_ConeEnergy;
+
+    TH1F* m_HcalSplitMuonTrackMass[10];
+    TH2F* m_GlobalMuonEplusHadEplusEcalE2D;
 };
 #endif

@@ -13,19 +13,19 @@ class stackInfo:
       self.mcFiles=mc
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Rebin
-      self.stack(basedir+"/ConeHits","Hits along probe trajectory in HE",False,tag,outDir)
-      self.stack(basedir+"/ConeEnergy","Energy of cells alone probe in HE",True,tag,outDir)
-      self.stack(basedir+"/dRtoNearestCSC","#Delta R from probe to nearest CSC hit",True,tag,outDir)
-      self.stack(basedir+"/StandaloneMuondEoverE","(Standalone P - Probe P)/Probe P",True,tag,outDir)
-      self.stack(basedir+"/DrtoNearestStandalone","#Delta R to Nearest Standalone Mion",True,tag,outDir)
-      self.stack(basedir+"/signalCategory","Signal Category",True,tag,outDir)
-      self.stack(basedir+"/CaloConeEnergy","Energy in HE Cone (GeV)",True,tag,outDir)
-      self.stack(basedir+"/Dark Brem R","R of Dark Brem Location",True,tag,outDir)
-      self.twoDshow(basedir+"/HEEStandDEOverE","Energy in HE Hits GeV","(Standalone P - Probe P)/Probe P)", False,tag,outDir,1)
-      self.twoDshow(basedir+"/FailLocation","Probe i#eta","Probe i#phi", False, tag, outDir,1)
-      self.stack("allEvents/cutProgress","Cut Progress",True,tag,outDir,False,True)
-      self.stack("allEvents/ProbeEcalIsolation","Ecal Energy in 0.4 #Delta R  Cone", True, tag, outDir,False,False,35)
-      self.stack("allEvents/TrackIsolation","Relative Track Isolation (Track pt / #Sigma pt in 0.3 #Delta R)", True, tag, outDir,False,False,0.3)
+      #self.stack(basedir+"/ConeHits","Hits along probe trajectory in HE",False,tag,outDir)
+      #self.stack(basedir+"/ConeEnergy","Energy of cells alone probe in HE",True,tag,outDir)
+      #self.stack(basedir+"/dRtoNearestCSC","#Delta R from probe to nearest CSC hit",True,tag,outDir)
+      #self.stack(basedir+"/StandaloneMuondEoverE","(Standalone P - Probe P)/Probe P",True,tag,outDir)
+      #self.stack(basedir+"/DrtoNearestStandalone","#Delta R to Nearest Standalone Mion",True,tag,outDir)
+      #self.stack(basedir+"/signalCategory","Signal Category",True,tag,outDir)
+      #self.stack(basedir+"/CaloConeEnergy","Energy in HE Cone (GeV)",True,tag,outDir)
+      #self.stack(basedir+"/Dark Brem R","R of Dark Brem Location",True,tag,outDir)
+      #self.twoDshow(basedir+"/HEEStandDEOverE","Energy in HE Hits GeV","(Standalone P - Probe P)/Probe P)", False,tag,outDir,1)
+      #self.twoDshow(basedir+"/FailLocation","Probe i#eta","Probe i#phi", False, tag, outDir,1)
+      #self.stack("allEvents/cutProgress","Cut Progress",True,tag,outDir,False,True)
+      #self.stack("allEvents/ProbeEcalIsolation","Ecal Energy in 0.4 #Delta R  Cone", True, tag, outDir,False,False,35)
+      #self.stack("allEvents/TrackIsolation","Relative Track Isolation (Track pt / #Sigma pt in 0.3 #Delta R)", True, tag, outDir,False,False,0.3)
       self.cutFlowText(outDir)
 
    def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1):
@@ -205,7 +205,7 @@ class stackInfo:
 
 
       for mcFile in self.mcFiles:
-         hist=(mcFile.mcfile.Get("demo/allEvents/cutProgress").Clone())
+         hist=(mcFile.Get("demo/allEvents/cutProgress").Clone())
          outfile.write("\n")
          for n in range(1,len(cutList)+1):
              if(hist.GetBinContent(n)>0):

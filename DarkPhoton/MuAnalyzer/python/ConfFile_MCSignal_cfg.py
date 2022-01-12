@@ -4,7 +4,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -22,13 +22,13 @@ options.register( 'runLocally',
                                   "True if running locally")
 
 options.register( 'isSig',
-				  True,
+				  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if using signal injected events")
 
 options.register( 'hasDpho',
-                                  True,
+                                  False,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if dark brem particle is present")

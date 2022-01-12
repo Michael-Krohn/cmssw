@@ -26,7 +26,7 @@ int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<
       if(cutProgress==1){cutProgress=2;}
       if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
       if(cutProgress==2){cutProgress=3;}
-      if(iTrack->dxy()>0.05) continue;
+      if(fabs(iTrack->dxy())>0.05) continue;
       if(cutProgress==3){cutProgress=4;}
       if (iTrack->pt()>highendcaptrackpt)
       { 

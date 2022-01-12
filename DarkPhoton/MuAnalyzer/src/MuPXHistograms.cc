@@ -40,6 +40,12 @@ void MuPXHistograms::book(TFileDirectory histFolder){
      std::string adjname = "adj"+name; 
      m_EcalSplitAdjMuonTrackMass[i] = histFolder.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
   }
+  for(int i=0;i<10;i++)
+  {
+     std::string name = "HcalMuonsTrackMass"+std::to_string(i);
+     m_HcalSplitMuonTrackMass[i] = histFolder.make<TH1F>(name.c_str(), "; MuonTrackMass (GeV); Events", 100,50,150);
+  }
+
   for(int i=0;i<100;i++)
   {
      std::string name = "TrackMuonsTrackMass"+std::to_string(i);
@@ -70,9 +76,11 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_ProbePhi = histFolder.make<TH1F>("ProbeTrackPhi", "; #phi of ProbeTrack; Events", 100, -3.15, 3.15);
   m_ProbeEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi","; Probe Track #eta; Probe Track #phi; Events", 100, -2.6,2.6, 100, -3.15, 3.15);
   m_ProbeTrackIso = histFolder.make<TH1F>("ProbeTrackIsolation","; Track Based Isolation; Events",200,0,5);
-  m_ProbeHcalIso = histFolder.make<TH1F>("ProbeHcalIsolation","; Hcal Energy in matched hits (GeV); Events", 200, 0, 100);
+  m_ProbeHcalIso = histFolder.make<TH1F>("ProbeHcalIsolation","; Hcal Energy in matched hits (GeV); Events", 300, 0, 300);
+  m_HcalHitsInCone = histFolder.make<TH1F>("HcalHitsInCone", "; Hits in Cone; Events", 50,-0.5,49.5);
   m_ProbeEcalIso = histFolder.make<TH1F>("ProbeEcalIsolation","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   m_ProbeCombinedIso = histFolder.make<TH2F>("ProbeCombinedIsolation","; Track Based Isolation; Hcal energy in matched hits (GeV); Events", 200, 0, 5, 200, 0, 8);
+  m_ConeEnergy = histFolder.make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,100);
   m_NPassingProbe = histFolder.make<TH1F>("NTracksPassingProbe","; Tracks Passing Probe Selection; Events", 20, -0.5, 19.5);
   m_AdjustedMuTrackMass = histFolder.make<TH1F>("AdjustedMuonTrackMass","; Adjusted Invariant Mass of Tag and Probe (GeV); Events", 110, 50, 160); 
   //Multiple Paired Tracks Histograms
@@ -118,6 +126,7 @@ void MuPXHistograms::book(TFileDirectory histFolder){
   m_nLooseMuons = histFolder.make<TH1F>("N loose muons",";Number of Gen Muons; Events",10,0,10);
   m_TagPdgId = histFolder.make<TH1F>("Tag Mother PDG Id",";PDG Id of Tag Mother; Events",200,-100,100);
   m_MotherMatch = histFolder.make<TH1F>("MatchTagProbeMother",";Match PDG Ids; Events",2,0,2);
+  m_GlobalMuonEplusHadEplusEcalE2D = histFolder.make<TH2F>("GlobalMuonEplusHadEplusEcalE2D",";Global Muon E + Calo Jet HCAL E + ECAL Iso E; Probe E ; Events", 250, 0, 500, 250,0, 500);
   TFileDirectory looseMatch = histFolder.mkdir("looseMatch");
   for(int i=0;i<10;i++)
   {
@@ -144,6 +153,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_ProbeTrackIso->Fill(info.probeTrackIso/info.probeTrack->pt(),info.eventWeight);
      m_ProbeEcalIso->Fill(info.probeEcalIso,info.eventWeight);
      m_ProbeHcalIso->Fill(info.probeHcalIso,info.eventWeight);
+     m_HcalHitsInCone->Fill(info.nHitsInCone,info.eventWeight);
      m_TagEta->Fill(info.tagMuon->eta(),info.eventWeight);
      m_TagPhi->Fill(info.tagMuon->phi(),info.eventWeight);
      m_TagEtaPhi->Fill(info.tagMuon->eta(),info.tagMuon->phi(),info.eventWeight);
@@ -163,6 +173,38 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      {
        m_EcalSplitAdjMuonTrackMass[99]->Fill(info.adjMuonTrackMass,info.eventWeight);
      }
+     if(info.probeHcalIso<32)
+     {
+       m_HcalSplitMuonTrackMass[0]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<34)
+     {
+       m_HcalSplitMuonTrackMass[1]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<36)
+     {
+       m_HcalSplitMuonTrackMass[2]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<40)
+     {
+       m_HcalSplitMuonTrackMass[3]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<46)
+     {
+       m_HcalSplitMuonTrackMass[4]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<55)
+     {
+       m_HcalSplitMuonTrackMass[5]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<67)
+     {
+       m_HcalSplitMuonTrackMass[6]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso< 85)
+     {
+       m_HcalSplitMuonTrackMass[7]->Fill(info.muonTrackMass,info.eventWeight);
+     }else if(info.probeHcalIso<115)
+     {
+       m_HcalSplitMuonTrackMass[8]->Fill(info.muonTrackMass,info.eventWeight);
+     }else
+     {
+       m_HcalSplitMuonTrackMass[9]->Fill(info.muonTrackMass,info.eventWeight);
+     }
+
      if(info.probeTrackIso/info.probeTrack->pt()<0.5)
      {
        m_TrackSplitAdjMuonTrackMass[(int)(info.probeTrackIso/info.probeTrack->pt()/0.5*100)]->Fill(info.adjMuonTrackMass,info.eventWeight);
@@ -207,6 +249,8 @@ void MuPXHistograms::FillHists(MuPXEventInfo info)
      m_TagProbeVtxd0->Fill(info.vtxd0,info.eventWeight);
      m_TagProbeVtxdz->Fill(info.vtxdz,info.eventWeight);
      //Gen Particle Information
+     m_ConeEnergy->Fill(info.ProbeConeEnergy, info.eventWeight);
+     m_GlobalMuonEplusHadEplusEcalE2D->Fill(info.globalMuonEplusCaloJetHadEplusEcalE,info.probeTrack->p(), info.eventWeight);
      
      if(info.farMuDr>0)
      {
