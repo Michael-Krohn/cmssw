@@ -35,11 +35,14 @@ class MuPXEventInfo{
     double tagTrackIso;
     double tagHcalIso;
     double tagEcalIso;
+    double probeDCA;
+    double probeLongDCA;
     int nJets;
     double nearestJetE;
     double nearestJetDr;   
     double nearJetMaxE;
     //Calo Jets
+    double minProbeCaloJetDr;
     double probeCaloJetE;
     double tagCaloJetE;
     double probeCaloJetEcal;
@@ -59,14 +62,21 @@ class MuPXEventInfo{
     double genTagMuDr;
     double genPdgId;
     bool passLooseMatch;
-    int nonMuPdgId;
+    std::vector<int> nearbyNonMuPdgIds;
+    std::vector<int> highPtNonMuPdgIds;
     int nLooseMuons;
     double tagPdgId;
     double nHitsInCone;
     double ProbeConeEnergy;
 
     double globalMuonEplusCaloJetHadEplusEcalE;
+    double standaloneMuonEplusCaloJetHadEplusEcalE;
     double matchedProbeGlobalMuonE;
 
+    double staMinDr;
+    double standaloneE;
+    int nEle;
+    int nExtraEle;
+    int nExtraMuon;
 };
 #endif

@@ -15,8 +15,12 @@ class Jets{
     Jets();
 
     void SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken);
+    void FindNearestJet(const reco::Track* probe);
 
     std::vector<const reco::PFJet*> selectedJets;
+    double nearestJetDr;
+    double nearestJetE;
+    double nearJetMaxE;
 };
 
 #endif

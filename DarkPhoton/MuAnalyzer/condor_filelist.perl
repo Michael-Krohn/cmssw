@@ -119,7 +119,7 @@ print(SUBMIT "request_memory = 1024\n");
 print(SUBMIT "Requirements = (Arch==\"X86_64\")");
 # Zebras are for remote login, not cluster computing
 print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"zebra04.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
-#print(SUBMIT " && (Machine != \"scorpion24.spa.umn.edu\" && Machine != \"scorpion20.spa.umn.edu\" && Machine != \"scorpion44.spa.umn.edu\")");
+print(SUBMIT " && (Machine != \"scorpion3.spa.umn.edu\" && Machine != \"scorpion18.spa.umn.edu\")");
 #print(SUBMIT " && (Machine != \"scorpion42.spa.umn.edu\" && Machine != \"scorpion43.spa.umn.edu\" && Machine != \"scorpion45.spa.umn.edu\" && Machine != \"scorpion46.spa.umn.edu\" && Machine != \"scorpion5.spa.umn.edu\")");
 
 # These machines are VMs that run the grid interface

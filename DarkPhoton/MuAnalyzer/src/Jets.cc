@@ -3,11 +3,16 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
-
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/TrackReco/interface/TrackFwd.h"
+#include "DataFormats/Math/interface/deltaR.h"
 #include <TMath.h>
 
 Jets::Jets()
 {
+   nearestJetDr = 1000;
+   nearestJetE = -1;
+   nearJetMaxE = -1;
 }
 
 void Jets::SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken){
@@ -36,4 +41,18 @@ void Jets::SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken){
     
     if(JetId){selectedJets.push_back(&(*it));}
   }
+}
+
+void Jets::FindNearestJet(const reco::Track* probe)
+{
+   for(auto it = selectedJets.begin(); it!=selectedJets.end();++it)
+   {
+      double jetDr=deltaR(probe->eta(),probe->phi(),(*it)->eta(),(*it)->phi());
+      if(jetDr<0.3&&(*it)->energy()>nearJetMaxE){nearJetMaxE=(*it)->energy();}
+      if(jetDr<nearestJetDr||nearestJetDr<0)
+      {
+         nearestJetDr=jetDr;
+         nearestJetE=(*it)->energy();
+      }
+   }
 }

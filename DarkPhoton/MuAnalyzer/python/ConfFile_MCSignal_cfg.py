@@ -71,8 +71,8 @@ if(options.runLocally):
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
 	   #mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem.txt')
-           #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
-           mylist = FileUtils.loadListFromFile ('filetest.txt')
+           mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
+           #mylist = FileUtils.loadListFromFile ('filetest.txt')
         else:
 	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
 	readFiles = cms.untracked.vstring( *mylist)
@@ -92,6 +92,7 @@ process.source = cms.Source("PoolSource",
 process.demo = cms.EDAnalyzer('SigAnalyzer',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
+    electrons = cms.InputTag("gedGsfElectrons"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
     g4SimHits = cms.InputTag("g4SimHits"),
@@ -106,6 +107,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
+    PFJets = cms.InputTag("ak4PFJetsCHS"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),
     StandAloneTracks = cms.InputTag("standAloneMuons"),
     EERecHits = cms.InputTag("reducedEcalRecHitsEE"),

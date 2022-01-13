@@ -13,9 +13,10 @@ class mcFile:
       self.color=fillcolor
 
 class stackInfo:
-   def __init__(self, mc, data, lumi):
+   def __init__(self, mc, lumi,data=None):
       self.mcFiles=mc
       self.dataFile=data
+      print "lumi: ", lumi
       self.lumi=lumi
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Output Directory, Rebin
@@ -143,6 +144,7 @@ class stackInfo:
 	 print "mcFile xsec: ", mcFile.cx
          Nevents = mcFile.cx*1000*float(self.lumi)*eff
          hist=(mcFile.result.Get("demo/"+name).Clone())
+         #hist.Add(mcFile.result.Get("demo/"+nextname))
          if(hist.Integral()>0):
             hist.Scale(Nevents/hist.Integral())
          hist.SetFillColor(mcFile.color)
@@ -199,9 +201,13 @@ class stackInfo:
       if(log):
          pad1.SetLogy()
          ROOT.gPad.SetLogy()
-      maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
-      minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
-      if(minimum==0):
+      if self.dataFile is not None:
+         maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
+         minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
+      else:
+         maximum=stackplot.GetMaximum()
+         minimum=stackplot.GetMinimum()
+      if(minimum==0 and self.dataFile is not None):
          minimum=dataHist.GetMinimum(0)
       if not log:
          minimum=0      
@@ -215,7 +221,8 @@ class stackInfo:
       stackplot.GetXaxis().SetTitle("")
       stackplot.GetXaxis().SetTickSize(0)
       stackplot.Draw("hist")
-      dataHist.Draw("psame") 
+      if self.dataFile is not None:
+         dataHist.Draw("psame") 
   
       newDataHist = copy.deepcopy(dataHist)
       allMC = stackplot.GetStack().Last().Clone()
@@ -330,4 +337,60 @@ class stackInfo:
       img.FromPad(plot)
       img.WriteImage(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.png")
       plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.pdf")
-      plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")
+      #plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")
+
+   def cutFlowText(self, name, outDir):
+      outfile = open(outDir+"/CutProgress.txt","w")
+      cutList = [ 'All Events',
+                  'Tight ID muon',
+                  'Tight PF Iso muon',
+                  'Muon pt > 26 GeV and |eta|<2.',
+                  'Muon is global',
+                  'Track With >20 GeV pt >0.2 dR from muon',
+                  'Track |eta|>1.45 and <2.4',
+                  'Track is High Purity',
+                  'Track Belongs to PV',
+                  'Track Longitudinal Impact Parameter <0.05',
+                  'Track Transverse Impact Parameter <0.005',
+                  'Tag and Probe Opposite Charge',
+                  'Tag and Probe valid fitted vertex',
+                  'Fitted vtx reduced chi^2<3.0',
+                  'Tag Probe Invariant Mass >50  <150 GeV',
+                  'Probe track ecal iso > 30 GeV or tk iso>0.1',
+                  'No other probes with dR>0.3 pair with track']
+     
+      hists = [] 
+      for mcFile in self.mcFiles:
+         eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
+         #neff = self.calcScaleFactor(nextname,mcFile.skim,mcFile.result)
+         Nevents = mcFile.cx*1000*float(self.lumi)*eff
+         #Nevents = Nevents+mcFile.cx*1000*float(self.lumi)*neff
+         #NtotalEvents=NtotalEvents+Nevents
+         hist=(mcFile.result.Get("demo/"+name).Clone())
+         #hist.Add(mcFile.result.Get("demo/"+nextname))
+         if(hist.Integral()>0):
+            hist.Scale(Nevents/hist.Integral())
+         hists.append(hist)
+
+      stackplot = hists[0].Clone()    
+      for hist in hists:
+         if(hist!=hists[0]):
+            stackplot.Add(hist)
+
+      outfile.write("Cut Name,WW,TTTo2L2Nu,TTToSemiLeptonic,WJets,DYJets,DYJets_10to50\n")
+      for n in range(2,len(cutList)+2):
+         outfile.write(cutList[n-2])
+         for hist in hists:
+            if(hist.GetBinContent(n)>0):
+               outfile.write(","+str(hist.GetBinContent(n)))
+            else:
+               outfile.write(",0")
+         outfile.write("\n")
+
+#      outfile.write("Data:\n")
+#      dataHist=self.dataFile.Get("demo/allEvents/cutProgress").Clone()
+#      for n in range(1,len(cutList)+2):
+#         if(dataHist.GetBinContent(n)>0):
+#            outfile.write(cutList[n-2]+","+str(dataHist.GetBinContent(n))+"\n")
+    
+      outfile.close()

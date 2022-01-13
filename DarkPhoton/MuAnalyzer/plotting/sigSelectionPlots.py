@@ -23,7 +23,7 @@ mcFiles = []
 #Histograms are stacked in the order they are added here
 mcFiles.append(tool.histfile(ROOT.TFile("../ZmmDBrem.root","READ"), "ZmmDBrem, mAp=1.0 GeV",2))
 mcFiles.append(tool.histfile(ROOT.TFile("../ZmmSim.root","READ"), "DYJets MC",1))
-mcFiles.append(tool.histfile(ROOT.TFile("../ZmmDBrem_0p1.root","READ"), "ZmmDBrem, mAp=0.1 GeV",3))
+mcFiles.append(tool.histfile(ROOT.TFile("../ZmmDBrem_0p2.root","READ"), "ZmmDBrem, mAp=0.2 GeV",3))
 
 info = tool.stackInfo(mcFiles)
 info.plotAll("allEvents","Private MC, All Events",outDir)

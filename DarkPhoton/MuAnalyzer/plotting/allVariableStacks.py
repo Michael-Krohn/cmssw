@@ -12,6 +12,7 @@ parser.add_argument("--l", "--lumi", dest="lumi", help="luminosity", default=0)
 parser.add_argument("--t", "--title", dest="label", help="Data label", default="Mu+X Data Skim")
 arg = parser.parse_args()
 
+ROOT.gROOT.SetBatch()
 resultsDir = arg.resultsDir
 #Check for trailing slash on results dir and delete
 if arg.resultsDir.split("/")[-1] =="": resultsDir = arg.resultsDir[:-1]
@@ -46,7 +47,7 @@ mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets/hists/DYJetsToLL_RECO
 
 #dataFile = ROOT.TFile(resultsDir+"/Data/hists/SingleMuon2018D_RECO_hists_BadTrackIso.root","READ")
 dataFile = ROOT.TFile(resultsDir+"/Data/hists/SingleMuon2018D_RECO_hists_HighHcalE.root","READ")
-info = stack.stackInfo(mcFiles,dataFile, arg.lumi)
+info = stack.stackInfo(mcFiles,arg.lumi, dataFile)
 info.plotAll("allEvents","RunA+D Non-Isolated Events",outDir)
 #info.plotAll("muProbe","RunA+D Non-Isolated Events, Probe Matched to Muon",outDir)
 #info.plotAll("nonMuonProbe","RunA+D Non-Isolated Events, Probe Not Matched to Muon",outDir)

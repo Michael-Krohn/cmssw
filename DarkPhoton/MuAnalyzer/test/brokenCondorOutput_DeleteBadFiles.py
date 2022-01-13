@@ -1,8 +1,8 @@
 import os
 import ROOT
 
-logFiles = 'SingleMuon_Run2018D_rootFiles.txt'
-#logFiles = 'DYJetsToLL_rootFiles.txt'
+#logFiles = 'SingleMuon_Run2018D_rootFiles.txt'
+logFiles = 'DYJetsToLL_rootFiles.txt'
 
 with open(logFiles) as f:
     lines = f.read().splitlines()
