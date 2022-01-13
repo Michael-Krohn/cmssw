@@ -19,7 +19,7 @@ int Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken
   for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end(); iMuon++) {
 
     //Tight ID
-//    if (!(iMuon->isPFMuon() && iMuon->isGlobalMuon() )) continue;
+    if (!(iMuon->isPFMuon() && iMuon->isGlobalMuon() )) continue;
     if(!(iMuon->passed(reco::Muon::CutBasedIdTight))) continue;
     if(cutPro==0){cutPro=1;}
     //PFIso Loose requirement

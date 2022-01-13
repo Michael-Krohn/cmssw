@@ -41,6 +41,10 @@ SigEventInfo::SigEventInfo()
    hitsOverThresh=-1;
    vtxZ=-1;  
    bremDepth = -1;
+   nearestJetDr=-1;
+   nearJetMaxE=-1;
+   nearestJetE=-1;
+   minCaloJetDr=-1;
    caloJetHcalE=-1;
    caloJetEcalE=-1;
    caloJetTotalE=-1;
@@ -52,5 +56,8 @@ SigEventInfo::SigEventInfo()
    probeMuondE=-1;
    standaloneE=-1;
    globalMuonE=-1; 
+   nEle=0;
+   nExtraEle=0;
+   nExtraMuon=0;
 }
 

@@ -45,8 +45,8 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_ProbeTrackEta = histFolder.make<TH1F>("ProbeTrackEta",";#eta; Events", 200, -4, 4);
   m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
   m_DeflectingAngle = histFolder.make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
-  m_initialMuE = histFolder.make<TH1F>("MuInitialE",";Energy (GeV);Events",800,0,800);
-  m_finalMuE = histFolder.make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,800);
+  m_initialMuE = histFolder.make<TH1F>("MuInitialE",";Energy (GeV);Events",800,0,200);
+  m_finalMuE = histFolder.make<TH1F>("MuFinalE",";Energy (GeV);Events",800,0,200);
   m_DBremScalingDistance = histFolder.make<TH1F>("DarkBremScalingDistance",";Initial E/Sampled E; Events", 100,0,4);
   m_ProbeEcalIsolation = histFolder.make<TH1F>("ProbeEcalIsolation",";Ecal Isolation; Events", 100,0,100);
   m_IsolationVariables = histFolder.make<TH2F>("IsolationVars",";ECAL Isolation;Track Isolation; Events",6,0,30,8,0,0.2);
@@ -70,6 +70,10 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_DBremR = histFolder.make<TH1F>("Dark Brem R","; Dark Brem R; Events", 300,0, 600);
   m_HEHitByDepth = histFolder.make<TH1F>("HEHitsByDepth","; Depth; Number of Events With a Hit in this depth", 8, -0.5, 7.5);
   m_DrtoStandalone = histFolder.make<TH1F>("DrtoNearestStandalone","; #Delta R to Nearest Standalone muon; Number of Events", 140, 0, 7);
+  m_ProbePFJetDr = histFolder.make<TH1F>("ProbePFJetDr",";#Delta R from Probe to Nearest PF Jet; Events",140,0,7);
+  m_ProbePFJetE = histFolder.make<TH1F>("ProbePFJetE",";Energy of Nearest PF Jet to Probe (GeV); Events",100,0,100);
+  m_ProbePFJetMaxE = histFolder.make<TH1F>("ProbePFJetMaxE",";Energy of Largest PF Jet Nearby Probe (GeV); Events",100,0,100);
+  m_CaloJetMinDr = histFolder.make<TH1F>("MinCaloJetDr",";#Delta R from Probe to Nearest Calo Jet; Events",140,0,7);
   m_CaloJetEcalE = histFolder.make<TH1F>("CaloJetEcalE",";Calo Jet Ecal E (GeV); Events", 100,0,100);
   m_CaloJetHcalE = histFolder.make<TH1F>("CaloJetHcalE",";Calo Jet Ecal E (GeV); Events", 100,0,100);
   m_CaloJetTotalE = histFolder.make<TH1F>("CaloJetTotalE",";Calo Jet Total E (GeV); Events", 100,0,100);
@@ -103,6 +107,12 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_HcalPlusEcal = histFolder.make<TH1F>("HcalPlusEcalE","; Ecal Cone + Hcal cone (GeV); Events",100,0,100);
   m_Probedxy = histFolder.make<TH1F>("ProbeTrackdxy","; Probe Track dxy; Events",200,-0.3,0.3);
   m_Probedsz = histFolder.make<TH1F>("ProbeTrackdsz","; Probe Track dsz; Events",200,-7,7);
+  m_ProbeDCA = histFolder.make<TH1F>("ProbeTrackDCA","; Probe Track Transverse DCA; Events",200,0,0.05);
+  m_ProbeLongDCA = histFolder.make<TH1F>("ProbeTrackLongDCA","; Probe Track Long DCA; Events",200,0,0.3);
+  m_ProbeDCAphi = histFolder.make<TH2F>("ProbeTrackDCAphi","; Probe Track DCA; Probe Track Phi; Events", 200,0,0.4,100,-3.14,3.14);
+  m_nEle = histFolder.make<TH1F>("nElectrons",";Number of Electrons > 10GeV;Events",20,0,20);
+  m_nExtraEle = histFolder.make<TH1F>("nExtraElectrons",";Number of Extra Electrons;Events",8,-0.5,7.5);
+  m_nExtraMuon = histFolder.make<TH1F>("nExtraMuons",";Number of Extra Muons;Events",8,-0.5,7.5);
 }
 
 void MCHistograms::FillHists(SigEventInfo info)
@@ -123,6 +133,9 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_HcalPlusEcal->Fill(info.caloConeE+info.probeEcalIso,info.eventWeight);
    m_Probedxy->Fill(info.dxy,info.eventWeight);
    m_Probedsz->Fill(info.dsz,info.eventWeight);
+   m_ProbeDCA->Fill(info.dca,info.eventWeight);
+   m_ProbeLongDCA->Fill(info.dcal,info.eventWeight);
+   m_ProbeDCAphi->Fill(info.dca,info.probeTrackPhi,info.eventWeight);
    if(info.isLoose){m_TrackQuality->Fill(0.1,info.eventWeight);}
    if(info.isTight){m_TrackQuality->Fill(1.1,info.eventWeight);}
    if(info.isHighPurity){m_TrackQuality->Fill(2.1,info.eventWeight);}
@@ -142,6 +155,9 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter,info.eventWeight);
    m_CSC_dR->Fill(info.cscMinDR,info.eventWeight);
    m_CSCHitChiSq->Fill(info.cscChiSq,info.eventWeight);
+   m_nEle->Fill(info.nEle,info.eventWeight);
+   m_nExtraEle->Fill(info.nExtraEle,info.eventWeight);
+   m_nExtraMuon->Fill(info.nExtraMuon,info.eventWeight);
    if(info.cscHitAngleChange<10)
    {
       m_CSCHitAngleChange->Fill(info.cscHitAngleChange,info.eventWeight);
@@ -168,6 +184,10 @@ void MCHistograms::FillHists(SigEventInfo info)
       if(info.hitEnergies[i]>0.1){m_HEHitByDepth->Fill(i+1,info.eventWeight);}
    }
    m_DrtoStandalone->Fill(info.staMinDr,info.eventWeight);
+   m_ProbePFJetE->Fill(info.nearestJetE,info.eventWeight);
+   m_ProbePFJetDr->Fill(info.nearestJetDr,info.eventWeight);
+   m_ProbePFJetMaxE->Fill(info.nearJetMaxE,info.eventWeight);
+   m_CaloJetMinDr->Fill(info.minCaloJetDr,info.eventWeight);
    m_CaloJetEcalE->Fill(info.caloJetEcalE,info.eventWeight);
    m_CaloJetHcalE->Fill(info.caloJetHcalE,info.eventWeight);
    m_CaloJetTotalE->Fill(info.caloJetTotalE,info.eventWeight);

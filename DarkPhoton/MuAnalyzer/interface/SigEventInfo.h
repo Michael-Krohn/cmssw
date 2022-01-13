@@ -49,6 +49,8 @@ class SigEventInfo{
     double standaloneDEoverE;
     double dxy;
     double dsz;
+    double dca;
+    double dcal;
     //HCAL
     int nCellsFound;
     double coneEnergy;
@@ -58,7 +60,12 @@ class SigEventInfo{
     double vtxZ;
     double vtxPerp;
     int bremDepth;
+    //Pf Jets
+    double nearestJetDr;
+    double nearJetMaxE;
+    double nearestJetE;
     //Calo Jets
+    double minCaloJetDr;
     double caloJetHcalE;
     double caloJetEcalE;
     double caloJetTotalE;
@@ -71,6 +78,10 @@ class SigEventInfo{
     double probeMuondR;
     double standaloneE;
     double globalMuonE;
-
+    int particlePDG;
+    double minMuDr;
+    int nEle;
+    int nExtraEle;
+    int nExtraMuon;
 };
 #endif

@@ -105,6 +105,10 @@
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
 
+//Electrons
+#include "DataFormats/PatCandidates/interface/Electron.h"
+
+//Custom Classes
 #include "DarkPhoton/MuAnalyzer/interface/MuPXHistograms.h"
 #include "DarkPhoton/MuAnalyzer/interface/CSC.h"
 #include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
@@ -113,6 +117,7 @@
 #include "DarkPhoton/MuAnalyzer/interface/Jets.h"
 #include "DarkPhoton/MuAnalyzer/interface/HCAL.h"
 #include "DarkPhoton/MuAnalyzer/interface/ECAL.h"
+#include "DarkPhoton/MuAnalyzer/interface/ParticleListDrawer.h"
 
 // class declaration
 //
@@ -139,9 +144,10 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MuPXHistograms);
-    bool MatchTrackToMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info);
+    bool MatchTrackToMuon(const edm::Event& iEvent, const reco::Track* selTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info);
     bool MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo);
-    bool LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo);
+    bool LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo, std::vector<int> &nearbyIDs, std::vector<int> &highPtIds);
+    int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, HCAL myHCAL,  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
 
     double GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct);
 
@@ -166,12 +172,20 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetToken m_pfJetCollection_label;
     edm::EDGetToken m_caloTower_label;
     edm::EDGetToken m_caloJet_label;
+    edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
     edm::EDGetToken m_PUInfoToken;
+    edm::EDGetTokenT<reco::CandidateView> candToken_;
     bool m_isMC;
     bool m_signalRegion;
+    bool m_makeTuples;
+    bool m_makeSplits;
     double weight_;
     double nPUmean_;
     double standaloneE;
+    double pairVtxChi;
+    double muTrackMass;
+    double probeLIP;
+    double probeTIP;
     TH1F* fPUDataHist_;
     TH1F* fPUMCHist_;
     TH1F* puWeightHist_;
@@ -180,6 +194,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     MuPXHistograms muProbe;
     MuPXHistograms nonMuonProbe;
     MuPXHistograms genMatched;
+    MuPXHistograms looseMatch;
     MuPXHistograms nonGenMatched;
     MuPXHistograms passSig;
 };
@@ -203,16 +218,21 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
   reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
+  m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
   m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
   m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
+  m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false)),
-  m_signalRegion(iConfig.getUntrackedParameter<bool>("signalRegion",false))
+  m_signalRegion(iConfig.getUntrackedParameter<bool>("signalRegion",false)),
+  m_makeTuples(iConfig.getUntrackedParameter<bool>("makeTuples",false)),
+  m_makeSplits (iConfig.getUntrackedParameter<bool>("makeSplits",true))
 {
    //now do what ever initialization is needed
   if (m_isMC){
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
     m_genInfoToken = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
     m_PUInfoToken = consumes< std::vector<PileupSummaryInfo>> (iConfig.getParameter<edm::InputTag>("edmPileupInfo"));
+    candToken_ = consumes<reco::CandidateView>(edm::InputTag("genParticles"));
   }
   else
   {
@@ -234,10 +254,11 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   puWeightHist_=(TH1F*)fPUDataHist_->Clone();
 
   myHistogramsNoCuts.book(fs->mkdir("allEventsNoCuts"));
-  myHistograms.book(fs->mkdir("allEvents"));
+  myHistograms.book(fs->mkdir("allEvents"),false);
   muProbe.book(fs->mkdir("muProbe"));
   nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
   genMatched.book(fs->mkdir("genMatched"));
+  looseMatch.book(fs->mkdir("looseMatched"),false);
   nonGenMatched.book(fs->mkdir("nonGenMatched"));
   passSig.book(fs->mkdir("passSig"));
 }
@@ -275,13 +296,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   myCSCs.minDR_Muon = 1000;
 
   info.cutProgress=0;
-  //myHistograms.ResetCutFlow();
 
   edm::ESHandle<MagneticField> theMGField;
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
-
+  myHistograms.ResetCutFlow();
   if(m_isMC)
   {
      edm::Handle<GenEventInfoProduct> eventInfo;
@@ -299,123 +319,84 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      weight_=1;
      nPUmean_=0;
   }
-  //if(!founddpho){return;}
-  info.cutProgress++;
- 
-  myTracks.SelectTracks(iEvent, trackCollection_label);
-  myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  //myJets.SelectJets(iEvent, m_pfJetCollection_label);
-//  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
- 
-  edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
-  iEvent.getByToken(trackCollection_label,thePATTrackHandle);  
-
-  bool Paired = false;
-  edm::Handle<std::vector<reco::Muon>> recoMuons;
-  iEvent.getByToken(m_recoMuonToken, recoMuons);
-  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
-  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
-  edm::Handle <reco::VertexCollection> vtxHandle;
-  iEvent.getByToken(primaryVertices_Label, vtxHandle);
-
-  int nPairedTracks =0;
-  double pairVtxChi;
-  double highpt=0;
-  double muTrackMass=0;
-  //Pair our candidate track with a tagging muon to reconstruct a Z
-  double MuonTrackMass=0;
-  std::vector<double> HCALisolationInfo;
-
   GlobalPoint MatchedGlobalPoint, VertexPosition;
 
   myHistogramsNoCuts.FillHists(info);
 
-  for(std::vector<const reco::Muon*>::const_iterator iMuon = myMuons.selectedMuons.begin(); iMuon != myMuons.selectedMuons.end(); ++iMuon)
-     {
-        double hightrackpt=0;
-        int nPairs=0;
-        //if((*iMuon)->pt()<highpt) continue;
-        for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
-        {
-	   std::cout << "Looping over tracks" << std::endl;
-           if((*iMuon)->charge()==(*iTrack)->charge()) continue;
-           if((*iMuon)->pt()<highpt){continue;}
-           if(fabs((*iTrack)->dxy())>0.05) continue;
-           if((*iMuon)->isGlobalMuon())
-	   std::cout << "Pass basic selection" << std::endl;
-           {
-              if(myTracks.PairTracks(iTrack, (*iMuon)->globalTrack(), transientTrackBuilder))
-              {
-	        std::cout << "Paired track and muon" << std::endl;
-                double probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,*iTrack);
-                double probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-                HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
-                if(m_signalRegion)
-                {
-//                   if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30) continue;
-                   if((probeTrackIso/(*iTrack)->pt())>0.05) continue;
-                   if(probeEcalIso>10) continue;
-                   if(probeTrackIso<0) continue;
-                   if(HCALisolationInfo[0] < 30) continue;
-	           std::cout << "Passes HardBrem selection" << std::endl;
-                }
-                if(!m_signalRegion)
-                {
-                   if((probeTrackIso/(*iTrack)->pt())<0.2&&probeEcalIso<30) continue;
-                }
-                Paired=true;
-		std::cout << "Paired: " << Paired << std::endl;
-                if(nPairs==0){pairedTracks.clear();}
-                nPairs++;
-                pairedTracks.push_back((*iTrack));
-		std::cout << "(*iTrack)->pt(): " << (*iTrack)->pt() << std::endl;
-                if((*iTrack)->pt()>hightrackpt)
-                {
-		   std::cout << "myTracks.MuonTrackMass: " << myTracks.MuonTrackMass << std::endl;
-                   highpt=(*iMuon)->pt();
-                   pairVtxChi=myTracks.pairvertexchi;
-                   muTrackMass=myTracks.MuonTrackMass;
-                   selectedMuon = (*iMuon);
-                   selectedTrack = (*iTrack); 
-                   //hightrackpt = (*iTrack)->pt();
-                   myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, myTracks.one_momentum, myTracks.tracksToVertex, myTracks.fittedVertex.position());
-                }
-              }
-           } 
-        }
-        if(nPairs>0){nPairedTracks=nPairs;} 
-     }
+  info.eventWeight = weight_;
+  info.cutProgress++;
+  edm::Handle <reco::VertexCollection> vtxHandle;
+  iEvent.getByToken(primaryVertices_Label, vtxHandle);
+  myHistograms.IncCutFlow(info.eventWeight);
 
-  //Check for other tracks that would have passed the global selection.
-  std::cout << "2nd check, Paired: " << Paired << std::endl;
-  if(Paired==true)
+  edm::Handle<std::vector<reco::Track> > thePATTrackHandle; 
+  iEvent.getByToken(trackCollection_label,thePATTrackHandle);  
+  for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack )
   {
-     for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack)
-     {  
-        if(deltaR((*iTrack)->eta(),(*iTrack)->phi(),selectedTrack->eta(),selectedTrack->phi())<0.1) continue;
-
-        if(selectedMuon->charge()==(*iTrack)->charge()) continue;
-        if(myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder))
-        {
-	   std::cout << "Setting Paired to false" << std::endl;
-           Paired=false;   
-        }
+     if(iTrack->pt()<20) continue;
+     if(fabs(iTrack->eta())>2.4 || fabs(iTrack->eta())<1.45) continue;
+     if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
+     myHistograms.m_PreDXYPhi->Fill(iTrack->phi());
+     myHistograms.m_PreDXY->Fill(iTrack->dxy());
+     myHistograms.m_ProbePhiDXY->Fill(iTrack->phi(),iTrack->dxy());
+     if(fabs(iTrack->dxy())>0.05) continue;
+     myHistograms.m_PostDXYPhi->Fill(iTrack->phi());
+     myHistograms.m_PostDXY->Fill(iTrack->dxy());
+  }
+  
+  std::vector<double> HCALisolationInfo;
+  int muProgress = myMuons.SelectMuons(iEvent, m_recoMuonToken);
+  for(int i=0;i<muProgress;i++){myHistograms.IncCutFlow(info.eventWeight);}
+  if(muProgress<4){return;}
+  bool Paired = false;
+  int maxTrackProgress=0;
+  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
+  iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
+  for(std::vector<const reco::Muon*>::const_iterator muon = myMuons.selectedMuons.begin(); muon!=myMuons.selectedMuons.end();muon++)
+  {  
+     if(maxTrackProgress==11){continue;}
+     myTracks.selectedTracks.clear(); 
+     myTracks.selectedEndcapTracks.clear();     
+     int trackProgress = myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle, *muon, transientTrackBuilder);
+  //Pair our candidate track with a tagging muon to reconstruct a Z
+     if(trackProgress==6){trackProgress = trackProgress+PairTagAndProbe(iEvent,iSetup,myTracks,*muon,myECAL, myHCAL, transientTrackBuilder,trackCollection_label, vtxHandle,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label);}
+     if(trackProgress>maxTrackProgress){maxTrackProgress=trackProgress;}
+  }
+  for(int i=0;i<maxTrackProgress;i++){myHistograms.IncCutFlow(info.eventWeight);}
+  if(maxTrackProgress<11){return;}
+  Paired = true;
+  myJets.SelectJets(iEvent, m_pfJetCollection_label);
+  myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
+ 
+  for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack)
+  {  
+     if(deltaR((*iTrack)->eta(),(*iTrack)->phi(),selectedTrack->eta(),selectedTrack->phi())<0.3) continue;
+     if(selectedMuon->charge()==(*iTrack)->charge()) continue;
+     //if(fabs((*iTrack)->dxy())>0.05) continue;
+     if(myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder))
+     {        
+//       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
+//       double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
+       //if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
+       Paired=false;
      }
   }
-  std::cout << "3rd check, Paired: " << Paired << std::endl;
+  
+  
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
-//  if(myMuons.highmuonpt<26.){return;}
-  if(myMuons.highmuonpt>26.){info.cutProgress++;}
-  info.eventWeight=weight_;
-  info.nPassingProbe=nPairedTracks;
   info.nPassingTag=myMuons.selectedMuons.size();
   info.paired=Paired;
  
   if(Paired)
   {
+     myHistograms.IncCutFlow(info.eventWeight);
      info.cutProgress++;
      info.muonTrackMass=muTrackMass;
      info.probeTrack=selectedTrack;
+     
+     info.probeDCA=probeTIP;
+     info.probeLongDCA=probeLIP;
+
      info.tagMuon=selectedMuon;
      info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedTrack);
      info.probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack));
@@ -461,52 +442,55 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     //Jet analysis
     edm::Handle<reco::PFJetCollection> pfjetHandle;
     iEvent.getByToken(m_pfJetCollection_label, pfjetHandle);
-    if(!pfjetHandle.isValid()){return;}
-    const reco::PFJetCollection pfjets = *(pfjetHandle.product());
-
-    int njets=0;
-    double nearestJetDr=-1;
-    double nearestJetE;
-    double nearJetMaxE;
-    //for(std::vector<const reco::PFJet*>::const_iterator it = myJets.selectedJets.begin(); it!=myJets.selectedJets.end();++it)
-    for(reco::PFJetCollection::const_iterator it = pfjets.begin(); it!=pfjets.end();++it)
+    if(pfjetHandle.isValid())
     {
-      double NHF, NEMF, CHF, MUF, CEMF;
-      int CHM,NumNeutralParticles,NumConst;
-      NHF = it->neutralHadronEnergyFraction();
-      NEMF = it->neutralEmEnergyFraction();
-      CHF = it->chargedHadronEnergyFraction();
-      MUF = it->muonEnergyFraction();
-      CEMF = it->chargedEmEnergyFraction();
-      NumConst = it->chargedMultiplicity()+it->neutralMultiplicity();
-      NumNeutralParticles =it->neutralMultiplicity();
-      CHM = it->chargedMultiplicity();
-      bool JetId;
-      if(fabs(it->eta())<2.6){JetId=(CEMF<0.8&&CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9);}
-      else if(fabs(it->eta())<2.7){JetId= (CEMF<0.8 && CHM>0 && NEMF<0.99 && MUF <0.8 && NHF < 0.9 );}
-      else if(fabs(it->eta())<3.0){JetId=  ( NEMF>0.01 && NEMF<0.99 && NumNeutralParticles>1);}
-      else {JetId=(NEMF<0.90 && NHF>0.2 && NumNeutralParticles>10);}
-      if(!JetId){continue;}
-      njets++;
-      double jetDr=deltaR(selectedTrack->eta(),selectedTrack->phi(),it->eta(),it->phi());
-      if(jetDr<0.3&&it->energy()>nearJetMaxE){nearJetMaxE=it->energy();}
-      if(jetDr<nearestJetDr||nearestJetDr<0)
-      {
-        nearestJetDr=jetDr;
-        nearestJetE=it->energy();
-      }
-      
+       const reco::PFJetCollection pfjets = *(pfjetHandle.product());
+
+       int njets=0;
+       double nearestJetDr=-1;
+       double nearestJetE=-1;
+       double nearJetMaxE=-1;
+       //for(std::vector<const reco::PFJet*>::const_iterator it = myJets.selectedJets.begin(); it!=myJets.selectedJets.end();++it)
+       for(reco::PFJetCollection::const_iterator it = pfjets.begin(); it!=pfjets.end();++it)
+       {
+         double NHF, NEMF, CHF, MUF, CEMF;
+         int CHM,NumNeutralParticles,NumConst;
+         NHF = it->neutralHadronEnergyFraction();
+         NEMF = it->neutralEmEnergyFraction();
+         CHF = it->chargedHadronEnergyFraction();
+         MUF = it->muonEnergyFraction();
+         CEMF = it->chargedEmEnergyFraction();
+         NumConst = it->chargedMultiplicity()+it->neutralMultiplicity();
+         NumNeutralParticles =it->neutralMultiplicity();
+         CHM = it->chargedMultiplicity();
+         bool JetId;
+         if(fabs(it->eta())<2.6){JetId=(CEMF<0.8&&CHM>0 && CHF>0 && NumConst>1 && NEMF<0.9 && MUF <0.8 && NHF < 0.9);}
+         else if(fabs(it->eta())<2.7){JetId= (CEMF<0.8 && CHM>0 && NEMF<0.99 && MUF <0.8 && NHF < 0.9 );}
+         else if(fabs(it->eta())<3.0){JetId=  ( NEMF>0.01 && NEMF<0.99 && NumNeutralParticles>1);}
+         else {JetId=(NEMF<0.90 && NHF>0.2 && NumNeutralParticles>10);}
+         if(!JetId){continue;}
+         njets++;
+         double jetDr=deltaR(selectedTrack->eta(),selectedTrack->phi(),it->eta(),it->phi());
+         if(jetDr<0.3&&it->energy()>nearJetMaxE){nearJetMaxE=it->energy();}
+         if(jetDr<nearestJetDr||nearestJetDr<0)
+         {
+           nearestJetDr=jetDr;
+           nearestJetE=it->energy();
+         }
+         
+       }
+       info.nearestJetE=nearestJetE;
+       info.nearestJetDr=nearestJetDr;
+       info.nearJetMaxE=nearJetMaxE;
+       info.nJets=njets;
     }
-    info.nearestJetE=nearestJetE;
-    info.nearestJetDr=nearestJetDr;
-    info.nearJetMaxE=nearJetMaxE;
-    info.nJets=njets;
     //Tower Isolation
     edm::Handle<CaloJetCollection> caloJets;
     iEvent.getByToken(m_caloJet_label, caloJets);
     double nearMuCaloJetE = 0;
     double nearProbeCaloJetHadE = -1;
     double nearProbeCaloJetEmE = 0;
+    double minProbeDr = -1;
     bool foundmu = false;
     bool foundprobe = false;
     for(auto CaloJet = caloJets->begin(); CaloJet!= caloJets->end(); ++CaloJet)
@@ -520,7 +504,8 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
           foundmu=true;
           if((hadE+ecalE)>nearMuCaloJetE){nearMuCaloJetE = hadE+ecalE;}
        }
-       if(probeDr<0.2)
+       if(probeDr<minProbeDr||minProbeDr<0){minProbeDr=probeDr;}
+       if(probeDr<0.4)
        {
           foundprobe=true;
           if((hadE+ecalE)>(nearProbeCaloJetHadE+nearProbeCaloJetEmE))
@@ -531,6 +516,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        }
     }
     if(foundmu){info.tagCaloJetE=nearMuCaloJetE;}
+    info.minProbeCaloJetDr=minProbeDr;
     if(foundprobe)
     {
        info.probeCaloJetE = nearProbeCaloJetHadE+nearProbeCaloJetEmE;
@@ -575,10 +561,52 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        double total_pz = tagMomentum.z() + probeMomentum.z();
        info.adjMuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
     }
+    //Check nearby leptons
+    for (const auto& it: iEvent.get(m_electronsToken))
+    {
+       if(it.pt()<10) continue;
+       //if(!(it->electronID("cutBasedElectronID-Fall17-94X-V2-veto"))) continue;
+       info.nEle++;
+       if(deltaR(selectedTrack->eta(),selectedTrack->phi(),it.eta(),it.phi())<0.2) continue;
+       if(deltaR(selectedMuon->eta(),selectedMuon->phi(),it.eta(),it.phi())<0.2) continue;
+       info.nExtraEle++;
+    }
+    edm::Handle<std::vector<reco::Muon>> recoMuons;
+    iEvent.getByToken(m_recoMuonToken, recoMuons);
+    for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end();iMuon++) 
+    {
+       if(!(iMuon->isPFMuon() && iMuon->isGlobalMuon())) continue;
+       if(deltaR(selectedTrack->eta(),selectedTrack->phi(),iMuon->eta(),iMuon->phi())<0.2) continue;
+       if(deltaR(selectedMuon->eta(),selectedMuon->phi(),iMuon->eta(),iMuon->phi())<0.2) continue; 
+       info.nExtraMuon++;
+    }
   }
   if(Paired)
   {
-    bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken, info);
+    //Standalone Muons
+    edm::Handle<reco::TrackCollection> staTracks;
+    iEvent.getByToken(m_theSTAMuonLabel, staTracks);
+    double staMinDr = 7.;
+    double staE = - 0;
+    if(staTracks->size()>0)
+    {
+       for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
+       {
+          reco::TransientTrack track = transientTrackBuilder->build(*staTrack);
+          double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),selectedTrack->eta(),selectedTrack->phi());
+          if(dR<staMinDr){staMinDr=dR;}
+          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE)){staE=std::sqrt(track.impactPointTSCP().momentum().mag2());}
+       }
+    }
+    if(staMinDr<0.5)
+    {
+       info.standaloneE = staE;
+       info.standaloneMuonEplusCaloJetHadEplusEcalE = info.standaloneE + info.probeHcalIso + info.probeEcalIso;
+    }
+    if(staMinDr<1.0){info.sigCat=0;}
+    info.staMinDr=staMinDr;
+  
+    bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken,info);
     if(m_isMC)
     {
       double genInfo[4];
@@ -587,25 +615,31 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       info.farMuDr = genInfo[1];
       info.farMuEta = genInfo[2];
       info.genTagMuDr = genInfo[3];
-      if(genmatched){genMatched.FillHists(info);}
-      else if(info.adjMuonTrackMass>80&&info.adjMuonTrackMass<100)
+      if(genmatched){genMatched.FillHists(info, m_makeSplits);}
+      //else if(info.adjMuonTrackMass>80&&info.adjMuonTrackMass<100)
+      double genInfoTwo[8];
+      std::vector<int> nearbyIDs, highPtIds;
+      bool loosegenmatched = LooseMatchTrackToGenMuon(iEvent,selectedTrack,selectedMuon,m_genParticleToken,genInfoTwo, nearbyIDs, highPtIds);
+      info.farMuE = genInfoTwo[0];
+      info.farMuDr = genInfoTwo[1];
+      info.farMuEta = genInfoTwo[2];
+      info.genTagMuDr = genInfoTwo[3];
+      info.genPdgId = genInfoTwo[4];
+      info.nLooseMuons = genInfoTwo[5];
+      info.tagPdgId = genInfoTwo[6];
+      info.nearbyNonMuPdgIds = nearbyIDs;
+      info.highPtNonMuPdgIds = highPtIds;
+      info.passLooseMatch=loosegenmatched;
+      if(loosegenmatched){looseMatch.FillHists(info,m_makeSplits, m_makeTuples);}
+      if(!genmatched)
       {
-        double genInfoTwo[8];
-        bool loosegenmatched = LooseMatchTrackToGenMuon(iEvent,selectedTrack,selectedMuon,m_genParticleToken,genInfoTwo);
-        info.farMuE = genInfoTwo[0];
-        info.farMuDr = genInfoTwo[1];
-        info.farMuEta = genInfoTwo[2];
-        info.genTagMuDr = genInfoTwo[3];
-        info.genPdgId = genInfoTwo[4];
-        info.nLooseMuons = genInfoTwo[5];
-        info.tagPdgId = genInfoTwo[6];
-        info.nonMuPdgId = genInfoTwo[7];
-        info.passLooseMatch=loosegenmatched;
-        if(!info.passLooseMatch)
-        {
-           nonGenMatched.FillHists(info);   
-           if(info.sigCat==1){passSig.FillHists(info);}
-        }
+         nonGenMatched.FillHists(info,m_makeSplits);   
+         if(info.sigCat==1)
+         {
+   //         ParticleListDrawer myDrawer;
+   //        myDrawer.drawEvent(iEvent,candToken_);
+            passSig.FillHists(info,m_makeSplits);
+         }
       }
     } 
     if(matched)
@@ -630,7 +664,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   myHistograms.FillHists(info);
 }
 
-bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selectedTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info)
+bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info)
 {
   edm::Handle<std::vector<reco::Muon>> recoMuons;
   iEvent.getByToken(m_recoMuonToken, recoMuons);
@@ -641,8 +675,8 @@ bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* 
   for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end(); ++iMuon)
   {
      if(!iMuon->isGlobalMuon()) {continue;}
-     double dR = deltaR(iMuon->eta(),iMuon->phi(),selectedTrack->eta(),selectedTrack->phi());
-     double dPtOverPt =  std::abs((iMuon->pt()-selectedTrack->pt())/selectedTrack->pt());
+     double dR = deltaR(iMuon->eta(),iMuon->phi(),selTrack->eta(),selTrack->phi());
+     double dPtOverPt =  std::abs((iMuon->pt()-selTrack->pt())/selTrack->pt());
      if(dR > 0.2) continue;
      if(dPtOverPt<mindPt)
      {
@@ -654,7 +688,7 @@ bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* 
   return matched;
 }
 
-bool MuPXAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double* genInfo)
+bool MuPXAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double* genInfo)
 {
    edm::Handle<reco::GenParticleCollection> genParticles;
    iEvent.getByToken(m_genParticleToken, genParticles);
@@ -663,7 +697,8 @@ bool MuPXAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Tra
    double farMuE=0;
    double tagMuDr=1000;
    double farMuDr=0;
-   double farMuEta, farMuProbeDr;
+   double farMuEta=0; 
+   double farMuProbeDr=-1;
    for (const auto& particle : *(genParticles.product()))
    {
       if (std::abs(particle.pdgId()) != 13)
@@ -672,7 +707,7 @@ bool MuPXAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Tra
       if (particle.mother()->pdgId() != 23)
          continue;
       nmuons++;
-      double dR = deltaR(particle.eta(), particle.phi(), selectedTrack->eta(), selectedTrack->phi());
+      double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
       double tagDr = deltaR(particle.eta(), particle.phi(), selectedMuon->eta(), selectedMuon->phi());
       if(tagDr<tagMuDr)
       {
@@ -698,7 +733,7 @@ bool MuPXAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Tra
    return false;
 }
 
-bool MuPXAnalyzer::LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double* genInfo)
+bool MuPXAnalyzer::LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double* genInfo, std::vector<int> &nearbyIDs, std::vector<int> &highPtIds)
 {
    edm::Handle<reco::GenParticleCollection> genParticles;
    iEvent.getByToken(m_genParticleToken, genParticles);
@@ -710,14 +745,18 @@ bool MuPXAnalyzer::LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco
    double farMuE=0;
    double tagMuDr=1000;
    double farMuDr=-1;
-   double farMuEta, farMuProbeDr;
+   double farMuEta=0;
+   double farMuProbeDr=-1;
    genInfo[7]=0;
    for (const auto& particle : *(genParticles.product()))
    {
       if (std::abs(particle.pdgId()) != 13)
       {
-         double dR = deltaR(particle.eta(), particle.phi(), selectedTrack->eta(), selectedTrack->phi());
-         if(dR<0.1){genInfo[7]=std::abs(particle.pdgId());}
+         double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
+         if(dR<0.2)
+         {
+            if(particle.pt()>15){highPtIds.push_back(particle.pdgId());}
+         }
          continue;
       }
    //   if (fabs(particle.mother()->pdgId()) != 13)
@@ -725,7 +764,7 @@ bool MuPXAnalyzer::LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco
       if (fabs(particle.mother()->pdgId())==23)
          nmuons++;
       ntotalmuons++;
-      double dR = deltaR(particle.eta(), particle.phi(), selectedTrack->eta(), selectedTrack->phi());
+      double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
       double tagDr = deltaR(particle.eta(), particle.phi(), selectedMuon->eta(), selectedMuon->phi());
       if(tagDr<tagMuDr)
       {
@@ -779,6 +818,44 @@ double MuPXAnalyzer::GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > h
    if(nPUmean_<1){lNPVW=float(puWeightHist_->GetBinContent(puWeightHist_->FindBin(0)));}
 
    return lNPVW;
+}
+
+int MuPXAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, HCAL myHCAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label)
+{
+  int cutpro = 0;
+  for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
+  {
+     if(Tag->charge()==(*iTrack)->charge()) continue;
+     if(cutpro<1){cutpro=1;}
+     int pairingResult = myTracks.PairTracks(iTrack, Tag->globalTrack(), transientTrackBuilder);
+     if(cutpro<(1+pairingResult)){cutpro=pairingResult+1;}
+     if(pairingResult==3)
+     {
+       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
+       double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
+       std::vector<double> HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
+       if(!m_signalRegion)
+       {
+          if((probeTrackIso/(*iTrack)->pt())<0.1&&probeEcalIso<30.) continue;
+       }
+       else
+       {
+          if((probeTrackIso/(*iTrack)->pt())>0.05) continue;
+          if(probeEcalIso>10.) continue;
+          if(HCALisolationInfo[0] < 30) continue;
+       }
+       if(cutpro<5){cutpro=5;}
+       selectedTrack = (*iTrack);
+       selectedMuon = Tag;
+       pairVtxChi = myTracks.pairvertexchi;
+       muTrackMass = myTracks.MuonTrackMass;
+       reco::TransientTrack tk = transientTrackBuilder->build(*iTrack);
+       TrajectoryStateClosestToPoint  traj = tk.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
+       probeTIP = traj.perigeeParameters().transverseImpactParameter();
+       probeLIP = traj.perigeeParameters().longitudinalImpactParameter();
+     }
+  }
+  return cutpro;
 }
 
 // ------------ method called once each job just before starting event loop  ------------
