@@ -118,5 +118,14 @@ class MCHistograms{
     TH1F* m_nEle;
     TH1F* m_nExtraEle;
     TH1F* m_nExtraMuon;
+    TH1F* m_standaloneChi2;
+    TH1F* m_standaloneNHits;
+    TH1F* m_staTransDCA;
+    TH1F* m_staLongDCA;
+    TH2F* m_standaloneChi2dEoverE;
+    TH1F* m_genProbedEoverE;
+    TH1F* m_disGenProbedEoverE;
+    TH1F* m_PileupWeights;
+    TH1F* m_PUmean;
 };
 #endif

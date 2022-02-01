@@ -47,5 +47,8 @@ MuPXEventInfo::MuPXEventInfo()
     nEle=0;
     nExtraEle=0;
     nExtraMuon=0;
+    extraMuProbeDr=-1;
+    extraMuTagDr=-1;
+    extraMuPt=-1;
 }
 

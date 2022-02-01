@@ -88,6 +88,10 @@
 //Triggers
 #include "FWCore/Common/interface/TriggerNames.h"
 
+//Pileup
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+
 //Jets
 #include "DataFormats/JetReco/interface/PFJet.h"
 #include "DataFormats/JetReco/interface/PFJetCollection.h"
@@ -133,6 +137,7 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, SigEventInfo info);
     bool MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, SigEventInfo info, double FmuE, double minCSCdr);
     int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
+    double GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct);
 
     edm::EDGetToken m_recoMuonToken;
     edm::EDGetToken m_simTracksToken;
@@ -157,7 +162,9 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
     edm::EDGetToken m_caloJet_label;
     edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;  
+    edm::EDGetToken m_PUInfoToken;
     edm::EDGetToken m_theSTAMuonLabel;
+    edm::EDGetToken m_displacedSTAMuonLabel;
     edm::EDGetToken m_pfJetCollection_label;
     bool m_isMC;
     bool m_isSig;
@@ -166,18 +173,25 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool m_runRandomTrackEfficiency;
     double standaloneE;
     double weight_;
+    double nPUmean_;
     double pairVtxChi;
     double diMuonMass;
     double probeTIP;
     double probeLIP;
+   
+    //pileup reweighting
+    TH1F* fPUDataHist_;
+    TH1F* fPUMCHist_;
+    TH1F* puWeightHist_;
 
     edm::Handle<reco::CaloJetCollection> caloJets;
     MCHistograms allEvents;
     MCHistograms genAccepted;
     MCHistograms preSelectedEvents;
+    MCHistograms fourHits;
     MCHistograms failSig;
-    MCHistograms passTight;
-    MCHistograms tempTests;
+    MCHistograms totalDisappear;
+    MCHistograms partialDisappear;
 };
 
 //
@@ -202,6 +216,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
   m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
   m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
+  m_displacedSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("DisplacedStandaloneTracks"))),
   m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",true)),
   m_isSig (iConfig.getUntrackedParameter<bool>("isSig",false)),
@@ -214,6 +229,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
     m_genParticleToken = consumes<std::vector<reco::GenParticle>> (iConfig.getParameter<edm::InputTag>("genParticles"));
     m_simTracksToken = consumes<edm::SimTrackContainer> (iConfig.getParameter<edm::InputTag>("g4SimHits"));
     m_genInfoToken = consumes<GenEventInfoProduct>(edm::InputTag("generator"));
+     m_PUInfoToken = consumes< std::vector<PileupSummaryInfo>> (iConfig.getParameter<edm::InputTag>("edmPileupInfo"));  
     if(m_hasDpho)
     {
        m_dbremweighttoken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremweighttag"));
@@ -233,12 +249,25 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   usesResource("TFileService");
   edm::Service<TFileService> fs;
 
+//  TFile *puFile = TFile::Open("/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root");
+  TFile *puFile = TFile::Open("/hdfs/cms/user/revering/dphoton/MuPlusXSkim/muPxDataPileup.root");
+  fPUDataHist_ = (TH1F*)puFile->Get("pileup");
+  fPUDataHist_->SetDirectory(0);
+  puFile->Close();
+  TFile *MCPuFile = TFile::Open("/hdfs/cms/user/revering/dphoton/MuPlusXSkim/TTToSemiLeptonic_MCWeights.root");
+  fPUMCHist_= (TH1F*)MCPuFile->Get("MCWeights/TrueNumInteractions");  
+  fPUDataHist_->Scale(1./fPUDataHist_->Integral());
+  fPUMCHist_->Scale(1./fPUMCHist_->Integral());
+  fPUDataHist_->Divide(fPUMCHist_);
+  puWeightHist_=(TH1F*)fPUDataHist_->Clone(); 
+
   allEvents.book(fs->mkdir("allEvents"));
   genAccepted.book(fs->mkdir("genAccepted"));
   preSelectedEvents.book(fs->mkdir("preSelected"));
   failSig.book(fs->mkdir("failSig"));
-  passTight.book(fs->mkdir("passTight"));
-  tempTests.book(fs->mkdir("tempTests"));
+  fourHits.book(fs->mkdir("fourHits"));
+  totalDisappear.book(fs->mkdir("totalDisappear"));
+  partialDisappear.book(fs->mkdir("partialDisappear"));
 }
 
 
@@ -285,6 +314,13 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
        iEvent.getByToken(m_dbremZToken,dbremZ);
        weight_ = *dbremweight*m_scaleFactor;
        if(weight_>10){return;}
+       edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct;
+       iEvent.getByToken(m_PUInfoToken,hPileupInfoProduct); 
+       assert(hPileupInfoProduct.isValid()); 
+       double PUWeight = GetPuWeight(hPileupInfoProduct);
+       weight_ = weight_*PUWeight;
+       info.nPUmean=nPUmean_;
+       info.pileupWeight=PUWeight;
        if(*dbremInitialE<20){return;}
        edm::Handle<reco::GenParticleCollection> genParticles;
        iEvent.getByToken(m_genParticleToken, genParticles);
@@ -325,6 +361,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   if(genAccept){genAccepted.IncCutFlow(info.eventWeight);}
   edm::Handle<reco::TrackCollection> staTracks;
   iEvent.getByToken(m_theSTAMuonLabel, staTracks);
+  edm::Handle<reco::TrackCollection> displacedStaTracks;
+  iEvent.getByToken(m_displacedSTAMuonLabel, displacedStaTracks);
   edm::Handle<reco::VertexCollection> vtxHandle;
   iEvent.getByToken(primaryVertices_Label, vtxHandle);
   edm::ESHandle<MagneticField> theMGField;
@@ -380,6 +418,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   double FmuE = 0;
   if(m_isMC&&m_hasDpho)
   {
+     info.finalMuE=*dbremFinalE;
      FmuE=*dbremFinalE;
   }
 
@@ -470,11 +509,41 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           }
           if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE))
           {
+            if(track.ndof()<1){continue;}
+            if(track.chi2()/track.ndof()>10){continue;}
             staE = std::sqrt(track.impactPointTSCP().momentum().mag2());
             stadEoverE=(std::sqrt(track.impactPointTSCP().momentum().mag2())-mother.P())/mother.P();
+            if(track.ndof()>0){info.staChi2=track.chi2()/track.ndof();}
+            int nstaHits=0;
+            trackingRecHit_iterator rhbegin = staTrack->recHitsBegin();
+            trackingRecHit_iterator rhend = staTrack->recHitsEnd();
+            for (trackingRecHit_iterator recHit = rhbegin; recHit != rhend; ++recHit) {
+               nstaHits++;
+            }
+            info.staNHits=nstaHits;
+            TrajectoryStateClosestToPoint  traj = track.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
+            info.staTransDCA=traj.perigeeParameters().transverseImpactParameter();
+            info.staLongDCA=traj.perigeeParameters().longitudinalImpactParameter();
           }
        }
      } 
+     if(displacedStaTracks->size()>0)
+     {
+       double disStaE = -10;
+       for(reco::TrackCollection::const_iterator staTrack = displacedStaTracks->begin(); staTrack != displacedStaTracks->end(); ++staTrack)
+       {
+          reco::TransientTrack track = transientTrackBuilder->build(*staTrack); 
+          double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),selectedTrack->eta(),selectedTrack->phi());
+          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>disStaE))
+          {
+            if(track.ndof()<1){continue;}
+            if(track.chi2()/track.ndof()>6){continue;}
+            info.disStaE = std::sqrt(track.impactPointTSCP().momentum().mag2());
+            info.disStaDEoverE = (info.disStaE-mother.P())/mother.P();
+          }
+       }
+     } 
+
      info.closestApproach=closestapproach;
      if(staMinDr<0.5) 
      {
@@ -490,9 +559,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      allEvents.IncCutFlow(info.eventWeight);
      if(genAccept){genAccepted.IncCutFlow(info.eventWeight);}
      info.nCellsFound=myHCAL.CellsFound;
+     if(info.nCellsFound<4){return;}
      //Signal categories
      bool passSigCuts = false;
-     if(myHCAL.m_HitsOverThresh<2&&fabs(myHCAL.ieta)!=17){return;}
+     //if(myHCAL.m_HitsOverThresh<2){return;}
      allEvents.IncCutFlow(info.eventWeight);
      if(genAccept){genAccepted.IncCutFlow(info.eventWeight);}
      //Generic HCAL hits in cone
@@ -540,18 +610,22 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      //Check nearby leptons
      for (const auto& iEle : iEvent.get(m_electronsToken)) 
      {
-        if(iEle.pt()<10) continue;
+        if(iEle.pt()<15) continue;
         //if(!(iEle.electronID("cutBasedElectronID-Fall17-94X-V2-veto"))) continue;
-        info.nEle++;
-        if(deltaR(selectedTrack->eta(),selectedTrack->phi(),iEle.eta(),iEle.phi())<0.2) continue;
-        if(deltaR(selectedMuon->eta(),selectedMuon->phi(),iEle.eta(),iEle.phi())<0.2) continue;
-        info.nExtraEle++;
+        if(iEle.deltaPhiSuperClusterTrackAtVtx() < 0.8 && iEle.deltaEtaSuperClusterTrackAtVtx() < 0.01 && iEle.sigmaIetaIeta() < 0.03 && iEle.hcalOverEcal() < 0.12 && TMath::Abs(iEle.deltaEtaSuperClusterTrackAtVtx()) < 0.007 && TMath::Abs(iEle.deltaPhiSuperClusterTrackAtVtx()) < 0.8)
+        {
+           info.nEle++;
+           if(deltaR(selectedTrack->eta(),selectedTrack->phi(),iEle.eta(),iEle.phi())<0.2) continue;
+           if(deltaR(selectedMuon->eta(),selectedMuon->phi(),iEle.eta(),iEle.phi())<0.2) continue;
+           info.nExtraEle++;
+        }
      }                   
      edm::Handle<std::vector<reco::Muon>> recoMuons;
      iEvent.getByToken(m_recoMuonToken, recoMuons);
      for(std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end();iMuon++)
      {
         if(!(iMuon->isPFMuon() && iMuon->isGlobalMuon())) continue;
+        if(iMuon->pt()<15) continue;
         if(deltaR(selectedTrack->eta(),selectedTrack->phi(),iMuon->eta(),iMuon->phi())<0.2) continue;
         if(deltaR(selectedMuon->eta(),selectedMuon->phi(),iMuon->eta(),iMuon->phi())<0.2) continue;
         info.nExtraMuon++;
@@ -574,30 +648,27 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         }
      }
      bool passPreSelection=false;
-     if(myHCAL.m_coneEnergy<10)
+     passPreSelection=true;
+     if(staMinDr>1.0&&myCSCs.minDR>0.05)
      {
-        passPreSelection=true;
-        if(staMinDr>1.0&&myCSCs.minDR>0.05)
-	{
-          info.sigCat = 3;
-	  passSigCuts = true;
-          passTight.FillHists(info);
-	}
-        else if(staMinDr<1.0)
-        {
-           if(stadEoverE<-0.8&&myHCAL.m_coneEnergy<1.)
-           {
-              info.sigCat = 2;
-           }
-           else if(stadEoverE<-0.6&&myHCAL.m_coneEnergy<2.)
-           {
-              info.sigCat = 1;
-	   }
-           else{info.sigCat=0;}
-        }
-        else{info.sigCat = 0;}
+       if(myHCAL.m_coneEnergy<10){info.sigCat=3;}
+       passSigCuts = true;
+       totalDisappear.FillHists(info);
      }
-     else{info.sigCat=0;}
+     else if(staMinDr<1.0)
+     {
+        partialDisappear.FillHists(info);
+        if(stadEoverE<-0.8&&myHCAL.m_coneEnergy<1.)
+        {
+           info.sigCat = 2;
+        }
+        else if(stadEoverE<-0.6&&myHCAL.m_coneEnergy<2.)
+        {
+           info.sigCat = 1;
+        }
+        else{info.sigCat=0;}
+     }
+     else{info.sigCat = 0;}
      if(!passSigCuts)
      {
         failSig.FillHists(info);
@@ -606,6 +677,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      {
         preSelectedEvents.FillHists(info);
      }
+     if(info.coneHits==4){fourHits.FillHists(info);}
      allEvents.FillHists(info);
      if(genAccept){genAccepted.FillHists(info);}
   }
@@ -729,6 +801,22 @@ bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVe
   }
   return matched;
 }
+
+double SigAnalyzer::GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct)
+{
+   const std::vector<PileupSummaryInfo> *inPUInfos = hPileupInfoProduct.product();
+   for (std::vector<PileupSummaryInfo>::const_iterator itPUInfo = inPUInfos->begin(); itPUInfo!=inPUInfos->end(); ++itPUInfo)
+   {
+      if(itPUInfo->getBunchCrossing()==0)
+      nPUmean_  = itPUInfo->getTrueNumInteractions();
+   }
+   float lNPVW = float(puWeightHist_->GetBinContent(puWeightHist_->FindBin(nPUmean_)));
+   if(nPUmean_>70){lNPVW=float(puWeightHist_->GetBinContent(puWeightHist_->FindBin(70)));}
+   if(nPUmean_<1){lNPVW=float(puWeightHist_->GetBinContent(puWeightHist_->FindBin(0)));}
+
+   return lNPVW;
+}
+
 // ------------ method called once each job just before starting event loop  ------------
 void 
 SigAnalyzer::beginJob()

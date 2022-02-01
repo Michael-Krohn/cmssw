@@ -195,6 +195,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     MuPXHistograms genMatched;
     MuPXHistograms looseMatch;
     MuPXHistograms nonGenMatched;
+    MuPXHistograms extraLeptons;
     MuPXHistograms passSig;
 };
 //
@@ -257,6 +258,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   genMatched.book(fs->mkdir("genMatched"));
   looseMatch.book(fs->mkdir("looseMatched"),true);
   nonGenMatched.book(fs->mkdir("nonGenMatched"));
+  extraLeptons.book(fs->mkdir("extraLeptons"));
   passSig.book(fs->mkdir("passSig"));
 }
 
@@ -543,12 +545,15 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     //Check nearby leptons
     for (const auto& it: iEvent.get(m_electronsToken))
     {
-       if(it.pt()<10) continue;
+       if(it.pt()<15) continue;
        //if(!(it->electronID("cutBasedElectronID-Fall17-94X-V2-veto"))) continue;
-       info.nEle++;
-       if(deltaR(selectedTrack->eta(),selectedTrack->phi(),it.eta(),it.phi())<0.2) continue;
-       if(deltaR(selectedMuon->eta(),selectedMuon->phi(),it.eta(),it.phi())<0.2) continue;
-       info.nExtraEle++;
+       if(it.deltaPhiSuperClusterTrackAtVtx() < 0.8 && it.deltaEtaSuperClusterTrackAtVtx() < 0.01 && it.sigmaIetaIeta() < 0.03 && it.hcalOverEcal() < 0.12 && TMath::Abs(it.deltaEtaSuperClusterTrackAtVtx()) < 0.007 && TMath::Abs(it.deltaPhiSuperClusterTrackAtVtx()) < 0.8)
+       {
+          info.nEle++;
+          if(deltaR(selectedTrack->eta(),selectedTrack->phi(),it.eta(),it.phi())<0.2) continue;
+          if(deltaR(selectedMuon->eta(),selectedMuon->phi(),it.eta(),it.phi())<0.2) continue;
+          info.nExtraEle++;
+       }
     }
     edm::Handle<std::vector<reco::Muon>> recoMuons;
     iEvent.getByToken(m_recoMuonToken, recoMuons);
@@ -557,7 +562,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        if(!(iMuon->isPFMuon() && iMuon->isGlobalMuon())) continue;
        if(deltaR(selectedTrack->eta(),selectedTrack->phi(),iMuon->eta(),iMuon->phi())<0.2) continue;
        if(deltaR(selectedMuon->eta(),selectedMuon->phi(),iMuon->eta(),iMuon->phi())<0.2) continue; 
+       //if(iMuon->pt()<15) continue;
        info.nExtraMuon++;
+       info.extraMuProbeDr=deltaR(selectedTrack->eta(),selectedTrack->phi(),iMuon->eta(),iMuon->phi());
+       info.extraMuTagDr=deltaR(selectedMuon->eta(),selectedMuon->phi(),iMuon->eta(),iMuon->phi());
+       info.extraMuPt=iMuon->pt();
     }
   }
   if(Paired)
@@ -614,8 +623,8 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
          nonGenMatched.FillHists(info,m_makeSplits);   
          if(info.sigCat==1)
          {
-   //         ParticleListDrawer myDrawer;
-   //        myDrawer.drawEvent(iEvent,candToken_);
+            ParticleListDrawer myDrawer;
+            myDrawer.drawEvent(iEvent,candToken_);
             passSig.FillHists(info,m_makeSplits);
          }
       }
@@ -627,6 +636,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     else{nonMuonProbe.FillHists(info,m_makeSplits);} 
   }
   myHistograms.FillHists(info,m_makeSplits, m_makeTuples);
+  if(info.nExtraEle>0||info.nExtraMuon>0){extraLeptons.FillHists(info,false,false);}
 }
 
 bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken)

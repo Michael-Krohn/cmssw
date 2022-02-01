@@ -59,5 +59,14 @@ SigEventInfo::SigEventInfo()
    nEle=0;
    nExtraEle=0;
    nExtraMuon=0;
+   staNHits=0;
+   staChi2=-1;
+   staTransDCA=-1;
+   staLongDCA=-1;
+   finalMuE=-1.;
+   disStaE=-1.;
+   disStaDEoverE=10.;
+   nPUmean=-1.;
+   pileupWeight=-1.;
 }
 

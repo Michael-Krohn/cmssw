@@ -63,7 +63,7 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_CSCHitAngleChange = histFolder.make<TH1F>("CSCDeflection","; #Theta; Events", 200, 0, 3.15);
   m_StandaloneMuonE = histFolder.make<TH1F>("StandaloneMuonE","; Energy (GeV); Events", 200, 0, 200);
   m_GlobalMuonE = histFolder.make<TH1F>("GlobaldMuonE","; #Delta E over E; Events",200,0,200);
-  m_StandalonedE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
+  m_StandalonedE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1); 
   m_MatchedLocation = histFolder.make<TH2F>("MatchedLocation",";#eta; #phi; Events", 200, -2.4,2.4, 100, -3.2, 3.2);
   m_AllVertexOffset = histFolder.make<TH1F>("AllClosestApproach","; Distance of Closest Approach; Events", 200, 0, 10);
   m_EventWeights = histFolder.make<TH1F>("EventWeights","; Weight; Number of Events", 200, 0, 10);
@@ -113,10 +113,21 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_nEle = histFolder.make<TH1F>("nElectrons",";Number of Electrons > 10GeV;Events",20,0,20);
   m_nExtraEle = histFolder.make<TH1F>("nExtraElectrons",";Number of Extra Electrons;Events",8,-0.5,7.5);
   m_nExtraMuon = histFolder.make<TH1F>("nExtraMuons",";Number of Extra Muons;Events",8,-0.5,7.5);
+  m_standaloneChi2 = histFolder.make<TH1F>("standaloneChi2",";Standalone #Chi^2;Events",200,0,100);
+  m_standaloneNHits = histFolder.make<TH1F>("standaloneNHits",";Standalone N Hits;Events",100,0,20);
+  m_staTransDCA = histFolder.make<TH1F>("standaloneTDCA",";Standalone transverse DCA;Events",100,0,5);
+  m_staLongDCA=histFolder.make<TH1F>("standaloneLongDCA",";Standalone longitudinal DCA;Events",100,0,5);
+  m_standaloneChi2dEoverE = histFolder.make<TH2F>("standalonechidEoverE",";Standalone #Chi^2;Standalone dP over P;Events",50,0,100,100,-1,1);
+  m_genProbedEoverE = histFolder.make<TH1F>("GenStandaloneMuondEoverE","; (Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
+  m_disGenProbedEoverE = histFolder.make<TH1F>("DisGenStandaloneMuondEoverE","; (Displaced Standalone E - PostBrem E)/PostBrem E; Events", 200, -1,1); 
+  m_PileupWeights = histFolder.make<TH1F>("PileupWeights",";N Pileup Interactions; Weight", 100,0,4); 
+  m_PUmean = histFolder.make<TH1F>("NPUMean",";MC N Pileup Mean; Events", 100,0,100);
 }
 
 void MCHistograms::FillHists(SigEventInfo info)
 {
+   m_PileupWeights->Fill(info.pileupWeight);
+   m_PUmean->Fill(info.nPUmean);
    m_eventCount->Fill(0.5,info.eventWeight);
    m_EventWeights->Fill(info.eventWeight);
    m_signalCategory->Fill(info.sigCat,info.eventWeight);
@@ -149,9 +160,9 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_ProbeTrackEta->Fill(info.probeTrackEta,info.eventWeight);
    m_DiMuonMass->Fill(info.diMuonMass,info.eventWeight);
    m_DeflectingAngle->Fill(info.deflectingAngle,info.eventWeight);
-   m_FractionalELost->Fill(info.dbremFinalE/info.dbremInitialE,info.eventWeight);
+   m_FractionalELost->Fill(info.finalMuE/info.dbremInitialE,info.eventWeight);
    m_initialMuE->Fill(info.dbremInitialE,info.eventWeight);
-   m_finalMuE->Fill(info.dbremFinalE,info.eventWeight);
+   m_finalMuE->Fill(info.finalMuE,info.eventWeight);
    m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter,info.eventWeight);
    m_CSC_dR->Fill(info.cscMinDR,info.eventWeight);
    m_CSCHitChiSq->Fill(info.cscChiSq,info.eventWeight);
@@ -199,8 +210,33 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_ConeEnergy->Fill(info.coneEnergy,info.eventWeight);
    m_ConeHits->Fill(info.coneHits,info.eventWeight);
    m_HitsOverThresh->Fill(info.hitsOverThresh,info.eventWeight);
-   
-   
+   m_standaloneChi2->Fill(info.staChi2,info.eventWeight);
+   m_standaloneNHits->Fill(info.staNHits,info.eventWeight);
+   m_staTransDCA->Fill(info.staTransDCA,info.eventWeight);
+   m_staLongDCA->Fill(info.staLongDCA,info.eventWeight);
+   m_standaloneChi2dEoverE->Fill(info.staChi2,info.standaloneDEoverE,info.eventWeight);   
+   if(info.finalMuE>0)
+   {
+      if(info.standaloneE>0)
+      {
+         m_genProbedEoverE->Fill((info.standaloneE-info.finalMuE)/info.finalMuE,info.eventWeight);
+      }
+      if(info.disStaE>0)
+      {
+         m_disGenProbedEoverE->Fill((info.disStaE-info.finalMuE)/info.finalMuE,info.eventWeight);
+      }
+   } 
+   else
+   {
+      if(info.standaloneE>0)
+      {
+         m_genProbedEoverE->Fill(info.standaloneDEoverE,info.eventWeight);
+      }
+      if(info.disStaE>0)
+      {
+         m_disGenProbedEoverE->Fill(info.disStaDEoverE,info.eventWeight);
+      }
+   }  
 }
 
 void MCHistograms::IncCutFlow(double weight)

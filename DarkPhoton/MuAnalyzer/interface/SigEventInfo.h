@@ -83,5 +83,15 @@ class SigEventInfo{
     int nEle;
     int nExtraEle;
     int nExtraMuon;
+    double staChi2;
+    int staNHits;
+    double staTransDCA;
+    double staLongDCA;
+    double finalMuE;
+    double disStaE;
+    double disStaDEoverE;
+    //pileup
+    double pileupWeight;
+    int nPUmean;
 };
 #endif

@@ -144,7 +144,9 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_nEle = histFolder.make<TH1F>("nElectrons",";Number of Veto electrons > 10 GeV; Events",20,0,20);
   m_nExtraEle = histFolder.make<TH1F>("nExtraElectrons",";Number of Extra Electrons in Event; Events",20,0,20);
   m_nExtraMuon = histFolder.make<TH1F>("nExtraMuons",";Number of Extra Muons in Event; Events",20,0,20);
-
+  m_ExtraMuonProbeDr = histFolder.make<TH1F>("ExtraMuonProbeDr",";#Delta R from Probe to Extra Muon; Events",50,0,5);
+  m_ExtraMuonTagDr = histFolder.make<TH1F>("ExtraMuonTagDr",";#Delta R from Tag to Extra Muon; Events",50,0,5);
+  m_ExtraMuonPt = histFolder.make<TH1F>("ExtraMuonPt",";Pt of Extra Muon; Events",50,0,100);
 }
 
 void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
@@ -157,6 +159,9 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
      m_NPassingTag->Fill(info.nPassingTag,info.eventWeight);
      //for(int i=0; i<info.cutProgress;i++){IncCutFlow();} 
      if(!info.paired) return;  
+     m_ExtraMuonProbeDr->Fill(info.extraMuProbeDr,info.eventWeight);
+     m_ExtraMuonTagDr->Fill(info.extraMuTagDr,info.eventWeight);
+     m_ExtraMuonPt->Fill(info.extraMuPt,info.eventWeight);
      m_ProbeDCA->Fill(info.probeDCA,info.eventWeight);
      m_ProbeLongDCA->Fill(info.probeLongDCA,info.eventWeight);
      m_ProbeDCAPhi->Fill(info.probeDCA,info.probeTrack->phi(),info.eventWeight);

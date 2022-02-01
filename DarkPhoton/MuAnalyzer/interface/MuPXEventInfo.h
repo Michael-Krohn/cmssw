@@ -71,5 +71,8 @@ class MuPXEventInfo{
     int nEle;
     int nExtraEle;
     int nExtraMuon;
+    double extraMuProbeDr;
+    double extraMuTagDr;
+    double extraMuPt;
 };
 #endif

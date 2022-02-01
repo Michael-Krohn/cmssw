@@ -733,6 +733,7 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
            Hits[0]++;
            Hits[1]+=hbherechit->energy();
            if(hbherechit->energy()>0.8){ReducedConeE+= hbherechit->energy();}
+           if(id.depth()<8){layerenergies[id.depth()-1]+=hbherechit->energy();}
          }
          if(trackmatch!=std::end(AdjacentCells))
          {	 
@@ -741,7 +742,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
               if(id.depth()<8) 
   	      {
   	        //if(hbherechit->energy()>layerenergies[id.depth()-1]){layerenergies[id.depth()-1]=hbherechit->energy();}
-  	        layerenergies[id.depth()-1]+=hbherechit->energy();
   	      }
 	   }
          }
@@ -848,38 +848,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   return true;
 }
 
-int HCAL::GetProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, double vtxz, GlobalPoint direction)
-{
-
-   double start, step, end;
-   start = 320;
-   step = 5;
-   end = 530;
-   int j=0;
-   HcalDetId lastClosestCell;
-   for(int i = start; i<end; i+=step)
-   {
-      double testPointPerp = fabs(i*tan(direction.theta()));
-      double testPointX = testPointPerp*cos(direction.phi());
-      double testPointY = testPointPerp*sin(direction.phi());
-      double testPointZ;
-      if(direction.eta()>0){testPointZ = vtxz+i;}
-      else
-      {
-        testPointZ = vtxz-i;	
-      }
-      GlobalPoint testGlobalPoint = GlobalPoint(testPointX,testPointY,testPointZ);
-      HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(testGlobalPoint);
-      if(testClosestCell!=lastClosestCell)
-      {
-        lastClosestCell=testClosestCell;
-        TrackAlignedCells[j] = testClosestCell;
-	j = j+1;
-      }
-   }
-   return j;
-}
-
 double HCAL::GetIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, const reco::TransientTrack track)
 {
    edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
@@ -941,7 +909,7 @@ int HCAL::GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom, Hcal
       double testPointX = testPointPerp*cos(muTrack.track().phi());
       double testPointY = testPointPerp*sin(muTrack.track().phi());
       double testPointZ; 
-      if(muTrack.track().eta()>9){testPointZ = i;}
+      if(muTrack.track().eta()>0){testPointZ = i;}
       else{testPointZ=-i;}
 
       GlobalPoint testGlobalPoint = GlobalPoint(testPointX,testPointY,testPointZ);
