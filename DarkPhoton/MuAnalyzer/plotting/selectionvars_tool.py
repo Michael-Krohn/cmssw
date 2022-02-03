@@ -14,15 +14,17 @@ class stackInfo:
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Rebin
       self.stack(basedir+"/ConeHits","Hits along probe trajectory in HE",False,tag,outDir)
-      self.stack(basedir+"/ConeEnergy","Energy of cells along probe trajectory in HE",True,tag,outDir)
+      self.stack(basedir+"/ConeEnergy","Energy of cells along probe trajectory in HE",True,tag,outDir,False,False)
       self.stack(basedir+"/dRtoNearestCSC","#Delta R from probe to nearest CSC hit",True,tag,outDir)
-      self.stack(basedir+"/StandaloneMuondEoverE","(Standalone P - Probe P)/Probe P",True,tag,outDir)
+      self.stack(basedir+"/StandaloneMuondEoverE","(Standalone muon P - Probe P)/Probe P",True,tag,outDir,True)
       self.stack(basedir+"/DrtoNearestStandalone","#Delta R to Nearest Standalone Mion",True,tag,outDir)
       self.stack(basedir+"/signalCategory","Signal Category",True,tag,outDir)
       self.stack(basedir+"/CaloConeEnergy","Energy in HE Cone (GeV)",True,tag,outDir)
       self.stack(basedir+"/Dark Brem R","R of Dark Brem Location",True,tag,outDir)
+      self.stack(basedir+"/NHECellsFound","N HE Cells Found",True,tag,outDir)
       self.twoDshow(basedir+"/HEEStandDEOverE","Energy in HE Hits GeV","(Standalone P - Probe P)/Probe P)", False,tag,outDir,1)
       self.twoDshow(basedir+"/FailLocation","Probe i#eta","Probe i#phi", False, tag, outDir,1)
+      self.stack("allEvents/ProbeTrackEta","Probe #eta",True,tag,outDir)
       self.stack("allEvents/cutProgress","Cut Progress",True,tag,outDir,False,True)
       self.stack("allEvents/ProbeEcalIsolation","Ecal Energy in 0.4 #Delta R  Cone", True, tag, outDir,False,False,35)
       self.stack("allEvents/TrackIsolation","Relative Track Isolation (Track pt / #Sigma pt in 0.3 #Delta R)", True, tag, outDir,False,False,0.3)
@@ -32,10 +34,19 @@ class stackInfo:
       self.stack("allEvents/ProbeTrackLongDCA","Longitudinal Impact Parameter", True, tag,outDir)
       self.stack("allEvents/nExtraElectrons","Extra Electrons in Event", True, tag, outDir)
       self.stack("allEvents/nExtraMuons","Extra Muons in Event", True, tag, outDir)
+      self.stack("allEvents/standaloneChi2","#chi^2 of Largest Nearby Standalone Muon", True, tag, outDir)
+      self.stack("allEvents/standaloneNHits","Number of hits in largest nearby standalone muon", True, tag, outDir)
+      self.stack("allEvents/standaloneTDCA","Transverse DCA of standalone muon", True, tag, outDir)
+      self.stack("allEvents/standaloneLongDCA","Longitudinal DCA of standalone muon", True, tag, outDir)
+      self.stack("allEvents/GenStandaloneMuondEoverE","Final Muon P - Standalone P / Final Muon P", True, tag, outDir)
+      self.stack("allEvents/DisGenStandaloneMuondEoverE","Final Muon P - Displaced Standalone P / final Muon P", True, tag, outDir)
+      self.stack("allEvents/HitsOverThresh","Hits along probe trajectory",True,tag,outDir)
       self.cutFlowText(outDir)
 
    def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1):
-      leg = ROOT.TLegend(0.7,0.25,0.95,0.35)
+      lab_x0=0.55
+      lab_y0=0.65
+      leg = ROOT.TLegend(lab_x0,lab_y0,lab_x0+0.4,lab_y0+0.1)
       leg.SetBorderSize(0)
       hists = []
       NtotalEvents=0
@@ -78,9 +89,9 @@ class stackInfo:
       label.AddText(tag)
       label.SetFillColor(0)
       label.SetBorderSize(0)
-      label.Draw()
+      #label.Draw()
       
-      hists[0].GetYaxis().SetTitle("Fraction of events")
+      hists[0].GetYaxis().SetTitle("Normalized Yield")
       hists[0].GetYaxis().CenterTitle()
       hists[0].GetYaxis().SetTitleSize(20)
       hists[0].GetYaxis().SetTitleFont(43)
@@ -90,7 +101,8 @@ class stackInfo:
       hists[0].GetXaxis().SetLabelFont(43)
       hists[0].GetXaxis().SetLabelSize(15)
       hists[0].GetXaxis().SetTickSize(0.07)
-      hists[0].SetMinimum(0.00001)
+      hists[0].SetMinimum(0.0001)
+      hists[0].SetMaximum(1.0)
       if xmax>0:
          hists[0].GetXaxis().SetRangeUser(0,xmax)
       xlabel = ROOT.TPaveText(0.2,0.0,0.99,0.06,"brNDC")
@@ -100,12 +112,12 @@ class stackInfo:
       xlabel.SetBorderSize(0)
       xlabel.Draw()
       
-      lab_x0 = 0.20
-      lab_y0 = 0.96
-      tag1 = ROOT.TLatex(lab_x0,lab_y0,"CMS")
+      cms_lab_x0 = lab_x0+0.03
+      cms_lab_y0 = lab_y0+0.11
+      tag1 = ROOT.TLatex(cms_lab_x0,cms_lab_y0,"CMS")
       tag1.SetNDC()
       tag1.SetTextFont(62)
-      tag2 = ROOT.TLatex(lab_x0+0.085, lab_y0, "Internal")
+      tag2 = ROOT.TLatex(cms_lab_x0+0.085, cms_lab_y0, "Internal")
       tag2.SetNDC()
       tag2.SetTextFont(52)
       tag1.SetTextSize(0.04)

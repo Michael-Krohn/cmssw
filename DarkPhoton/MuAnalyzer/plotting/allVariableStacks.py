@@ -47,8 +47,8 @@ mcFiles.append(stack.mcFile(ROOT.TFile(resultsDir+"/DYJets_10to50/hists/DYJets10
 dataFile = ROOT.TFile(resultsDir+"/Data/hists/2018_analyzedsplit.root","READ")
 info = stack.stackInfo(mcFiles,arg.lumi,dataFile)
 info.plotAll("allEvents","2018 Data Non-Isolated Events",outDir)
-info.plotAll("muProbe","2018 Data Non-Isolated Events, Probe Matched to Muon",outDir)
-info.plotAll("nonMuonProbe","2018 Data Non-Isolated Events, Probe Not Matched to Muon",outDir)
+#info.plotAll("muProbe","2018 Data Non-Isolated Events, Probe Matched to Muon",outDir)
+#info.plotAll("nonMuonProbe","2018 Data Non-Isolated Events, Probe Not Matched to Muon",outDir)
 
 dataFile.Close()
 

@@ -194,6 +194,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     MuPXHistograms nonMuonProbe;
     MuPXHistograms genMatched;
     MuPXHistograms looseMatch;
+    MuPXHistograms partialDisappear;
     MuPXHistograms nonGenMatched;
     MuPXHistograms extraLeptons;
     MuPXHistograms passSig;
@@ -257,6 +258,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
   genMatched.book(fs->mkdir("genMatched"));
   looseMatch.book(fs->mkdir("looseMatched"),true);
+  partialDisappear.book(fs->mkdir("partialDisappear"));
   nonGenMatched.book(fs->mkdir("nonGenMatched"));
   extraLeptons.book(fs->mkdir("extraLeptons"));
   passSig.book(fs->mkdir("passSig"));
@@ -576,6 +578,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     iEvent.getByToken(m_theSTAMuonLabel, staTracks);
     double staMinDr = 7.;
     double staE = - 0;
+    double staDEoverE=0;
     if(staTracks->size()>0)
     {
        for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
@@ -583,14 +586,19 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
           reco::TransientTrack track = transientTrackBuilder->build(*staTrack);
           double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),selectedTrack->eta(),selectedTrack->phi());
           if(dR<staMinDr){staMinDr=dR;}
-          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE)){staE=std::sqrt(track.impactPointTSCP().momentum().mag2());}
+          if(dR<1.0&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE))
+          {
+             staE=std::sqrt(track.impactPointTSCP().momentum().mag2());
+             staDEoverE = (staE-selectedTrack->p())/selectedTrack->p();
+          }
        }
     }
-    if(staMinDr<0.5)
+    if(staMinDr<1.0)
     {
        info.standaloneE = staE;
+       info.standaloneDEoverE = staDEoverE;
     }
-    if(staMinDr<1.0){info.sigCat=0;}
+    if(staMinDr<1.0&&info.sigCat==1){info.sigCat=2;}
     info.staMinDr=staMinDr;
   
     bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken);
@@ -628,6 +636,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
             passSig.FillHists(info,m_makeSplits);
          }
       }
+      if(info.sigCat==2){partialDisappear.FillHists(info,m_makeSplits);}
     } 
     if(matched)
     {

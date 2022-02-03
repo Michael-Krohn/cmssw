@@ -74,5 +74,6 @@ class MuPXEventInfo{
     double extraMuProbeDr;
     double extraMuTagDr;
     double extraMuPt;
+    double standaloneDEoverE;
 };
 #endif

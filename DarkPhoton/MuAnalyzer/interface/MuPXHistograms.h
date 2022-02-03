@@ -118,5 +118,6 @@ class MuPXHistograms{
     TH1F* m_ExtraMuonProbeDr;
     TH1F* m_ExtraMuonTagDr;
     TH1F* m_ExtraMuonPt;
+    TH1F* m_standaloneDE;
 };
 #endif

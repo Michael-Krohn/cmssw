@@ -54,7 +54,6 @@ SigEventInfo::SigEventInfo()
    genProbeMatchdE=-1;
    genProbeMatchdR=-1;
    probeMuondE=-1;
-   standaloneE=-1;
    globalMuonE=-1; 
    nEle=0;
    nExtraEle=0;

@@ -5,6 +5,11 @@ import ROOT
 import math
 import numpy as np
 
+def calcScaleFactor(name,skimFile,resultFile)
+   eff = resultFile.Get("demo/"+name).Integral()/skimFile.Get("DiMuonFilter/allEvents/NumberOfMuonsPassingTag").Integral()
+   eff = eff* skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()/resultFile.Get("demo/allEvents/cutProgress").GetBinContent(2)
+   return eff
+
 def main():
    
    parser = argparse.ArgumentParser(description="Fit the background fraction as a function of isolation")
@@ -65,7 +70,7 @@ def main():
    dyStaDEoverE.Write("staDEoverE_DY")
    
    for sigfile, mass in sigFiles:
-      dbremHcalEnergy = sigfile.Get("demo/totalDisappear/ConeEnergy").Clone()
+      dbremHcalEnergy = sigfile.Get("demo/partialDisappear/ConeEnergy").Clone()
       dbremHcalEnergy.Write("hcalEnergy_DBrem_"+mass)
       dbremNTotalEvents = sigfile.Get("demo/partialDisappear/eventCount").Clone()
       dbremNTotalEvents.Write("totalEvents_DBrem_"+mass)
@@ -73,6 +78,22 @@ def main():
       dbremNEvents.Write("nEvents_DBrem_"+mass)
       dbremStaDEoverE = sigfile.Get("demo/partialDisappear/StandaloneMuondEoverE").Clone()    
       dbremStaDEoverE.Write("staDEoverE_DBrem_"+mass)
+
+   resultsDir = "../MuFilter/results"
+   muPxFiles = []
+   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu"))
+   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic"))
+   muPxFiles.append((ROOT.TFile(resultsDir+"/WJets/hists/WJets_Signal_monitor.root","READ"),ROOT.TFile(resultsDir+"/WJets/hists/WJets_SignalRegion_analyzedsplit.root","READ"),"WJets"))
+
+   for monitorFile, resultFile, name in muPxFiles:
+      eff = calcScaleFactor("partialDisappear/StandaloneMuondEoverE",monitorFile,resultFile)
+      ExpectedNevents = cx*1000*float(lumi)*eff
+      NEvents = resultFile.Get("demo/partialDisappear/eventCount").Clone()
+      if(NEvents.Integral()>0):
+         NEvents.Scale(ExpectedNevents/NEvents.Integral())
+      NEvents.Write("nEvents_"+name)
+      StaDEoverE = resultFile.Get("demo/partialDisappear/StandaloneMuondEoverE").Clone()    
+      StaDEoverE.Write("staDEoverE_"+name)
 
    writeFile.Close()
    dyFile.Close()

@@ -141,6 +141,7 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   }
   m_staMinDr = histFolder.make<TH1F>("staMinDr",";Min #Delta R from Probe to Standalone Muon; Events", 100,0,5);
   m_standaloneE = histFolder.make<TH1F>("standaloneE",";Energy of nearest standalone muon to probe (GeV);Events",100,0,100);
+  m_standaloneDE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1);
   m_nEle = histFolder.make<TH1F>("nElectrons",";Number of Veto electrons > 10 GeV; Events",20,0,20);
   m_nExtraEle = histFolder.make<TH1F>("nExtraElectrons",";Number of Extra Electrons in Event; Events",20,0,20);
   m_nExtraMuon = histFolder.make<TH1F>("nExtraMuons",";Number of Extra Muons in Event; Events",20,0,20);
@@ -168,6 +169,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool makeTuples)
      m_SigCat->Fill(info.sigCat,info.eventWeight);
      m_staMinDr->Fill(info.staMinDr,info.eventWeight);
      m_standaloneE->Fill(info.standaloneE,info.eventWeight);
+     m_standaloneDE->Fill(info.standaloneDEoverE,info.eventWeight);
      m_ProbeTrackIso->Fill(info.probeTrackIso/info.probeTrack->pt(),info.eventWeight);
      m_ProbeEcalIso->Fill(info.probeEcalIso,info.eventWeight);
      m_ProbeHcalIso->Fill(info.probeHcalIso,info.eventWeight);

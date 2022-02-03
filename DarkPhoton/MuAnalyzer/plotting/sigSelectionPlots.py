@@ -21,9 +21,9 @@ if not os.path.isdir(outDir):
 mcFiles = []
 #mcFIle object goes Skim File,Results File, Label, Cross Section, Fill Color
 #Histograms are stacked in the order they are added here
-mcFiles.append(tool.histfile(ROOT.TFile("../ZmmDBrem.root","READ"), "ZmmDBrem, mAp=1.0 GeV",2))
-mcFiles.append(tool.histfile(ROOT.TFile("../ZmmSim.root","READ"), "DYJets MC",1))
-mcFiles.append(tool.histfile(ROOT.TFile("../ZmmDBrem_0p2.root","READ"), "ZmmDBrem, mAp=0.2 GeV",3))
+mcFiles.append(tool.histfile(ROOT.TFile("../histograms/ZmmDBrem_1p0.root","READ"), "A'=1.0 GeV",2))
+mcFiles.append(tool.histfile(ROOT.TFile("../histograms/ZmmDBrem_0p2.root","READ"), "A'=0.2 GeV",3))
+mcFiles.append(tool.histfile(ROOT.TFile("../histograms/ZmmSim.root","READ"), "SM Drell-Yan",1))
 
 info = tool.stackInfo(mcFiles)
 info.plotAll("allEvents","Private MC, All Events",outDir)
