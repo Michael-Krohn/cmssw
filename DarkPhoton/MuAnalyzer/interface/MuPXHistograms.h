@@ -14,6 +14,7 @@
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DarkPhoton/MuAnalyzer/interface/MuPXEventInfo.h"
+#include "TTree.h"
 
 class TH1F;
 class TH2F;
@@ -26,10 +27,38 @@ class MuPXHistograms{
     void book(TFileDirectory histFolder, bool binIso=false);
     void IncCutFlow(double weight);
     void ResetCutFlow();
-    void FillHists(MuPXEventInfo, bool binIso=false, bool makeTuples = false);
+    void FillHists(MuPXEventInfo, bool binIso=false, bool isMC=true, bool makeTuples = false);
   public:
+    //Event numbers
+    int event;
+    int lumi;
+    int run;
+    //Weights
+    double eventWeightPUup;
+    double eventWeightPUdown;
+    double eventWeightIDup;
+    double eventWeightIDdown;
+    double eventWeightISOup;
+    double eventWeightISOdown;
+    double eventWeightTrigup;
+    double eventWeightTrigdown;
+    //Histograms
+    TH1F* m_genEventCount;
     TH1F* m_eventWeight;
     TH1F* m_eventCount;
+    TTree* m_eventNumbers;
+    TH1F* m_eventCount_PUup;
+    TH1F* m_eventCount_PUdown;
+    TH1F* m_eventCount_IDup;
+    TH1F* m_eventCount_IDdown; 
+    TH1F* m_eventCount_ISOup;
+    TH1F* m_eventCount_ISOdown;
+    TH1F* m_eventCount_Trigup; 
+    TH1F* m_eventCount_Trigdown;
+    TH1F* m_IDSF, *m_IDSFup, *m_IDSFdown;
+    TH1F* m_muRocWeight;
+    TH1F* m_ISOSF, *m_ISOSFup, *m_ISOSFdown;
+    TH1F* m_TrigSF, *m_TrigSFup, *m_TrigSFdown;
     TH1F* m_SigCat;
     TH1F* m_cutProgress;
     TH1F* m_MuonTrackMass;
@@ -42,10 +71,10 @@ class MuPXHistograms{
     TH1F* m_TagPt;
     TH1F* m_TagPhi;
     TH2F* m_TagEtaPhi;
+    TH2F* m_BigEtadEtadPhi;
+    TH2F* m_SmallEtadEtadPhi;
     TH1F* m_NPassingTag;
-    TH1F* m_EcalSplitMuonTrackMass[100];
     TH1F* m_EcalSplitAdjMuonTrackMass[100];
-    TH1F* m_TrackSplitMuonTrackMass[100];
     TH1F* m_TrackSplitAdjMuonTrackMass[100];
     TH1F* m_SplitMuonsTrackMass[20][20];
     TNtuple* m_TupleSplitMuonsTrackMass[20][20];
@@ -72,6 +101,7 @@ class MuPXHistograms{
     TH1F* m_JetPt;
     //Calo Jet 
     TH1F* m_ProbeJetE;
+    TH1F* m_CaloJetPt;
     TH1F* m_ProbeCaloJetDr;
     TH1F* m_TagCaloJetE;
     TH2F* m_CaloJetEcalE;
@@ -95,20 +125,15 @@ class MuPXHistograms{
     TH1F* m_InTrackerGenProbeDr;
     TH1F* m_GenProbePt;
     TH1F* m_GenPdgId;
-    TH1F* m_PassLooseMatch;
+//    TH1F* m_PassLooseMatch;
     TH1F* m_nonMuPdgId;
     TH1F* m_highPtNonMuPdgId;
     TH1F* m_nLooseMuons;
     TH1F* m_TagPdgId;
     TH1F* m_MotherMatch;
-    TH1F* m_LooseMatch[10][10];
+//    TH1F* m_LooseMatch[10][10];
     TH1F* m_staMinDr;
     TH1F* m_standaloneE;
-    TH1F* m_PreDXY;
-    TH1F* m_PreDXYPhi;
-    TH1F* m_PostDXY;
-    TH1F* m_PostDXYPhi;
-    TH2F* m_ProbePhiDXY;
     TH1F* m_ProbeDCA;
     TH1F* m_ProbeLongDCA;
     TH2F* m_ProbeDCAPhi;
@@ -119,5 +144,13 @@ class MuPXHistograms{
     TH1F* m_ExtraMuonTagDr;
     TH1F* m_ExtraMuonPt;
     TH1F* m_standaloneDE;
+    TH1F* m_standaloneDE_PUup;
+    TH1F* m_standaloneDE_PUdown;
+    TH1F* m_standaloneDE_IDup;
+    TH1F* m_standaloneDE_IDdown;
+    TH1F* m_standaloneDE_ISOup;
+    TH1F* m_standaloneDE_ISOdown;
+    TH1F* m_standaloneDE_Trigup;
+    TH1F* m_standaloneDE_Trigdown;
 };
 #endif

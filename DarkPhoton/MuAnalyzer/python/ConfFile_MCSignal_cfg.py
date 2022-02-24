@@ -39,6 +39,11 @@ options.register( 'scaleFactor',
                                   VarParsing.varType.float,
                                   "Reweighting factor for dark brem process")
 				
+options.register( 'binSFsfname',
+                                  "/hdfs/cms/user/revering/dphoton/dbremBinningSFs_map0p2.root",
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.string,
+                                  "Dark Photon Energy binning filename")
 
 options.parseArguments()
 
@@ -70,8 +75,9 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   #mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem.txt')
-           mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem_0p2.txt')
+           #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
+           #mylist = FileUtils.loadListFromFile ('datafiles/testfiles.txt')
            #mylist = FileUtils.loadListFromFile ('filetest.txt')
         else:
 	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
@@ -119,6 +125,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     isSig = cms.untracked.bool(options.isSig),
     hasDpho = cms.untracked.bool(options.hasDpho),
     scaleFactor = cms.untracked.double(options.scaleFactor),
+    binSFsfname = cms.untracked.string(options.binSFsfname),
     runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 

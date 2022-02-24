@@ -6,6 +6,8 @@
 SigEventInfo::SigEventInfo()
 {
    eventWeight = 1;
+   genEventWeight = 1;
+   muRocWeight=1;
    dbremZ = -1;
    dbremPerp = -1;
    sigCat = -1;
@@ -36,6 +38,9 @@ SigEventInfo::SigEventInfo()
    standaloneE=-1;
    staMinDr=-1;
    nCellsFound=-1;
+   iEta=0;
+   cellCenterDEta=-1;
+   cellCenterDPhi=-1;
    coneEnergy=-1;
    for(int i=0; i<7; i++){hitEnergies[i]=-1;}
    hitsOverThresh=-1;
@@ -67,5 +72,7 @@ SigEventInfo::SigEventInfo()
    disStaDEoverE=10.;
    nPUmean=-1.;
    pileupWeight=-1.;
+   usedBin=-1;
+   energyBinSF=1;
 }
 

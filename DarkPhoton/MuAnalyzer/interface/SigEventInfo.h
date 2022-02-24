@@ -16,6 +16,12 @@ class SigEventInfo{
   public:
     SigEventInfo();
     double eventWeight;
+    double genEventWeight;
+    std::vector<double> PuUpDownWeights;
+    double muRocWeight;
+    std::vector<double> muIdWeights;
+    std::vector<double> muIsoWeights;
+    std::vector<double> muTrigWeights;
     int sigCat;
     double dbremZ;
     double dbremPerp;
@@ -53,6 +59,9 @@ class SigEventInfo{
     double dcal;
     //HCAL
     int nCellsFound;
+    int iEta;
+    double cellCenterDEta;
+    double cellCenterDPhi;
     double coneEnergy;
     int coneHits;
     double hitEnergies[7];
@@ -93,5 +102,8 @@ class SigEventInfo{
     //pileup
     double pileupWeight;
     int nPUmean;
+    //Energy bin SFs
+    int usedBin;
+    double energyBinSF;
 };
 #endif

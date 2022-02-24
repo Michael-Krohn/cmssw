@@ -5,10 +5,18 @@
 
 MuPXEventInfo::MuPXEventInfo()
 {
+    run=-1;
+    lumi=-1;
+    event=-1;
     eventWeight=1;
+    genEventWeight=1;
+    muRocWeight=1;
     cutProgress=0;
     paired=false;
     muonTrackMass=-1;
+    iEta=0;
+    cellCenterDEta=-10;
+    cellCenterDPhi=-10;
     sigCat=-1;
     probeTrack=NULL;
     tagMuon=NULL;
@@ -30,6 +38,7 @@ MuPXEventInfo::MuPXEventInfo()
     minProbeCaloJetDr=-1;
     nearestJetDr=-1;
     nearJetMaxE=-1;
+    caloJetPt=-1;
     probeCaloJetE=-1;
     tagCaloJetE=-1;
     probeCaloJetEcal=-1;

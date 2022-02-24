@@ -16,6 +16,10 @@ class MuPXEventInfo{
   public:
     MuPXEventInfo();
     double eventWeight;
+    double genEventWeight;
+    int lumi;
+    int run;
+    int event;
     int cutProgress;
     int sigCat;
     bool paired;
@@ -29,6 +33,10 @@ class MuPXEventInfo{
     double probeTrackIso;
     double probeHcalIso;
     double probeEcalIso;
+    //HCAL stuff
+    int iEta;
+    double cellCenterDEta;
+    double cellCenterDPhi;
     //Multiple Paired Track Hists
     double smallestCone;
     double averageDr;
@@ -42,6 +50,7 @@ class MuPXEventInfo{
     double nearestJetDr;   
     double nearJetMaxE;
     //Calo Jets
+    double caloJetPt;
     double minProbeCaloJetDr;
     double probeCaloJetE;
     double tagCaloJetE;
@@ -53,8 +62,13 @@ class MuPXEventInfo{
     int nVtx;
     double vtxd0;
     double vtxdz;
+    //Muon Scale Factors
+    double muRocWeight;
+    std::vector<double> muIdWeights;
+    std::vector<double> muIsoWeights;
+    std::vector<double> muTrigWeights;
     //Pileup Weights
-    double pileupWeight;
+    std::vector<double> pileupWeights;
     double nPUmean;
     double farMuE;
     double farMuDr;

@@ -280,7 +280,7 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
-  int TrackiEta,TrackiPhi;
+  int TrackiPhi;
   //  HcalDetId MuonClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(TrackGlobalPoint); 
   TrackiEta = ClosestCell.ieta();
@@ -313,10 +313,10 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   phithresh = 0.0;*/
   //GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
   
-  double Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
   if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
   if(Tdphi<-ROOT::Math::Pi()) Tdphi += 2*ROOT::Math::Pi();
-  double Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
+  Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
   bool etaedge = false;
   if(TrackiEta>0)
   {
@@ -615,9 +615,27 @@ void HCAL::HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, ed
   return;
 }
 
-bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, SigEventInfo info, double standaloneE, double weight, double vtxz, double charge, reco::TransientTrack track){ 
-  double MuonEta = TrackGlobalPoint.eta();
-  double MuonPhi = TrackGlobalPoint.phi();
+void HCAL::SetCenterCellDistance(const edm::EventSetup& iSetup, GlobalPoint TrackGlobalPoint)
+{ 
+  edm::ESHandle<CaloGeometry> TheCALOGeometry;
+  iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+
+  edm::ESHandle<HcalTopology> htopo;
+  iSetup.get<HcalRecNumberingRecord>().get(htopo);
+  const CaloGeometry* caloGeom = TheCALOGeometry.product();
+  const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
+  HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(TrackGlobalPoint); 
+  TrackiEta = ClosestCell.ieta();
+  int TrackiPhi = ClosestCell.iphi();
+  ieta = TrackiEta;
+  iphi = TrackiPhi;
+  Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
+  if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
+  if(Tdphi<-ROOT::Math::Pi()) Tdphi += 2*ROOT::Math::Pi();
+}
+
+bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, double charge, reco::TransientTrack track){ 
   edm::Handle<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
   double ReducedConeE=0;
@@ -636,11 +654,10 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
-  int TrackiEta,TrackiPhi;
   //  HcalDetId MuonClosestCell = (HcalDetId)HEGeom->getClosestCell(MuonGlobalPoint); 
   HcalDetId ClosestCell = (HcalDetId)HEGeom->getClosestCell(TrackGlobalPoint); 
   TrackiEta = ClosestCell.ieta();
-  TrackiPhi = ClosestCell.iphi();
+  int TrackiPhi = ClosestCell.iphi();
   int BremDepth = ClosestCell.depth();
   m_bremDepth=BremDepth;
   ieta = TrackiEta;
@@ -655,7 +672,7 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
   HcalDetId CenterCells[CellsPerDepth*Ndepths];
   //GetConeIDs(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth);
   //GetCenterCells(theHBHETopology,TrackAlignedCells,ClosestCell,Ndepths,CellsPerDepth); 
-  double highetathresh, lowetathresh, phithresh;
+/*  double highetathresh, lowetathresh, phithresh;
   if(fabs(TrackiEta)>20)
   {
      highetathresh = 0.015;
@@ -667,17 +684,17 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
      lowetathresh = 0.024;
      highetathresh = 0.01;
      phithresh = 0.008;
-  }
+  }*/
   /*lowetathresh = 0.0;
   highetathresh = 0.0;
   phithresh = 0.0;*/
   //GetCornerIDs(theHBHETopology,CornerAlignedCells,ClosestCell,Ndepths);
   
-  double Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
-  double Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
+  Tdphi = TrackGlobalPoint.phi()-caloGeom->getGeometry(ClosestCell)->phiPos();
+  Tdeta = TrackGlobalPoint.eta()-caloGeom->getGeometry(ClosestCell)->etaPos();
   if(Tdphi>ROOT::Math::Pi()) Tdphi -= 2*ROOT::Math::Pi();
   if(Tdphi<-ROOT::Math::Pi()) Tdphi += 2*ROOT::Math::Pi();
-  bool etaedge = false;
+/*  bool etaedge = false;
   if(TrackiEta>0)
   {
      if(Tdeta>highetathresh){etaedge=true;}
@@ -688,11 +705,11 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
      if(Tdeta<-highetathresh){etaedge=true;}
      if(Tdeta>lowetathresh){etaedge=true;}
 //       if(fabs(Tdeta)>lowetathresh){etaedge=true;}
-  }
-  bool phiedge = (fabs(Tdphi)>phithresh);
+  }*/
+//  bool phiedge = (fabs(Tdphi)>phithresh);
   GetAdjacentCells(theHBHETopology,LowThreshAdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
-  if(!etaedge){Tdeta=10;}
-  if(!phiedge){Tdphi=10;}
+//  if(!etaedge){Tdeta=10;}
+//  if(!phiedge){Tdphi=10;}
   GetAdjacentCells(theHBHETopology,AdjacentCells,ClosestCell,Ndepths,TrackiEta,Tdeta,Tdphi,CellsPerDepth);
   //  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
   CellsFound = GetTransientProjectedCells(HEGeom,CenterCells,track);
@@ -753,14 +770,6 @@ bool HCAL::FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup,
 //       hbhe_cell->reset();
     }
     int hitsoverthresh=0;
-    if(standaloneE==0)
-    { 
-       double AdjacentE=0;
-       for(int i=0; i<7; i++)
-       {
-          AdjacentE+=lowthreshadjacent[i];
-       }
-    }
     m_failAdjacent=false;
     for(int i=0;i<7;i++)
     {
@@ -858,9 +867,9 @@ double HCAL::GetIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetu
    iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
 
    const CaloGeometry* caloGeom = TheCALOGeometry.product();
-   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
+/*   const CaloSubdetectorGeometry* HEGeom = caloGeom->getSubdetectorGeometry(DetId::Hcal, 2);
 
-/*   HcalDetId MatchedCells[20];
+   HcalDetId MatchedCells[20];
 
    GetTransientProjectedCells(HEGeom,MatchedCells,track);
 
