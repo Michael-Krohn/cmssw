@@ -1703,8 +1703,9 @@ int HcalLutManager::createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC(std::string 
     addLutMap(xml, masks);
   }
   //
-  const std::map<int, std::shared_ptr<LutXml>> _zdc_lut_xml = getZdcLutXml(_tag, split_by_crate);
-  addLutMap(xml, _zdc_lut_xml);
+//******* REMOVAL BECAUSE EMAP HAS 'ZDC_RPD' CHANNELS AND THESE ARE NOT HANDELED PROPERLY IN ZdcLut.cc **********
+//  const std::map<int, std::shared_ptr<LutXml>> _zdc_lut_xml = getZdcLutXml(_tag, split_by_crate);
+//  addLutMap(xml, _zdc_lut_xml);
 
   writeLutXmlFiles(xml, _tag, split_by_crate);
 
