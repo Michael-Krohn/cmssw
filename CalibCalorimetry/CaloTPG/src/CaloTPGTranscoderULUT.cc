@@ -75,7 +75,7 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
 
     unsigned int lutsize = getOutputLUTSize(id);
     if (abs(ieta) > 20) {
-      lutsize = 1048;
+      lutsize = 1024;
     }
     outputLUT_[index].resize(lutsize);
 
@@ -85,11 +85,10 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
     if (isHBHE) {
       for (unsigned int i = threshold; i < lutsize; ++i)
         if (allLinear_) {
-          if (abs(ieta) > 20) {
-            outputLUT_[index][i] = isOnlyQIE11(id) ? linearQIE11LUT[i*2] : linearQIE8LUT[i];
-          } else {
-            outputLUT_[index][i] = isOnlyQIE11(id) ? linearQIE11LUT[i] : linearQIE8LUT[i];
-	  }
+          outputLUT_[index][i] = isOnlyQIE11(id) ? linearQIE11LUT[i] : linearQIE8LUT[i];
+          if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= 127) {
+            outputLUT_[index][i] = 255;
+          }
         } else {
           outputLUT_[index][i] = analyticalLUT[i];
         }
@@ -110,11 +109,10 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
         for (unsigned int i = 0; i < lutsize; ++i) {
           if (outputLUT_[index][i] != tpg) {
             tpg = outputLUT_[index][i];
-            if (abs(ieta) > 20) {
-              hcaluncomp_[index][tpg] = lsb_factor_ * i * 2 / (isOnlyQIE11(id) ? lin11_factor_ : lin8_factor_);
-	    } else {
-              hcaluncomp_[index][tpg] = lsb_factor_ * i / (isOnlyQIE11(id) ? lin11_factor_ : lin8_factor_);
-	    }
+            hcaluncomp_[index][tpg] = lsb_factor_ * i / (isOnlyQIE11(id) ? lin11_factor_ : lin8_factor_);
+            if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= 127) {
+              hcaluncomp_[index][tpg] = 127.5;
+            }
           }
         }
       } else {
