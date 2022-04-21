@@ -1,7 +1,6 @@
 #include "SimG4Core/CustomPhysics/interface/CustomPhysics.h"
 #include "SimG4Core/CustomPhysics/interface/CustomPhysicsList.h"
 #include "SimG4Core/CustomPhysics/interface/CustomPhysicsListSS.h"
-#include "SimG4Core/CustomPhysics/interface/APrimePhysics.h"
 #include "SimG4Core/PhysicsLists/interface/CMSEmStandardPhysicsLPM.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
@@ -15,7 +14,6 @@
 #include "G4DataQuestionaire.hh"
 #include "G4HadronPhysicsFTFP_BERT.hh"
 #include "G4SystemOfUnits.hh"
-#include "G4GenericBiasingPhysics.hh"
 
 CustomPhysics::CustomPhysics(const edm::ParameterSet& p) : PhysicsList(p) {
   G4DataQuestionaire it(photon);
@@ -56,16 +54,10 @@ CustomPhysics::CustomPhysics(const edm::ParameterSet& p) : PhysicsList(p) {
     RegisterPhysics(ncut);
   }
 
-  RegisterPhysics(new APrimePhysics);
-  G4GenericBiasingPhysics* biasingPhysics = new G4GenericBiasingPhysics();
-  biasingPhysics->Bias("mu-");
-  biasingPhysics->Bias("mu+");
-  RegisterPhysics(biasingPhysics);
-
   // Custom Physics
-/*  if (ssPhys) {
+  if (ssPhys) {
     RegisterPhysics(new CustomPhysicsListSS("custom", p));
   } else {
     RegisterPhysics(new CustomPhysicsList("custom", p));
-  }*/
+  }
 }
