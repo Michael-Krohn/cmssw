@@ -1,0 +1,173 @@
+#ifndef MuPXHistograms_h
+#define MuPXHistograms_h
+
+#include <vector>
+#include <map>
+
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/CSCRecHit/interface/CSCSegmentCollection.h"
+#include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
+#include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
+#include "DataFormats/Common/interface/SortedCollection.h"
+#include "DarkPhoton/MuAnalyzer/interface/MuPXEventInfo.h"
+#include "TTree.h"
+
+class TH1F;
+class TH2F;
+class TNtuple;
+
+class MuPXHistograms{
+  public:
+    MuPXHistograms();
+
+    void book(TFileDirectory histFolder, bool binIso=false);
+    void IncCutFlow(double weight);
+    void ResetCutFlow();
+    void FillHists(MuPXEventInfo, bool binIso=false, bool isMC=true, bool makeTuples = false);
+    void PlotECALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
+  public:
+    //Event numbers
+    int event;
+    int lumi;
+    int run;
+    //Weights
+    double eventWeightPUup;
+    double eventWeightPUdown;
+    double eventWeightIDup;
+    double eventWeightIDdown;
+    double eventWeightISOup;
+    double eventWeightISOdown;
+    double eventWeightTrigup;
+    double eventWeightTrigdown;
+    //Histograms
+    TH1F* m_genEventCount;
+    TH1F* m_eventWeight;
+    TH1F* m_eventCount;
+    TTree* m_eventNumbers;
+    TH1F* m_eventCount_PUup;
+    TH1F* m_eventCount_PUdown;
+    TH1F* m_eventCount_IDup;
+    TH1F* m_eventCount_IDdown; 
+    TH1F* m_eventCount_ISOup;
+    TH1F* m_eventCount_ISOdown;
+    TH1F* m_eventCount_Trigup; 
+    TH1F* m_eventCount_Trigdown;
+    TH1F* m_IDSF, *m_IDSFup, *m_IDSFdown;
+    TH1F* m_muRocWeight;
+    TH1F* m_ISOSF, *m_ISOSFup, *m_ISOSFdown;
+    TH1F* m_TrigSF, *m_TrigSFup, *m_TrigSFdown;
+    TH1F* m_SigCat;
+    TH1F* m_cutProgress;
+    TH1F* m_MuonTrackMass;
+    TH1F* m_ProbeEta;
+    TH1F* m_ProbePt;
+    TH1F* m_ProbePhi;
+    TH2F* m_ProbeEtaPhi;
+    TH1F* m_NPassingProbe;
+    TH1F* m_TagEta;
+    TH1F* m_TagPt;
+    TH1F* m_TagPhi;
+    TH2F* m_TagEtaPhi;
+    TH2F* m_BigEtadEtadPhi;
+    TH2F* m_SmallEtadEtadPhi;
+    TH1F* m_NPassingTag;
+    TH2F* m_ECAL_ieta_iphi;
+    TH2F* m_ECALEtaPhi;
+    TH2F* m_ECAL_ix_iy_plusZ;
+    TH2F* m_ECAL_ix_iy_minusZ;
+    TH1F* m_EcalSplitAdjMuonTrackMass[100];
+    TH1F* m_TrackSplitAdjMuonTrackMass[100];
+    TH1F* m_SplitMuonsTrackMass[20][20];
+    TNtuple* m_TupleSplitMuonsTrackMass[20][20];
+    TH1F* m_AdjustedMuTrackMass;
+    TH1F* m_TagProbeVtxChi;
+    TH1F* m_ProbeTrackIso;
+    TH1F* m_ProbeHcalIso;
+    TH1F* m_ProbeEcalIso;
+    TH1F* m_ProbeEcalIso0p2;
+    TH1F* m_ProbeEcalIso0p1;
+    TH1F* m_ProbeEcalIso0p05;
+    TH2F* m_ProbeCombinedIso;     
+    TH1F* m_ConeHits;
+    TH1F* m_ConeEnergy;
+    TH1F* m_HECellsFound;
+    TH1F* m_HitsOverThresh;
+    double cutProgress;
+    //Multiple Paired Track Hists
+    TH1F* m_SmallestCone;
+    TH1F* m_AverageDr;
+    //Study Tag Muon selection
+    TH1F* m_TagProbeDr;
+    TH1F* m_TagTrackIso;
+    TH1F* m_TagHcalIso;
+    TH1F* m_TagEcalIso;
+    TH1F* m_NJets;
+    TH2F* m_CaloSumJetE;
+    TH2F* m_HCALIsoJetDr;
+    TH2F* m_ECALIsoJetDr;
+    TH1F* m_ProbeJetDr;
+    TH1F* m_JetPt;
+    //Calo Jet 
+    TH1F* m_ProbeJetE;
+    TH1F* m_CaloJetPt;
+    TH2F* m_CaloJetPtEta;
+    TH1F* m_ProbeCaloJetDr;
+    TH1F* m_TagCaloJetE;
+    TH2F* m_CaloJetEcalE;
+    TH1F* m_CaloJetEcalEnergy;
+    TH2F* m_CaloJetHcalE;
+    TH1F* m_CaloJetHcalEnergy;
+    TH2F* m_CaloJetEcalHcal;
+    //Vtx Stuff
+    TH1F* m_ProbeVtx;
+    TH1F* m_TagVtx;
+    TH1F* m_NVertices;
+    TH2F* m_TagProbeVtx;
+    TH1F* m_TagProbeVtxd0;
+    TH1F* m_TagProbeVtxdz;
+    TH1F* m_PileupWeights;
+    TH1F* m_PUmean;
+    //Gen Matching
+    TH1F* m_GenProbeDr;
+    TH1F* m_GenProbeEta;
+    TH1F* m_GenTagDr;
+    TH1F* m_InTrackerGenProbeDr;
+    TH1F* m_GenProbePt;
+    TH1F* m_GenPdgId;
+//    TH1F* m_PassLooseMatch;
+    TH1F* m_nonMuPdgId;
+    TH1F* m_highPtNonMuPdgId;
+    TH1F* m_nLooseMuons;
+    TH1F* m_TagPdgId;
+    TH1F* m_MotherMatch;
+//    TH1F* m_LooseMatch[10][10];
+    TH1F* m_staMinDr;
+    TH1F* m_standaloneE;
+    TH1F* m_standaloneDPhi;
+    TH1F* m_ProbeDCA;
+    TH1F* m_ProbeLongDCA;
+    TH2F* m_ProbeDCAPhi;
+    TH1F* m_nEle;
+    TH1F* m_nExtraEle;
+    TH1F* m_nExtraMuon;
+    TH1F* m_ExtraMuonProbeDr;
+    TH1F* m_ExtraMuonTagDr;
+    TH1F* m_ExtraMuonPt;
+    TH1F* m_standaloneDE;
+    TH1F* m_standaloneDE_PUup;
+    TH1F* m_standaloneDE_PUdown;
+    TH1F* m_standaloneDE_IDup;
+    TH1F* m_standaloneDE_IDdown;
+    TH1F* m_standaloneDE_ISOup;
+    TH1F* m_standaloneDE_ISOdown;
+    TH1F* m_standaloneDE_Trigup;
+    TH1F* m_standaloneDE_Trigdown;
+    TH1F* m_matchGenTau;
+    TH1F* m_matchGenEle;
+};
+#endif
