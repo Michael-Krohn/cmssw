@@ -26,6 +26,9 @@ MuPXEventInfo::MuPXEventInfo()
     probeTrackIso=-1;
     probeHcalIso=-1;
     probeEcalIso=-1;
+    probeEcalIso0p2=-1;
+    probeEcalIso0p1=-1;
+    probeEcalIso0p05=-1;
     probeDCA=-1;
     probeLongDCA=-1;
     smallestCone=-1;
@@ -44,7 +47,17 @@ MuPXEventInfo::MuPXEventInfo()
     probeCaloJetEcal=-1;
     probeCaloJetHcal=-1;
     staMinDr=10;
+    for(int i=0;i<3;i++)
+    {
+       muIdWeights.push_back(1);
+       muIsoWeights.push_back(1);
+       muTrigWeights.push_back(1);
+       pileupWeights.push_back(1);
+    }
     standaloneE=-1;
+    stadPhi=-10;
+    probeCharge=0;
+    standaloneDEoverE=-10;
     farMuE=0;
     farMuDr=0;
     farMuEta=0;
@@ -59,5 +72,7 @@ MuPXEventInfo::MuPXEventInfo()
     extraMuProbeDr=-1;
     extraMuTagDr=-1;
     extraMuPt=-1;
+    matchGenTau=false;
+    matchGenEle=false;
 }
 

@@ -34,6 +34,12 @@ options.register( 'makeSplits',
                                   VarParsing.varType.bool,
                                   "True if binned invariant masses for mu+x fits")
 
+options.register( 'offPeakCR',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if analyzing off-peak mu+X data control region")
+
 options.parseArguments()
 
 
@@ -65,9 +71,9 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/TTTo2L2Nu.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/TTTo2L2Nu_SignalRegion.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/2018_all.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/offPeakCR.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -95,10 +101,10 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
-    #HBHERecHits = cms.InputTag("hbhereco"),
+    HBHERecHits = cms.InputTag("hbhereco"),
     EERecHits = cms.InputTag("reducedEcalRecHitsEE"),
     EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
-    HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
+    #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     PFJets = cms.InputTag("ak4PFJetsCHS"),
     TowerSource = cms.InputTag("caloStage2Digis","CaloTower"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),
@@ -107,7 +113,8 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     isMC = cms.untracked.bool(options.isMC),
     signalRegion = cms.untracked.bool(options.signalRegion),
     makeTuples = cms.untracked.bool(options.makeTuples),
-    makeSplits = cms.untracked.bool(options.makeSplits)
+    makeSplits = cms.untracked.bool(options.makeSplits),
+    offPeakCR = cms.untracked.bool(options.offPeakCR)
 )
 
 process.TFileService = cms.Service("TFileService",

@@ -13,6 +13,7 @@
 #include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
+#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
 
 class TH1F;
 class TH2F;
@@ -21,42 +22,23 @@ class Histograms{
   public:
     Histograms();
 
-    void book(edm::Service<TFileService> fs);
+    void book(TFileDirectory histFolder);
     void PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR);
     void PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label);
     void PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
     void Normalize();
+    void IncCutFlow(double weight);
+    void IncCutFlow(double weight,int nCuts);
+    void FillHists(EventInfo);
 
   public:
+    int cutProgress;
     TH1F* m_eventCount;
     TH1F* m_cutProgress;
-
-    TH1F* m_TagMuonEta;    
     TH1F* m_MuonTrackMass;
-    
-    TH1F* m_GENMuonTrackdR;
-    TH1F* m_nMuonTrackCand;
-    TH1F* m_nTracksPairedPerMuon;
-    TH1F* m_nMuonsPairedPerEvent;
-    TH1F* m_nTracksNoMuon;
-
+    TH1F* m_failHEEnergy;
     TH1F* m_histogram_TrackerTack_P;
-    TH1F* m_histogram_MuonTrack_P;
-
-    TH2F* m_histogram_differenceVertex_xy;
-    TH2F* m_histogram_misshitVertex_xy;
-    TH1F* m_histogram_differenceVertex_z;
-    TH1F* m_histogram_misshitVertex_z;
-    TH1F* m_adjacentfailvertex_z;
-
-    TH1F* m_MinTransverseImpactParameter;
-    TH1F* m_MinLongiudinalImpactParameter;
-    TH1F* m_MinTotalImpactParameter;
-    TH1F* m_MinDR;
-
-    TH1F* m_MinDR_Muon;
-    TH1F* m_MinTotalImpactParameterMuon;
-
+    TH1F* m_CSCMinDR;
     //Tracker track location
     TH2F* m_histogram_TrackerTrack_EtaPhi_negEta;
     TH2F* m_histogram_TrackerTrack_EtaPhi_negEta_pT0to50;
@@ -100,18 +82,18 @@ class Histograms{
     TH2F* m_histogram_CSCHits_EtaPhi;
 
     //HCAL hits histogram
-    TH2F* m_histogram_HCALHits_EtaPhi;
-    TH2F* m_histogram_BlankHCALHits_EtaPhi;
-
+    TH2F* m_HCALHits_EtaPhi;
+    TH1F* m_HEConeEnergy;
+    TH1F* m_tagHcalIso;
+    TH1F* m_probeHcalIso;
+    TH1F* m_centerInCone;
+    TH1F* m_centerOutOfCone;
     TH1F* m_MinDR_MuonHCAL;
     TH1F* m_MinDR_RandomHCAL;
-    TH1F* m_HitEnergy_MinDR_MuonHCAL;
-    TH1F* m_HitEnergy_RandomHCAL;
     TH1F* m_HitDepth_MuonHCAL;
     TH1F* m_HitDepth_RandomHCAL;
     TH1F* m_ConeHits;
     TH1F* m_ConeEnergy;
-    TH1F* m_MissThreshConeEnergy;
     TH1F* m_RandomConeHits;
     TH1F* m_RandomConeEnergy;   
     TH1F* m_HitsOverThresh;
@@ -123,31 +105,9 @@ class Histograms{
     TH2F* m_Layer_Eta[7];
     TH2F* m_RLayer_Eta[7];
     TH1F* m_ValidIDs;
-    TH1F* m_Missing_ValidIDs;
-    TH1F* m_MissingHits;
-    TH1F* m_RMissingHits;
-    TH2F* m_MissingHitsMap;
-    TH2F* m_RMissingHitsMap;
-    TH1F* m_MissingHitsEnergy;
-    TH1F* m_MissingHitsDR;
-    TH1F* m_BlankHitsDR;
-    TH1F* m_TrackHCALDR_MissHit;
-    TH1F* m_TrackHCALDR_GoodHits;
-    TH1F* m_BlankDepth;
-    TH1F* m_4BlankDepth;
-    TH2F* m_BlankCellDetaDphiPosEta;
-    TH2F* m_BlankCellSmallDetaDphiPosEta;
-    TH2F* m_BlankCellDetaDphiNegEta;
-    TH2F* m_BlankCellSmallDetaDphiNegEta;   
-    TH1F* m_MuonEtaDist;
-    TH1F* m_TrackPt;
-    TH1F* m_MissHitTrackPt;
-    TH2F* m_DBremLocation;
-    TH1F* m_DeflectingAngle;
-    TH1F* m_initialMuE;
-    TH1F* m_finalMuE;
-    TH1F* m_dphoEnergy;
-    TH1F* m_NThreshCut;
+    TH1F* m_HEHitsDR;
+    TH2F* m_HEBigCellDEtaDPhi;
+    TH2F* m_HESmallCellDEtaDPhi;
 };
 
 #endif

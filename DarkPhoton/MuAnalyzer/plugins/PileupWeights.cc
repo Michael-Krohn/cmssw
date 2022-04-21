@@ -129,7 +129,7 @@ void
 WeightsFinder::beginJob()
 {
    if (!fs){throw edm::Exception(edm::errors::Configuration, "TFile Service is not registered in cfg file");}
-   trueNumInt_ = fs->make<TH1F>("TrueNumInteractions","TrueNumInteractions",100,0,100);
+   trueNumInt_ = fs->make<TH1F>("TrueNumInteractions","TrueNumInteractions",99,0,99);
    totalweights_ = fs->make<TH1F>("totalEventWeights","TotalEventWeights",1,0,1);
    nEffEvents_ = fs->make<TH1F>("nEffEvents","nEffEvents",4,0,4);
 }

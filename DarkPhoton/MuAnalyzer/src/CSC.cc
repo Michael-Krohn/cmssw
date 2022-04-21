@@ -15,6 +15,9 @@
 CSC::CSC()
 {
 minDR=10;
+recMinDR=100;
+CSCdEta=-10;
+CSCdPhi=-10;
 minTotalImpactParameter=10000;
 }
 
@@ -53,8 +56,9 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 //         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
 	 TrackEta_dR = one_momentum.eta();
 	 TrackPhi_dR = one_momentum.phi();
+         CSCdEta = one_momentum.eta()-TheGlobalPosition.eta();
+         CSCdPhi = one_momentum.phi()-TheGlobalPosition.phi();
 	 TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(one_momentum.theta(),one_momentum.phi(),TheGlobalPosition.mag()));
-	 TrackVertex = VertexPosition; 
 	 TrackP_dR = sqrt(pow(one_momentum.x(), 2) + pow(one_momentum.y(), 2) );
        }
 
@@ -73,11 +77,67 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
 
 }
 
+void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition){
+   ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, tracksToVertex, VertexPosition);
+  
+  edm::Handle<RPCRecHitCollection> rpcRecHits;
+  iEvent.getByToken(rpcRecHitToken, rpcRecHits);
+  edm::ESHandle<RPCGeometry> TheRPCGeometry;
+  iSetup.get<MuonGeometryRecord>().get(TheRPCGeometry);
+
+  RPCRecHitCollection::const_iterator recIt;
+  for (recIt = rpcRecHits->begin(); recIt != rpcRecHits->end(); recIt++) 
+  {
+       DetId TheDetUnitId(recIt->rpcId());
+       const GeomDetUnit *TheUnit = (*TheRPCGeometry).idToDetUnit(TheDetUnitId);
+
+       LocalPoint TheLocalPosition = recIt->localPosition();
+       const BoundPlane& TheSurface = TheUnit->surface();
+       GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+       TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+       double RHdEta = traj.position().eta()-TheGlobalPosition.eta();
+       double RHdPhi = traj.position().phi()-TheGlobalPosition.phi();
+       if(recMinDR > sqrt(( pow(RHdEta,2.0) + pow(RHdPhi, 2.0))))
+       {
+          recMinDR= sqrt(( pow(RHdEta,2.0) + pow(RHdPhi, 2.0)));
+       }
+  }
+}
+void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition){
+   ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, iTrack, tracksToVertex, VertexPosition);
+  
+  edm::Handle<CSCRecHit2DCollection> cscRecHits;
+  iEvent.getByToken(CSCRecHitToken, cscRecHits);
+  edm::ESHandle<CSCGeometry> TheCSCGeometry;
+  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
+
+  CSCRecHit2DCollection::const_iterator recIt;
+  for (recIt = cscRecHits->begin(); recIt != cscRecHits->end(); recIt++) 
+  {
+       CSCDetId iDetId = (CSCDetId)(*recIt).cscDetId();
+       if(iTrack->eta() < 0 && iDetId.endcap() == 1) continue;
+       if(iTrack->eta() > 0 && iDetId.endcap() == 2) continue;
+       DetId TheDetUnitId(recIt->cscDetId());
+       const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+
+       LocalPoint TheLocalPosition = recIt->localPosition();
+       const BoundPlane& TheSurface = TheUnit->surface();
+       GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+       TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+       double RHdEta = traj.position().eta()-TheGlobalPosition.eta();
+       double RHdPhi = traj.position().phi()-TheGlobalPosition.phi();
+       if(recMinDR > sqrt(( pow(RHdEta,2.0) + pow(RHdPhi, 2.0))))
+       {
+          recMinDR= sqrt(( pow(RHdEta,2.0) + pow(RHdPhi, 2.0)));
+       }
+  }
+
+}
+
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition){
 
   edm::Handle<CSCSegmentCollection> TheCSCSegments;
   iEvent.getByToken(CSCSegment_Label, TheCSCSegments);
-
   edm::ESHandle<CSCGeometry> TheCSCGeometry;
   iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
   minDR = 10;
@@ -108,17 +168,20 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
           minDR = sqrt(( pow((iTrack->momentum().eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)));
 //       if(minDR > sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)))){
 //         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
+         TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+         CSCdEta = traj.position().eta()-TheGlobalPosition.eta();
+         CSCdPhi = traj.position().phi()-TheGlobalPosition.phi();
+
 	 TrackEta_dR = iTrack->momentum().eta();
 	 TrackPhi_dR = iTrack->momentum().phi();
 	 TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(iTrack->momentum().theta(),iTrack->momentum().phi(),TheGlobalPosition.mag()));
-	 TrackVertex = VertexPosition; 
 	 TrackP_dR = sqrt(pow(iTrack->momentum().x(), 2) + pow(iTrack->momentum().y(), 2) );
          CSCTraj = TheUnit->toGlobal(iSegment->localDirection());
          CSCChiSq = iSegment->chi2();     
        }
 
        TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
-
+        
 
        if (minTotalImpactParameter > sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter())){
 	 minTotalImpactParameter = sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter());

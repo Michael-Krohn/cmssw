@@ -23,6 +23,7 @@ class Tracks{
     Tracks();
 
     int SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
+    int MatchMuonToTrack(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     int PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     int PairTracks(const reco::Track* Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     void PairSimTracks(const reco::Track* Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
@@ -32,6 +33,7 @@ class Tracks{
     std::vector<reco::TransientTrack> tracksToVertex;
     std::vector<const reco::Track*> selectedEndcapTracks;
     std::vector<const reco::Track*> selectedTracks;    
+    const reco::Track* MuonMatchedTrack;
     GlobalVector one_momentum;
     GlobalVector two_momentum;
     float MuonTrackMass;
@@ -40,6 +42,7 @@ class Tracks{
     double simVtxChi;
     double SimProbeTrackPt;
     double SimProbeTrackEta;
+    bool trackSelected;
     CachingVertex<5> fittedVertex;
     double highendcaptrackpt;
     const reco::Track* highptendcaptrack;

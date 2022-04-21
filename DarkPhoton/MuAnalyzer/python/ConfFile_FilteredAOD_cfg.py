@@ -34,9 +34,9 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('100X_upgrade2018_realistic_v10')
+        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v15_L1v1')
 else:
-        process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
+        process.GlobalTag.globaltag = cms.string('106X_dataRun2_v32')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
@@ -73,13 +73,18 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     tracks = cms.InputTag("generalTracks"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
+    edmPileupInfo = cms.InputTag("mixData"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
+    CSCRecHitTag = cms.InputTag("csc2DRecHits"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),
+    EERecHits = cms.InputTag("reducedEcalRecHitsEE"),
+    EBRecHits = cms.InputTag("reducedEcalRecHitsEB"),
+    CaloJetSource = cms.InputTag("ak4CaloJets"),    
     #HBHERecHits = cms.InputTag("reducedHcalRecHits","hbhereco"),
     isMC = cms.untracked.bool(options.isMC),
-    runuandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
+    runRandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 
 process.TFileService = cms.Service("TFileService",

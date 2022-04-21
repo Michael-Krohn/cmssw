@@ -23,90 +23,70 @@
 
 Histograms::Histograms(){}
 
-void Histograms::book(edm::Service<TFileService> fs){
+void Histograms::book(TFileDirectory histFolder){
 
-  m_eventCount = fs->make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
-  m_cutProgress = fs->make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
-  m_TagMuonEta = fs->make<TH1F>("TaggingMuonEta", ";#eta; Events", 100, -2.6, 2.6);
-  m_MuonTrackMass = fs->make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
+  m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
+  m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
+  m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
 
-  m_GENMuonTrackdR = fs->make<TH1F>("DeltaR_GENMuonTrack", ";DeltaR(GENMuon,Track) ;Events", 30,  0.  , 0.2  );
-  m_nMuonTrackCand = fs->make<TH1F>("nMuonTrackCand", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  m_nTracksPairedPerMuon = fs->make<TH1F>("nTracksPairedPerMuon", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  m_nMuonsPairedPerEvent = fs->make<TH1F>("nMuonsPairedPerEvent", "; # of MuonTrack Candidates ;Events", 10, -0.5  , 9.5  );
-  m_nTracksNoMuon = fs->make<TH1F>("nTrackNoMuon", "; # of TrackerTrackMatched Candidates ;Events", 8, -0.5  , 7.5  );
-  
-  m_histogram_TrackerTack_P = fs->make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
-  m_histogram_MuonTrack_P = fs->make<TH1F>("MuonTrack_P", "", 140, 0, 700);
-    
-  m_histogram_differenceVertex_xy = fs->make<TH2F>("differenceVertex_xy", "", 300, -1., 1., 300, -1., 1.);
-  m_histogram_misshitVertex_xy = fs->make<TH2F>("misshitVertex_xy", "", 300, -1., 1., 300, -1., 1.);
-  m_histogram_differenceVertex_z = fs->make<TH1F>("differenceVertex_z", "", 60, -20., 20.);
-  m_histogram_misshitVertex_z = fs->make<TH1F>("misshitVertex_z", "", 60, -20., 20.);
-  m_adjacentfailvertex_z = fs->make<TH1F>("adjacentfailvertex_z", "", 60, -20., 20.);
+  m_failHEEnergy = histFolder.make<TH1F>("failHEEnergy",";HE Energy (GeV);Events",200,0,200);
+  m_histogram_TrackerTack_P = histFolder.make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
+  m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 7);
+  m_histogram_TrackerTrack_EtaPhi_negEta = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_negEta_pT0to50 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_negEta_pT50to100 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_negEta_pT100to150 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT100to150", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_negEta_pT150toInf = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT150toInf", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_posEta = histFolder.make<TH2F>("TrackerTrack_EtaPhi_posEta", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_posEta_pT0to50 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_posEta_pT0to50", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_posEta_pT50to100 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_posEta_pT50to100", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_posEta_pT100to150 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_posEta_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = histFolder.make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_MinTransverseImpactParameter = fs->make<TH1F>("MinTransverseImpactParameter", "", 300, -50, 50);
-  m_MinLongiudinalImpactParameter = fs->make<TH1F>("MinLongiudinalImpactParameter", "", 300, -50, 50);
-  m_MinTotalImpactParameter = fs->make<TH1F>("MinTotalImpactParameter", "", 300, 0, 1000);
-  m_MinDR = fs->make<TH1F>("MinDR", "", 140, 0, 7);
+  m_histogram_CSCHits_EtaPhi = histFolder.make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
+  m_HCALHits_EtaPhi = histFolder.make<TH2F>("HCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
 
-  m_MinDR_Muon = fs->make<TH1F>("MinDR_Muon", "", 140, 0, 7);
-  m_MinTotalImpactParameterMuon = fs->make<TH1F>("MinTotalImpactParameterMuon", "", 300, 0, 300);
-
-  m_histogram_TrackerTrack_EtaPhi_negEta = fs->make<TH2F>("TrackerTrack_EtaPhi_negEta", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_negEta_pT0to50 = fs->make<TH2F>("TrackerTrack_EtaPhi_negEta_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_negEta_pT50to100 = fs->make<TH2F>("TrackerTrack_EtaPhi_negEta_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_negEta_pT100to150 = fs->make<TH2F>("TrackerTrack_EtaPhi_negEta_pT100to150", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_negEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_negEta_pT150toInf", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_posEta = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_posEta_pT0to50 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT0to50", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_posEta_pT50to100 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT50to100", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_posEta_pT100to150 = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_EtaPhi_posEta_pT150toInf = fs->make<TH2F>("TrackerTrack_EtaPhi_posEta_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-
-  m_histogram_CSCHits_EtaPhi = fs->make<TH2F>("CSCHits_EtaPhi", "; #eta; #phi; Events", 100, -2.4, 2.4, 72, -ROOT::Math::Pi(), ROOT::Math::Pi());
-  m_histogram_HCALHits_EtaPhi = fs->make<TH2F>("HCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
-  m_histogram_BlankHCALHits_EtaPhi = fs->make<TH2F>("BlankHCALHits_EtaPhi", "; i#eta; i#phi; Events", 57, -28.5, 28.5, 72, 0.5, 72.5);
-
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT100to150 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT100to150", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT150toInf = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT150toInf", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_IP15_posEta", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT0to50 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT0to50", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT50to100 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT50to100", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT100to150 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT150toInf = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT100to150 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT100to150", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP15_pT150toInf = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP15_pT150toInf", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_IP15_posEta", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT0to50 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT0to50", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT50to100 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT50to100", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT100to150 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT100to150", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP15_pT150toInf = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP15_pT150toInf", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 		      
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP10 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP10", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP10 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP10", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP5 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP5", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP5 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP5", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP3 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP3", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP3 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP3", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP2", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP2 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP2", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP10 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP10", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP10 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP10", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP5 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP5", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP5 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP5", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP3 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP3", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP3 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP3", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP2 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_IP2", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP2 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_IP2", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
-  m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_dRMatched_EtaPhi_negEta = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrack_dRMatched_EtaPhi_posEta = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
 
-  m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
-  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1 = fs->make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_posEta_dR0p1 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_posEta_dR0p1", "", 100, 1.63, 2.4, 100, -3.2, 3.2);
+  m_histogram_TrackerTrackMatched_EtaPhi_negEta_dR0p1 = histFolder.make<TH2F>("TrackerTrackMatched_EtaPhi_negEta_dR0p1", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
 
-  m_MinDR_MuonHCAL = fs->make<TH1F>("MinDR_MuonHCAL", "; Min #Delta R; Events", 140, 0, 0.4);
-  m_MinDR_RandomHCAL = fs->make<TH1F>("MinDR_RandomHCAL", "; Min #Delta R; Events", 140, 0, 0.4);
-  m_HitEnergy_MinDR_MuonHCAL = fs->make<TH1F>("HitEnergy_MinDR_MuonHCAL", "; Energy; Events", 200, 0, 20);
-  m_HitEnergy_RandomHCAL = fs->make<TH1F>("HitEnergy_MinDR_RandomHCAL", "; Energy; Events", 200, 0, 20);
-  m_HitDepth_MuonHCAL = fs->make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
-  m_HitDepth_RandomHCAL = fs->make<TH1F>("HitDepth_RandomHCAL", "; Depth; Events", 40,0,20);
-  m_ConeHits = fs->make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
-  m_ConeEnergy = fs->make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
-  m_MissThreshConeEnergy = fs->make<TH1F>("MissConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,200);
-  m_RandomConeHits = fs->make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
-  m_RandomConeEnergy = fs->make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,200);
-  m_HitsOverThresh = fs->make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
-  m_RandomHitsOverThresh = fs->make<TH1F>("RandomHitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_centerInCone = histFolder.make<TH1F>("CenterInCone",";Projected cells in 0.2 DR cone",10,-0.5,9.5);
+  m_centerOutOfCone = histFolder.make<TH1F>("CenterOutOfCone",";Projected cells out of 0.2 DR cone",10,-0.5,9.5);
+  m_MinDR_MuonHCAL = histFolder.make<TH1F>("MinDR_MuonHCAL", "; Min #Delta R; Events", 140, 0, 0.4);
+  m_MinDR_RandomHCAL = histFolder.make<TH1F>("MinDR_RandomHCAL", "; Min #Delta R; Events", 140, 0, 0.4);
+  m_HitDepth_MuonHCAL = histFolder.make<TH1F>("HitDepth_MuonHCAL", "; Depth; Events", 40,0,20);
+  m_HitDepth_RandomHCAL = histFolder.make<TH1F>("HitDepth_RandomHCAL", "; Depth; Events", 40,0,20);
+  m_ConeHits = histFolder.make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
+  m_ConeEnergy = histFolder.make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
+  m_RandomConeHits = histFolder.make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
+  m_RandomConeEnergy = histFolder.make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200,0,20);
+  m_HitsOverThresh = histFolder.make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_HEConeEnergy = histFolder.make<TH1F>("HEConeEnergy",";HCAL Energy in 0.4 #Delta R Cone (GeV); Events",100,0,100);
+  m_tagHcalIso = histFolder.make<TH1F>("tagHcalIso",";HCAL Energy in 0.4 #Delta R Cone (GeV); Events",100,0,100);
+  m_probeHcalIso = histFolder.make<TH1F>("probeHcalIso",";HCAL Energy in 0.4 #Delta R Cone (GeV); Events",100,0,100);
+  m_RandomHitsOverThresh = histFolder.make<TH1F>("RandomHitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
 
   for(int i=0; i<7; i++)
   {
@@ -115,54 +95,79 @@ void Histograms::book(edm::Service<TFileService> fs){
      std::string pairname = "DepthPairSpectra_"+std::to_string(i+1)+std::to_string(i+2);
      std::string rpairname = "R"+pairname;
      std::string pairaxis = "; Depth " + std::to_string(i+1)+" Hit Energy (GeV); Depth "+std::to_string(i+2)+" Hit Energy (GeV); Events";
-     m_Layer_Spectra[i] = fs->make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
-     m_RLayer_Spectra[i] = fs->make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
+     m_Layer_Spectra[i] = histFolder.make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
+     m_RLayer_Spectra[i] = histFolder.make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 400,0,10);
      if(i<6)
      {
-        m_DepthPairSpectra[i] = fs->make<TH2F>(pairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
-        m_RDepthPairSpectra[i] = fs->make<TH2F>(rpairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
+        m_DepthPairSpectra[i] = histFolder.make<TH2F>(pairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
+        m_RDepthPairSpectra[i] = histFolder.make<TH2F>(rpairname.c_str(),pairaxis.c_str(),100,0,10,100,0,10);
      }
   }
   for(int i=0; i<7; i++)
   {
      std::string name = "Layer"+std::to_string(i+1)+"Eta";
      std::string rname = "R"+name;
-     m_Layer_Eta[i] = fs->make<TH2F>(name.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
-     m_RLayer_Eta[i] = fs->make<TH2F>(rname.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
+     m_Layer_Eta[i] = histFolder.make<TH2F>(name.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
+     m_RLayer_Eta[i] = histFolder.make<TH2F>(rname.c_str(), "; Hit Energy (GeV); #eta ; Events", 150,0,10, 50,-2.6,2.6);
   }
-  m_ValidIDs = fs->make<TH1F>("ValidCellIds", "; Valid Cell Ids; Events", 101,-0.5,100.5);
-  m_Missing_ValidIDs = fs->make<TH1F>("MissingHitValidCellIds", "; Valid Cell Ids; Events", 101, -0.5, 100.5);
-  m_MissingHits = fs->make<TH1F>("MissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
-  m_RMissingHits = fs->make<TH1F>("RMissingHits", "; Hit Depth; Events", 16,-8.5,7.5);
-  m_MissingHitsMap = fs->make<TH2F>("MissingHitsMap", "; i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5); 
-  m_RMissingHitsMap = fs->make<TH2F>("RMissingHitsMap", ";i#eta; i#phi; Events", 58, -28.5, 28.5, 73, 0.5, 72.5);
-  m_MissingHitsEnergy = fs->make<TH1F>("MissingHitsEnergy", "; Hit Energy (GeV); Events", 50,0,0.2);
-  m_MissingHitsDR = fs->make<TH1F>("MinDR_MissingHits", "; Min #Delta R; Events", 70, 0, 0.2);
-  m_BlankHitsDR = fs->make<TH1F>("MinDR_BlankHits", "; #Delta R; Events", 70, 0, 0.2);
-  m_TrackHCALDR_GoodHits = fs->make<TH1F>("MinDRTrack_GoodHits", "; #Delta R; Events", 70, 0, 0.2);
-  m_TrackHCALDR_MissHit = fs->make<TH1F>("MinDRTrack_MissHit", "; #Delta R; Events", 70, 0, 0.2);
-  m_BlankDepth = fs->make<TH1F>("Blank_Depth", "; Hit Depth; Events", 7,0.5,7.5);
-  m_4BlankDepth = fs->make<TH1F>("TwoMiss_Depth", "; Hit Depth; Events", 7,0.5,7.5);
-  m_BlankCellDetaDphiPosEta = fs->make<TH2F>("LostHitsDetaDphiPosEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BlankCellSmallDetaDphiPosEta = fs->make<TH2F>("SmallLostHitsDetaDphiPosEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BlankCellDetaDphiNegEta = fs->make<TH2F>("LostHitsDetaDphiNegEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_BlankCellSmallDetaDphiNegEta = fs->make<TH2F>("SmallLostHitsDetaDphiNegEta", ";#eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
-  m_MuonEtaDist = fs->make<TH1F>("MuonEtaDist",";#eta; Events", 100,-10,10);
-  m_TrackPt = fs->make<TH1F>("SelectedTrackPt",";#Pt (GeV); Events", 200, 0, 100);
-  m_MissHitTrackPt = fs->make<TH1F>("MissHitTrackPt",";#Pt (GeV); Events", 200, 0, 100);
-  m_DBremLocation = fs->make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
-  m_DeflectingAngle = fs->make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
-  m_initialMuE = fs->make<TH1F>("MuInitialE",";Energy (GeV);Events",100,0,200);
-  m_finalMuE = fs->make<TH1F>("MuFinalE",";Energy (GeV);Events",100,0,200);
-  m_dphoEnergy = fs->make<TH1F>("DarkPhotonEnergy",";Energy (GeV);Events",100,0,200);
-  m_NThreshCut = fs->make<TH1F>("NPassAdjacentCut","; Fail cut in bin zero, pass in bin 1; Events", 2,-0.5,1.5);
+  m_ValidIDs = histFolder.make<TH1F>("ValidCellIds", "; Valid Cell Ids; Events", 101,-0.5,100.5);
+  m_HEBigCellDEtaDPhi = histFolder.make<TH2F>("BigEtaCellCenterDistance","; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+  m_HESmallCellDEtaDPhi = histFolder.make<TH2F>("SmallEtaCellCenterDistance","; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
 }
 
-/*void Histograms::IncCutFlow()
+void Histograms::FillHists(EventInfo info)
+{
+   m_eventCount->Fill(0.5,info.eventWeight);
+   m_MuonTrackMass->Fill(info.diMuonMass,info.eventWeight);
+   m_CSCMinDR->Fill(info.minDR,info.eventWeight);
+   m_HCALHits_EtaPhi->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);
+   m_MinDR_MuonHCAL->Fill(info.minDR_muonHCAL,info.eventWeight);
+   m_MinDR_RandomHCAL->Fill(info.minDR_randomHCAL,info.eventWeight);
+   m_HitDepth_MuonHCAL->Fill(info.hitDepth_muonHCAL,info.eventWeight);
+   m_HitDepth_RandomHCAL->Fill(info.hitDepth_randomHCAL,info.eventWeight);
+   m_centerInCone->Fill(info.centerInCone,info.eventWeight);
+   m_centerOutOfCone->Fill(info.centerOutOfCone,info.eventWeight);
+   m_ConeHits->Fill(info.coneHits,info.eventWeight);
+   m_ConeEnergy->Fill(info.coneEnergy,info.eventWeight);
+   m_HEConeEnergy->Fill(info.heConeEnergy);
+   m_tagHcalIso->Fill(info.tagHcalIso);
+   m_probeHcalIso->Fill(info.probeHcalIso);
+   m_RandomConeHits->Fill(info.randomConeHits,info.eventWeight);
+   m_RandomConeEnergy->Fill(info.randomConeEnergy,info.eventWeight);
+   m_HitsOverThresh->Fill(info.hitsOverThresh,info.eventWeight);
+   m_RandomHitsOverThresh->Fill(info.randomHitsOverThresh,info.eventWeight);
+   for(int i=0;i<7;i++)
+   {
+      if(i>=info.cellsFound){continue;}
+      m_Layer_Spectra[i]->Fill(info.hitEnergies[i],info.eventWeight);
+      m_RLayer_Spectra[i]->Fill(info.randHitEnergies[i],info.eventWeight);
+      m_Layer_Eta[i]->Fill(info.hitEnergies[i],info.ProbeEta,info.eventWeight);
+//      m_RLayer_Eta[i]->Fill(info.randHitEnergies[i],info.ProbeEta,info.eventWeight);
+      if(i<6&&((i+1)<info.cellsFound))
+      {
+         m_DepthPairSpectra[i]->Fill(info.hitEnergies[i],info.hitEnergies[i+1],info.eventWeight);
+         m_RDepthPairSpectra[i]->Fill(info.randHitEnergies[i],info.randHitEnergies[i+1],info.eventWeight);
+      }
+   }
+   m_ValidIDs->Fill(info.cellsFound,info.eventWeight);
+   if(fabs(info.probeiEta)>20){m_HEBigCellDEtaDPhi->Fill(info.cellCenterDEta,info.cellCenterDPhi,info.eventWeight);}
+   else{m_HESmallCellDEtaDPhi->Fill(info.cellCenterDEta,info.cellCenterDPhi,info.eventWeight);}
+ 
+}
+
+void Histograms::IncCutFlow(double weight)
 {
    cutProgress++;
-   m_cutProgress->fill(cutProgress);
-}*/
+   m_cutProgress->Fill(cutProgress,weight);
+}
+
+void Histograms::IncCutFlow(double weight,int nCuts)
+{
+   for(int i=0;i<nCuts;i++)
+   {
+      IncCutFlow(weight);
+   }
+}
 
 void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double TrackPhi, double minDR, double minTotalImpactParameter, double TrackP_dR, double TrackEta_dR, double TrackPhi_dR){
 
@@ -276,8 +281,6 @@ void Histograms::PlotTrackDisappearance(double TrackP, double TrackEta, double T
     m_histogram_TrackerTrackMatched_EtaPhi_negEta_IP2->Fill(TrackEta, TrackPhi);
     m_histogram_TrackerTrackMatched_EtaPhi_posEta_IP2->Fill(TrackEta, TrackPhi);
   }
-			      
-
 }
 
 void Histograms::PlotCSCHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label)
@@ -311,7 +314,6 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
 
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
-  const CaloGeometry* caloGeom = TheCALOGeometry.product();
 
   if ((hcalRecHits.isValid()))
   {
@@ -322,8 +324,6 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
 	HcalDetId id(hbherechit->detid());
         //std::shared_ptr<const CaloCellGeometry> hbhe_cell = caloGeom->getGeometry(hbherechit->id());
 	//Global3DPoint hbhe_position = hbhe_cell->getPosition();
-	m_histogram_HCALHits_EtaPhi->Fill(id.ieta(),id.iphi());
-        
 	//const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 	//m_histogram_CSCHits_EtaPhi->Fill(TheUnit->toGlobal(iSegment->localPosition()).eta(),TheUnit->toGlobal(iSegment->localPosition()).phi());
      }
@@ -333,9 +333,4 @@ void Histograms::PlotHCALHits(const edm::Event& iEvent, const edm::EventSetup& i
 
 void Histograms::Normalize()
 {
- /* if(m_histogram_CSCHits_EtaPhi->Integral()!=0)
-  {
-     double norm = 1/m_histogram_CSCHits_EtaPhi->Integral();
-     m_histogram_CSCHits_EtaPhi->Scale(norm);
-  }*/
 }

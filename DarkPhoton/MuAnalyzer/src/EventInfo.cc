@@ -1,8 +1,35 @@
-#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/Event.h"
-#include "FWCore/Common/interface/TriggerNames.h"
+#include "FWCore/Common/interface/TriggerNames.h" 
+#include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
+#include <iostream>
 
-EventInfo::EventInfo(){}
+EventInfo::EventInfo()
+{
+   eventWeight = 1;
+   diMuonMass=-1;
+   heConeEnergy=-1;
+   probeHcalIso=-1;
+   tagHcalIso=-1;
+   minDR=-1;
+   ProbeEta=10;
+   ProbePhi=10;
+   probeiEta=0;
+   centerInCone=-1;
+   centerOutOfCone=-1;
+   minDR_muonHCAL=-1;
+   minDR_randomHCAL=-1;
+   coneHits=-1;
+   coneEnergy=-1;
+   randomConeHits=-1;
+   randomConeEnergy=-1;
+   hitsOverThresh=-1;
+   randomHitsOverThresh=-1;
+   cellsFound=-1;
+   cellCenterDEta=-1;
+   cellCenterDPhi=-1;  
+}
+
 
 bool EventInfo::goodPrimaryVertex(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label){
 

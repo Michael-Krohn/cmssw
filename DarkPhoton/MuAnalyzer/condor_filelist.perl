@@ -107,12 +107,13 @@ print(SUBMIT "Arguments = \"$cmsRunArguments\"\n");
 print(SUBMIT "Universe = vanilla\n");
 print(SUBMIT "Output = $prodSpace/logs/output\n");
 print(SUBMIT "Error = $prodSpace/logs/error\n");
-print(SUBMIT "request_memory = 2048\n");
+print(SUBMIT "request_memory = 1G\n");
 print(SUBMIT "Requirements = (Arch==\"X86_64\")");
 # Zebras are for remote login, not cluster computing
 print(SUBMIT " && (Machine != \"zebra01.spa.umn.edu\" && Machine != \"zebra02.spa.umn.edu\" && Machine != \"zebra03.spa.umn.edu\" && Machine != \"zebra04.spa.umn.edu\" && Machine != \"caffeine.spa.umn.edu\")");
-print(SUBMIT " && (Machine != \"scorpion24.spa.umn.edu\" && Machine != \"scorpion17.spa.umn.edu\" && Machine != \"scorpion23.spa.umn.edu\" && Machine != \"scorpion21.spa.umn.edu\" && Machine != \"scorpion1.spa.umn.edu\" && Machine != \"scorpion6.spa.umn.edu\" && Machine != \"scorpion20.spa.umn.edu\" && Machine != \"scorpion44.spa.umn.edu\" && Machine != \"scorpion9.spa.umn.edu\" && Machine != \"scorpion5.spa.umn.edu\")");
-print(SUBMIT " && (Machine != \"scorpion42.spa.umn.edu\" && Machine != \"scorpion43.spa.umn.edu\" && Machine != \"scorpion45.spa.umn.edu\" && Machine != \"scorpion16.spa.umn.edu\" && Machine != \"scorpion18.spa.umn.edu\" && Machine != \"scorpion46.spa.umn.edu\")");
+print(SUBMIT " && (Machine == \"scorpion46.spa.umn.edu\" || Machine == \"scorpion45.spa.umn.edu\" || Machine == \"scorpion43.spa.umn.edu\" )");# && Machine != \"scorpion17.spa.umn.edu\" && Machine != \"scorpion23.spa.umn.edu\" && Machine != \"scorpion21.spa.umn.edu\" && Machine != \"scorpion1.spa.umn.edu\" && Machine != \"scorpion6.spa.umn.edu\" && Machine != \"scorpion20.spa.umn.edu\" && Machine != \"scorpion44.spa.umn.edu\" && Machine != \"scorpion9.spa.umn.edu\" && Machine != \"scorpion5.spa.umn.edu\")");
+
+#print(SUBMIT " && (Machine != \"scorpion42.spa.umn.edu\" && Machine != \"scorpion43.spa.umn.edu\" && Machine != \"scorpion45.spa.umn.edu\" && Machine != \"scorpion16.spa.umn.edu\" && Machine != \"scorpion18.spa.umn.edu\" && Machine != \"scorpion46.spa.umn.edu\")");
 
 # These machines are VMs that run the grid interface
 print(SUBMIT " && (Machine != \"gc1-ce.spa.umn.edu\" && Machine != \"gc1-hn.spa.umn.edu\" && Machine != \"gc1-se.spa.umn.edu\" && Machine != \"red.spa.umn.edu\" && Machine != \"hadoop-test.spa.umn.edu\" && Machine != \"nova2.spa.umn.edu\")");

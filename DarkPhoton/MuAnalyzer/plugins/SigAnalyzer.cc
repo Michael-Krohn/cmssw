@@ -137,7 +137,7 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MCHistograms);
     bool MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, SigEventInfo info);
     bool MatchTrackToMuon(const edm::Event& iEvent, math::XYZTLorentzVectorD mother, Muons myMuons, SigEventInfo info, double FmuE, double minCSCdr);
-    int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
+    int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, HCAL myHCAL, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
     std::vector<double> GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct);
 
     edm::EDGetToken m_recoMuonToken;
@@ -146,6 +146,8 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
     edm::EDGetToken m_genParticleToken;
     edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label;
+//    edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
+    edm::EDGetTokenT<RPCRecHitCollection > rpcRecHitToken;
     edm::EDGetToken m_dbremweighttoken;
     edm::EDGetToken m_dbremInitialEToken;
     edm::EDGetToken m_dbremFinalEToken;
@@ -199,6 +201,7 @@ class SigAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     MCHistograms failSig;
     MCHistograms totalDisappear;
     MCHistograms partialDisappear;
+    MCHistograms partialDisappear_largeCSCDefl;
 };
 
 //
@@ -217,6 +220,8 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   trackCollection_label(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("tracks"))),
   primaryVertices_Label(consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
   CSCSegment_Label(consumes<CSCSegmentCollection > (iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
+//  CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
+  rpcRecHitToken(consumes<RPCRecHitCollection>(iConfig.getParameter<edm::InputTag>("RPCRecHitTag"))),
   HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>(iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
   reducedEndcapRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EERecHits"))),
   reducedBarrelRecHitCollection_Label(consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
@@ -302,6 +307,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig):
   lowHits.book(fs->mkdir("lowHits"));
   totalDisappear.book(fs->mkdir("totalDisappear"));
   partialDisappear.book(fs->mkdir("partialDisappear"));
+  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"));
 }
 
 
@@ -338,6 +344,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   if(m_hasDpho)
   {
      iEvent.getByToken(m_dbremweighttoken,dbremweight);
+     edm::Handle<GenEventInfoProduct> eventInfo;
+     iEvent.getByToken(m_genInfoToken, eventInfo);
+     weight_  = eventInfo->weight();
+     allEvents.IncCutFlow(weight_); 
      if(*dbremweight>0)
      {
        iEvent.getByToken(m_dbremFinalEToken,dbremFinalE);
@@ -346,8 +356,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
        iEvent.getByToken(m_dbremXToken,dbremX);
        iEvent.getByToken(m_dbremYToken,dbremY);
        iEvent.getByToken(m_dbremZToken,dbremZ);
-       weight_ = *dbremweight*m_scaleFactor;
-       if(weight_>10){return;}
+       weight_ = *dbremweight*weight_;
+       info.dbremWeight=*dbremweight*m_scaleFactor;
+       if(*dbremweight>0.01){return;}
        if(*dbremInitialE<20){return;}
        for(auto const& iter : binningSFs)
        {
@@ -436,8 +447,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      if(maxTrackProgress==13){continue;}
      myTracks.selectedTracks.clear();
      myTracks.selectedEndcapTracks.clear();
+     myTracks.trackSelected=false;
      int trackProgress = myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle, *muon, transientTrackBuilder);
-     if(trackProgress==6){trackProgress=trackProgress+PairTagAndProbe(iEvent,iSetup,myTracks,*muon,myECAL,transientTrackBuilder,trackCollection_label, vtxHandle,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label);}
+     if(myTracks.trackSelected){trackProgress=trackProgress+PairTagAndProbe(iEvent,iSetup,myTracks,*muon,myECAL,myHCAL,HBHERecHit_Label,transientTrackBuilder,trackCollection_label, vtxHandle,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label);}
      if(trackProgress>maxTrackProgress)
      {
         maxTrackProgress=trackProgress;
@@ -530,8 +542,12 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      info.tagMuonEta = selectedMuon->eta();
      info.pairVtxChi = pairVtxChi;
      info.probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(selectedTrack));
+     info.probeEcalIso0p1 = myECAL.GetIsolation(iEvent,iSetup,reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(selectedTrack),0.1);
+     info.probeEcalIso0p2 = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(selectedTrack),0.2);
+     info.probeEcalIso0p05 = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(selectedTrack),0.05);
      info.tagMuonPt = selectedMuon->pt();
      info.probeTrackEta = selectedTrack->eta();
+     info.probeCharge = selectedTrack->charge();
      info.probeTrackPt = selectedTrack->pt();
      info.probeTrackPhi = selectedTrack->phi();
      info.dxy = selectedTrack->dxy();
@@ -541,7 +557,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      info.diMuonMass = diMuonMass;
    // this wraps tracks with additional methods that are used in vertex-calculation
      GlobalPoint FillerPoint; 
-     myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack,transientTrackBuilder->build(selectedTrack),  FillerPoint);
+     myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, rpcRecHitToken, selectedTrack,transientTrackBuilder->build(selectedTrack),  FillerPoint);
+     info.cscRecHitMinDR=myCSCs.recMinDR;
+     info.CSCdEta=myCSCs.CSCdEta;
+     info.CSCdPhi=myCSCs.CSCdPhi;
      GlobalPoint TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),info.bremR));
      if(m_isMC&&m_hasDpho)
      {
@@ -564,7 +583,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      double stadEoverE = 10.;
      double staE = -10;
      double closestapproach = 100.;
-
+     
      if(staTracks->size()>0)
      {
        for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
@@ -576,14 +595,28 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           {
             staMinDr=dR;
             closestapproach=track.stateAtBeamLine().transverseImpactParameter().value();
+            if(track.ndof()>0)
+            {
+               if(track.chi2()/track.ndof()<10)
+               {
+                  if(std::sqrt(track.impactPointTSCP().momentum().mag2())>staE)
+                  {
+                     info.stadEta = track.impactPointTSCP().momentum().eta()-selectedTrack->eta();
+                     info.stadPhi = track.impactPointTSCP().momentum().phi()-selectedTrack->phi();
+                  }
+               }
+            }
           }
-          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE))
+          //Pick the largest energy standalone muon within dR of 1.0
+          if(dR<1.0&&std::sqrt(track.impactPointTSCP().momentum().mag2())>staE)
           {
             if(track.ndof()<1){continue;}
             if(track.chi2()/track.ndof()>10){continue;}
             staE = std::sqrt(track.impactPointTSCP().momentum().mag2());
+            info.stadEta = track.impactPointTSCP().momentum().eta()-selectedTrack->eta();
+            info.stadPhi = track.impactPointTSCP().momentum().phi()-selectedTrack->phi();
             stadEoverE=(std::sqrt(track.impactPointTSCP().momentum().mag2())-mother.P())/mother.P();
-            if(track.ndof()>0){info.staChi2=track.chi2()/track.ndof();}
+            info.staChi2=track.chi2()/track.ndof();
             int nstaHits=0;
             trackingRecHit_iterator rhbegin = staTrack->recHitsBegin();
             trackingRecHit_iterator rhend = staTrack->recHitsEnd();
@@ -604,7 +637,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
        {
           reco::TransientTrack track = transientTrackBuilder->build(*staTrack); 
           double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),selectedTrack->eta(),selectedTrack->phi());
-          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>disStaE))
+          if(dR<1.0&&std::sqrt(track.impactPointTSCP().momentum().mag2()>disStaE))
           {
             if(track.ndof()<1){continue;}
             if(track.chi2()/track.ndof()>6){continue;}
@@ -615,7 +648,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      } 
 
      info.closestApproach=closestapproach;
-     if(staMinDr<0.5) 
+     if(staMinDr<1.0) 
      {
         info.standaloneE = staE;
         info.standaloneDEoverE = stadEoverE;
@@ -629,6 +662,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      allEvents.IncCutFlow(info.eventWeight);
      if(genAccept){genAccepted.IncCutFlow(info.eventWeight);}
      info.nCellsFound=myHCAL.CellsFound;
+     info.nNeighborCellsFound=myHCAL.NeighborCellsFound;
      info.iEta=myHCAL.TrackiEta;
      info.cellCenterDEta=myHCAL.Tdeta;
      info.cellCenterDPhi=myHCAL.Tdphi;
@@ -663,6 +697,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      for(int k=0;k<7;k++)
      {
         info.hitEnergies[k]=myHCAL.m_hitEnergies[k];
+        info.neighborHitEnergies[k]=myHCAL.m_neighborHitEnergies[k];
      }
      info.bremDepth = myHCAL.m_bremDepth;
      info.minCaloJetDr=minProbeDr;
@@ -734,6 +769,14 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      else if(staMinDr<1.0&&info.diMuonMass>80&&info.diMuonMass<100)
      {
         partialDisappear.FillHists(info);
+        if(info.probeCharge>0)
+        {
+           if(info.stadPhi>0.1){partialDisappear_largeCSCDefl.FillHists(info);}
+        }
+        else
+        {
+           if(info.stadPhi<-0.1){partialDisappear_largeCSCDefl.FillHists(info);}
+        }
         if(stadEoverE<-0.8&&myHCAL.m_coneEnergy<1.)
         {
            info.sigCat = 2;
@@ -791,7 +834,7 @@ bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent, math::XYZTLorentz
   return matched;
 }
 
-int SigAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label)
+int SigAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, HCAL myHCAL, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label)
 {
   int cutpro = 0;
   for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin(); iTrack != myTracks.selectedEndcapTracks.end(); ++iTrack)
@@ -804,6 +847,7 @@ int SigAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup
      {
        double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
        double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
+       double probeHcalIso = myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
        double minProbeDr=5;
        for(auto CaloJet = caloJets->begin(); CaloJet!= caloJets->end(); ++CaloJet)
        {
@@ -818,9 +862,10 @@ int SigAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup
 
        if((probeTrackIso/(*iTrack)->pt())>0.05) continue;
        if(cutpro<5){cutpro=5;}
-       if(probeEcalIso>10.) continue;
+       if(probeEcalIso>5.||probeEcalIso<0.) continue;
        if(cutpro<6){cutpro=6;}
-       if(minProbeDr<0.4) continue;
+       //if(minProbeDr<0.4) continue;
+       if(probeHcalIso>20.) continue;
        if(cutpro<7){cutpro=7;}
        selectedTrack = (*iTrack); 
        selectedMuon = Tag;

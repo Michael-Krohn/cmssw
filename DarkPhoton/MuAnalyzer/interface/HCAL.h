@@ -26,7 +26,7 @@ class HCAL{
     void CheckHCAL(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label);
     std::pair<double,int> EnergyInCone(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint track);
     double MuonMindR(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint MuonGlobalPoint);
-    void HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, GlobalPoint RandGlobalPoint, bool GoodRand, Histograms myHistograms, double TrackPt, GlobalPoint VertexPosition);
+    bool HitsPlots(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, GlobalPoint RandGlobalPoint, bool GoodRand, Histograms myHistograms, reco::TransientTrack track);
     void SetCenterCellDistance(const edm::EventSetup& iSetup, GlobalPoint TrackGlobalPoint);
     bool FindMuonHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >> HBHERecHit_Label, GlobalPoint TrackGlobalPoint, double charge, reco::TransientTrack track);
     double GetIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<edm::SortedCollection<HBHERecHit,edm::StrictWeakOrdering<HBHERecHit> >>, const reco::TransientTrack); 
@@ -38,13 +38,19 @@ class HCAL{
     int m_coneHits;
     int m_bremDepth;
     int TrackiEta;
+    int centerInCone;
+    int centerOutOfCone;
     double Tdeta;
     double Tdphi;
     double BigConeEnergy;
     int m_HitsOverThresh;
     double m_hitEnergies[7];
+    double m_neighborHitEnergies[7];
+    double m_neighborHitEnergiesPhi[7];
     bool m_failAdjacent;
     int CellsFound;
+    int NeighborCellsFound;
+    int NeighborPhiCellsFound;
     int ieta;
     int iphi;
 
@@ -55,6 +61,8 @@ class HCAL{
     void GetCenterCells(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths, const int CellsPerDepth);
     void GetAdjacentCells(const HcalTopology* theHBHETopology, HcalDetId *MuonAlignedCells, HcalDetId ClosestCell, const int Ndepths, int ieta, double deta, double dphi, const int CellsPerDepth);
     int GetProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, double vtxz, GlobalPoint direction);
+    int GetTransientProjectedCellsNeighbors(const HcalTopology* theHBHETopology, const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, reco::TransientTrack muTrack, bool etaPlus);
+    int GetTransientProjectedCellsNeighborsPhi(const HcalTopology* theHBHETopology, const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, reco::TransientTrack muTrack, bool phiPlus);
     int GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom, HcalDetId *TrackAlignedCells, reco::TransientTrack muTrack);
 };
 

@@ -33,10 +33,17 @@ class MuPXEventInfo{
     double probeTrackIso;
     double probeHcalIso;
     double probeEcalIso;
+    double probeEcalIso0p1;
+    double probeEcalIso0p2;
+    double probeEcalIso0p05;
     //HCAL stuff
     int iEta;
     double cellCenterDEta;
     double cellCenterDPhi;
+    int nCellsFound;
+    int hitsOverThresh;
+    int coneHits;
+    double coneEnergy; 
     //Multiple Paired Track Hists
     double smallestCone;
     double averageDr;
@@ -89,5 +96,10 @@ class MuPXEventInfo{
     double extraMuTagDr;
     double extraMuPt;
     double standaloneDEoverE;
+    double stadPhi;
+    int probeCharge;
+    //Gen Matching
+    bool matchGenTau;
+    bool matchGenEle;
 };
 #endif

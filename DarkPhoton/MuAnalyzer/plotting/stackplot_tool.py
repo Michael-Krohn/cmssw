@@ -17,33 +17,53 @@ class stackInfo:
       self.lumi=lumi
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Rebin
-      self.stack(basedir+"/cutProgress","CutProgress",True,tag,outDir,False)
-      self.stack(basedir+"/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
-      self.stack(basedir+"/TaggingMuonEta","Tagging Muon #eta",True,tag,outDir)
-      self.stack(basedir+"/TaggingMuonPt","Tagging Muon Pt",False,tag,outDir,True)
-      self.stack(basedir+"/TaggingMuonPhi","Tagging Muon #phi",False,tag,outDir)
-      self.stack(basedir+"/ProbeTrackEta","Probe Track #eta",True,tag,outDir)
-      self.stack(basedir+"/ProbeTrackPt","Probe Track Pt",True,tag,outDir)
-      self.stack(basedir+"/ProbeTrackPhi","Probe Track #phi",True,tag,outDir)
-      self.stack(basedir+"/ProbeHcalIsolation","Probe Hcal Energy in #Delta R cone of 0.3 (GeV)",True,tag,outDir)
-      self.stack(basedir+"/ProbeTrackIsolation","Probe Track Isolation",True,tag,outDir,True)
-      self.stack(basedir+"/ProbeEcalIsolation","Ecal Energy within cone (GeV)",False,tag,outDir)
-      self.stack(basedir+"/NumberOfMuonsPassingTag","Number of possible tag muons",True,tag,outDir)
-      self.stack(basedir+"/TagTrackIsolation","Tag Muon Track Isolation",True,tag,outDir,True)
-      self.stack(basedir+"/TagEcalIsolation","Tag Muon ECAL Isolation",True,tag,outDir)
-      self.stack(basedir+"/Njets","Number of Jets in Event",False,tag,outDir)
-      self.stack(basedir+"/ProbeJetDr","#Delta R between Probe and nearest jet",True,tag,outDir)
-      self.stack(basedir+"/ProbeCaloJetE","Energy of Largest Calo Jet within #Delta R of 0.2 to probe", True, tag,outDir)
-      self.stack(basedir+"/TagCaloGetE","Energy of Largest Calo Jet within #Delta R of 0.2 to tag", True, tag, outDir, True)
-      self.stack(basedir+"/NPV","Number of Primary Vertices",False,tag,outDir)  
-      self.stack(basedir+"/TagVtxIndex","Index of Tag Muon Primary Vertex", True, tag, outDir)
-      self.stack(basedir+"/AdjustedMuonTrackMass","Adjusted Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
-      self.stack(basedir+"/Non Muon Pdg Id","PDG ID of Closest Non-muon to probe",True,tag,outDir,False)
-      self.stack(basedir+"/ProbeDCA","Probe Transverse IP",True,tag,outDir,False)
-      self.stack(basedir+"/ProbeLongDCA","Probe Longitudinal IP",True,tag,outDir,False)
-      self.stack(basedir+"/nExtraElectrons","Extra Electrons",True,tag,outDir,False)
-      self.stack(basedir+"/nExtraMuons","Extra Muons",True,tag,outDir,False)
-      self.cutFlowText(basedir+"/cutProgress",outDir)
+      #self.stack(basedir+"/cutProgress","CutProgress",True,tag,outDir,False)
+      #self.stack(basedir+"/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag,outDir,True)
+      #self.stack(basedir+"/TaggingMuonEta","Tagging Muon #eta",True,tag,outDir)
+      #self.stack(basedir+"/TaggingMuonPt","Tagging Muon Pt",False,tag,outDir,True)
+      #self.stack(basedir+"/TaggingMuonPhi","Tagging Muon #phi",False,tag,outDir)
+      #self.stack(basedir+"/ProbeTrackEta","Probe Track #eta",True,tag,outDir)
+      #self.stack(basedir+"/ProbeTrackPt","Probe Track Pt",True,tag,outDir)
+      #self.stack(basedir+"/ProbeTrackPhi","Probe Track #phi",True,tag,outDir)
+      #self.stack(basedir+"/ProbeHcalIsolation","Probe Hcal Energy in #Delta R cone of 0.3 (GeV)",True,tag,outDir)
+      #self.stack(basedir+"/ProbeTrackIsolation","Probe Track Isolation",True,tag,outDir,True)
+      #self.stack(basedir+"/ProbeEcalIsolation","Ecal Energy within cone (GeV)",False,tag,outDir)
+      #self.stack(basedir+"/NumberOfMuonsPassingTag","Number of possible tag muons",True,tag,outDir)
+      #self.stack(basedir+"/TagTrackIsolation","Tag Muon Track Isolation",True,tag,outDir,True)
+      #self.stack(basedir+"/TagEcalIsolation","Tag Muon ECAL Isolation",True,tag,outDir)
+      #self.stack(basedir+"/Njets","Number of Jets in Event",False,tag,outDir)
+      #self.stack(basedir+"/ProbeJetDr","#Delta R between Probe and nearest jet",True,tag,outDir)
+      #self.stack(basedir+"/ProbeCaloJetE","Energy of Largest Calo Jet within #Delta R of 0.2 to probe", True, tag,outDir)
+      #self.stack(basedir+"/TagCaloGetE","Energy of Largest Calo Jet within #Delta R of 0.2 to tag", True, tag, outDir, True)
+      #self.stack(basedir+"/NPV","Number of Primary Vertices",False,tag,outDir)  
+      #self.stack(basedir+"/TagVtxIndex","Index of Tag Muon Primary Vertex", True, tag, outDir)
+      #self.stack(basedir+"/AdjustedMuonTrackMass","Adjusted Invariant Mass of Tag/Probe Pair (GeV)",False,tag,outDir,True)
+      #self.stack(basedir+"/ProbeDCA","Probe Transverse IP",True,tag,outDir,False)
+      #self.stack(basedir+"/ProbeLongDCA","Probe Longitudinal IP",True,tag,outDir,False)
+      #self.stack(basedir+"/nExtraElectrons","Extra Electrons",True,tag,outDir,False)
+      #self.stack(basedir+"/nExtraMuons","Extra Muons",True,tag,outDir,False)
+      #self.stack(basedir+"/CaloJetPt","Calo Jet Pt (GeV)",True,tag,outDir,showUnderflow=True)
+      #self.stack(basedir+"/ProbeCaloJetDr","#Delta R from probe to nearest Calo Jet",True, tag, outDir)
+      #self.stack("nonMuonProbe/ProbeCaloJetDr","#Delta R from probe to nearest Calo Jet",True,tag,outDir)
+      #self.stack("nonMuonProbe/CaloJetPt","Calo Jet Pt (GeV)",True,tag+", No Muon Nearby Probe",outDir,showUnderflow=True)
+      #self.stack("nonMuonProbe/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", No Muon Nearby Probe",outDir)
+      #self.stack(basedir+"/StandaloneMuondEoverE","Standalone muon #Delta E over E",True,tag,outDir,False,showUnderflow=True)
+      #self.stack("nonMuonProbe/StandaloneMuondEoverE","Standalone muon #Delta E over E",True,tag+", No Muon nearby probe",outDir,False,showUnderflow=True)
+      #self.stack("muProbe/StandaloneMuondEoverE","Standalone muon #Delta E over E",True,tag+", No Muon nearby probe",outDir,False)
+      #self.stack("caloJets/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", Calo Jet Nearby Probe",outDir)
+      #self.stack("caloJets/StandaloneMuondEoverE","Standalone muon #Delta E over E",True,tag+", No Muon nearby probe",outDir,False,showUnderflow=True)
+      #self.cutFlowText(basedir+"/cutProgress",outDir)
+      self.stack("noMuonProbeCR/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", No standalone muon near probe",outDir)
+      self.stack("allEvents/ProbeEcalIsolation","ECAL Energy in 0.4 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
+      self.stack("allEvents/ProbeEcalIsolation0p2","ECAL Energy in 0.2 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
+      self.stack("allEvents/ProbeEcalIsolation0p1","ECAL Energy in 0.1 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
+      self.stack("allEvents/ProbeEcalIsolation0p05","ECAL Energy in 0.05 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
+
+      self.stack("passSig/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", No Standalone muon near probe",outDir)
+      self.stack("partialDisappear/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", Standalone muon near probe",outDir)
+      self.stack("passSigNearCSC/MuonsTrackMass","Inv Mass of Tag/Probe Pair (GeV)",True,tag+", no standalone muon, CSC hit nearby",outDir)
+      self.stack("noCaloJets/StandaloneMuondEoverE","Standalone muon vs. probe #Delta E over E",True,tag+", No Calo Jet near probe",outDir)
+      self.stack("partialDisappear/StandaloneMuondEoverE","Standalone muon vs. probe #Delta E over E",True,tag+", Standalone muon near probe",outDir)
 
    def calcScaleFactor(self,name,skimFile,resultFile):
       #Use # of muons passing tag for total weight because I know that there was no over/underflow
@@ -52,15 +72,32 @@ class stackInfo:
       eff = eff* skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()/resultFile.Get("demo/allEvents/cutProgress").GetBinContent(2)
       return eff
 
-   def stack(self, name, xtitle, log, tag, outDir,rebin=False):
+   def makeUnderflow(self,hist):
+      nBins = hist.GetNbinsX()+1
+      xMin = hist.GetBinLowEdge(1)
+      width = hist.GetBinWidth(1)
+      xMin = xMin-width
+      xMax = hist.GetBinLowEdge(hist.GetNbinsX())
+      newHist = ROOT.TH1F(hist.GetName(),hist.GetTitle(),nBins,xMin,xMax+width)
+      for i in range(1,hist.GetNbinsX()+1):
+         newHist.Fill(newHist.GetBinCenter(i+1),hist.GetBinContent(i))
+      newHist.Fill(newHist.GetBinCenter(1),hist.GetBinContent(0))
+      newHist.SetEntries(hist.GetEntries()) 
+      return newHist
+
+   def stack(self, name, xtitle, log, tag, outDir,rebin=False,showUnderflow=False,xmax=-1, ymin=-1,ymax=-1):
       stackplot = ROOT.THStack("stack","")     
-      leg = ROOT.TLegend(0.8,0.6,0.95,0.85)
+      leg = ROOT.TLegend(0.65,0.65,0.8,0.9)
       leg.SetBorderSize(0)
       hists = []
       NtotalEvents=0
       #nextname = name[:-1]+str(int(name[-1])+1)
       #print nextname
       for mcFile in self.mcFiles:
+         origname = name
+         #if mcFile.label == "DYJets":
+         #   if name.split("/")[0]=="partialDisappear":
+         #      name="partialDisappearNoGenMu/"+name.split("/")[-1]
          eff = self.calcScaleFactor(name,mcFile.skim,mcFile.result)
          #neff = self.calcScaleFactor(nextname,mcFile.skim,mcFile.result)
          Nevents = mcFile.cx*1000*float(self.lumi)*eff
@@ -70,13 +107,20 @@ class stackInfo:
          #hist.Add(mcFile.result.Get("demo/"+nextname))
          if(hist.Integral()>0):
             hist.Scale(Nevents/hist.Integral())
+         if(showUnderflow):
+            hist=self.makeUnderflow(hist).Clone()
+         #intErr = ROOT.Double(0.)
+         #integral = hist.IntegralAndError(hist.GetXaxis().FindBin(80),hist.GetXaxis().FindBin(100),intErr)
+         #print(str(integral)+" "+mcFile.label+" "+str(intErr))
          hist.SetFillColor(mcFile.color)
          hist.SetLineWidth(0)
          if(rebin):
             hist.Rebin(2)
          hist.SetDirectory(0)
-         hists.append(hist)
-         leg.AddEntry(hist, mcFile.label,"f")
+         if(hist.Integral()>0):
+            hists.append(hist)
+            leg.AddEntry(hist, mcFile.label,"f")
+         name=origname
 
       for hist in hists:
          stackplot.Add(hist)
@@ -92,7 +136,8 @@ class stackInfo:
       pad1.cd()
       if self.dataFile is not None:
          dataHist = self.dataFile.Get("demo/"+name).Clone()
-         print dataHist.Integral()
+         if(showUnderflow):
+            dataHist=self.makeUnderflow(dataHist).Clone() 
          #dataHist.Add(self.dataFile.Get("demo/"+nextname))
          #print dataHist.Integral()
          #print("Expected " + str(NtotalEvents)+" found " + str(dataHist.Integral())+".")
@@ -102,28 +147,34 @@ class stackInfo:
          dataHist.SetMarkerSize(0.5)
          if(rebin):
             dataHist.Rebin(2)
-          
          dataHist.SetStats(0)
-         dataHist.Draw("psame") 
+         if(dataHist.Integral()>0):
+            dataHist.Draw("psame") 
       stackplot.Draw("hist")
-      if(log):
-         pad1.SetLogy()
-         ROOT.gPad.SetLogy()
       if self.dataFile is not None:
-         maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
-         minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
+         if(dataHist.GetMinimum(0)>0):
+            maximum=max(stackplot.GetMaximum(),dataHist.GetMaximum())
+            minimum=min(stackplot.GetMinimum(),dataHist.GetMinimum(0))
       else:
          maximum=stackplot.GetMaximum()
          minimum=stackplot.GetMinimum()
-      if(minimum==0 and self.dataFile is not None):
-         minimum=dataHist.GetMinimum(0)
+      #if(minimum==0 and self.dataFile is not None):
+      #   minimum=dataHist.GetMinimum(0)
       if not log:
          minimum=0      
-      if log and minimum==0:
+      if log and minimum<=0:
          minimum=0.5     
- 
+
       stackplot.SetMaximum(maximum*1.2)
       stackplot.SetMinimum(minimum*0.2)
+      if(ymin>0):
+         stackplot.SetMinimum(ymin)
+      if(ymax>0):
+         stackplot.SetMaximum(ymax)
+      if(log):
+         pad1.SetLogy()
+         ROOT.gPad.SetLogy()
+
       stackplot.Draw("hist")
       if self.dataFile is not None:
          dataHist.Draw("psame") 
@@ -145,6 +196,8 @@ class stackInfo:
       stackplot.GetYaxis().SetTitleOffset(1.35)
       stackplot.GetYaxis().SetLabelFont(43)
       stackplot.GetYaxis().SetLabelSize(15)
+      if(xmax>0):
+         stackplot.GetXaxis().SetRangeUser(0,xmax)
       stackplot.GetXaxis().SetLabelFont(43)
       stackplot.GetXaxis().SetLabelSize(15)
       stackplot.GetXaxis().SetTickSize(0.07)
@@ -203,9 +256,11 @@ class stackInfo:
          #NtotalEvents=NtotalEvents+Nevents
          hist=(mcFile.result.Get("demo/"+name).Clone())
          #hist.Add(mcFile.result.Get("demo/"+nextname))
+         if(hist.Integral()<0):
+            print("Broken hist!\n")
          if(hist.Integral()>0):
             hist.Scale(Nevents/hist.Integral())
-         hists.append(hist)
+            hists.append(hist)
 
       stackplot = hists[0].Clone()    
       for hist in hists:

@@ -56,7 +56,8 @@ double Muons::MuonRoccorWeight(const reco::Muon* muon, edm::Handle<reco::GenPart
    }
    int nl = muon->innerTrack()->found();
    double u = randEng.Rndm();
-   return rc.kSmearMC(Q,pt,eta,phi,nl,u,0,0);
+   return 1;
+//   return rc.kSmearMC(Q,pt,eta,phi,nl,u,0,0);
 }
 
 std::vector<double> Muons::MuonTightIDWeight(double MuonPt, double MuonEta) {

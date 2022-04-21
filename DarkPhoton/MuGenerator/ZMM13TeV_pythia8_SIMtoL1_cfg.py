@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: --fileout file:ZMM13TeV_pythia8_RECO.root --filein file:ZMM13TeV_pythia8_RAW.root -s DIGI,L1,DIGI2RAW,HLT:@relval2018 --mc --datatier GEN-SIM-RAW --conditions 102X_upgrade2018_realistic_v17 --era Run2_2018 --eventcontent RAWSIM --python_filename ZMM13TeV_pythia8_SIMtoLI_cfg.py --geometry ExtendedDetailedCavern --no_exec -n 500
+# with command line options: --fileout file:ZMM13TeV_pythia8_RECO.root --filein file:ZMM13TeV_pythia8_RAW.root -s DIGI,L1,DIGI2RAW,HLT:@relval2018 --mc --datatier GEN-SIM-RAW --conditions 106X_upgrade2018_realistic_v11_L1v1 --era Run2_2018 --eventcontent RAWSIM --python_filename ZMM13TeV_pythia8_SIMtoLI_cfg.py --geometry ExtendedDetailedCavern --no_exec -n 500
 import FWCore.ParameterSet.Config as cms
 import sys
 
@@ -24,9 +24,8 @@ process.load('Configuration.StandardSequences.DigiToRaw_cff')
 process.load('HLTrigger.Configuration.HLT_2018v32_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(500)
+    input = cms.untracked.int32(6284)
 )
 
 # Input source
@@ -61,7 +60,7 @@ process.options = cms.untracked.PSet(
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('--fileout nevts:500'),
+    annotation = cms.untracked.string('--fileout nevts:6284'),
     name = cms.untracked.string('Applications'),
     version = cms.untracked.string('$Revision: 1.19 $')
 )
@@ -85,7 +84,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_realistic_v17', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '106X_upgrade2018_realistic_v11_L1v1', '')
 
 # Path and EndPath definitions
 process.digitisation_step = cms.Path(process.pdigi)

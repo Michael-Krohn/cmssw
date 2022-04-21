@@ -19,6 +19,9 @@ SigEventInfo::SigEventInfo()
    nPairedProbes = -1;
    probeTrackIso = -1; 
    probeEcalIso = -1;
+   probeEcalIso0p2 = -1;
+   probeEcalIso0p1 = -1;
+   probeEcalIso0p05 = -1;
    isLoose=false;
    isTight=false;
    isHighPurity=false;
@@ -32,17 +35,23 @@ SigEventInfo::SigEventInfo()
    diMuonMass=-1;
    minCSCImpactParameter=-1;
    cscMinDR=-1;
+   cscRecHitMinDR=-1;
    cscChiSq=-1;
    cscHitAngleChange=100;
    closestApproach=-1;
    standaloneE=-1;
    staMinDr=-1;
    nCellsFound=-1;
+   nNeighborCellsFound=-1;
    iEta=0;
    cellCenterDEta=-1;
    cellCenterDPhi=-1;
    coneEnergy=-1;
-   for(int i=0; i<7; i++){hitEnergies[i]=-1;}
+   for(int i=0; i<7; i++)
+   {
+      hitEnergies[i]=-1;
+      neighborHitEnergies[i]=-1;
+   }
    hitsOverThresh=-1;
    vtxZ=-1;  
    bremDepth = -1;
@@ -63,6 +72,11 @@ SigEventInfo::SigEventInfo()
    nEle=0;
    nExtraEle=0;
    nExtraMuon=0;
+   probeCharge=0;
+   CSCdEta=-10;
+   CSCdPhi=-10;
+   stadEta=-10;
+   stadPhi=-10;
    staNHits=0;
    staChi2=-1;
    staTransDCA=-1;

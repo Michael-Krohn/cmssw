@@ -42,12 +42,15 @@ def main():
 
    total = writeFile.mkdir("completeDisappearance")
    partial = writeFile.mkdir("partialDisappearance")
+   partialStaDphi = writeFile.mkdir("partialDisappearanceLargeStaDPhi")
 
    total.cd()
    variants = ['','_PUup','_PUdown','_IDup','_IDdown','_Trigup','_Trigdown']
    sigvariants = ['','_PUup','_PUdown','_IDup','_IDdown','_Trigup','_Trigdown','_EnBin']
-
+   biasFactors = {'0p1':2000,'0p2':4000,'0p4':8000,'1p0':40000,'2p0':80000,'4p0':160000}
+  
    dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
+   dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
    dyNTotalEvents.Write("totalEvents_DY")
    for variant in variants:
       dyHcalEnergy = dyFile.Get("demo/totalDisappear/ConeEnergy"+variant).Clone()
@@ -57,6 +60,7 @@ def main():
    
    for sigfile, mass in sigFiles:
       dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount").Clone()
+      dbremNTotalEvents.SetBinContent(1,sigfile.Get("demo/allEvents/cutProgress").GetBinContent(1))
       dbremNTotalEvents.Write("totalEvents_DBrem_"+mass)
       dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount_EnBin").Clone()
       dbremNTotalEvents.Write("totalEvents_DBrem_"+mass+"_EnBin")
@@ -64,10 +68,13 @@ def main():
          dbremHcalEnergy = sigfile.Get("demo/totalDisappear/ConeEnergy"+variant).Clone()
          dbremHcalEnergy.Write("hcalEnergy_DBrem_"+mass+variant)
          dbremNEvents = sigfile.Get("demo/totalDisappear/eventCount"+variant).Clone()
+         #dbremNEvents.Scale(1/2000.)
          dbremNEvents.Write("nEvents_DBrem_"+mass+variant)
- 
+
+   #Fill partial region signal files 
    partial.cd()
    dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
+   dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
    dyNTotalEvents.Write("totalEvents_DY")
    for variant in variants:
       dyHcalEnergy = dyFile.Get("demo/partialDisappear/ConeEnergy"+variant).Clone()
@@ -79,6 +86,7 @@ def main():
    
    for sigfile, mass in sigFiles:
       dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount").Clone()
+      dbremNTotalEvents.SetBinContent(1,sigfile.Get("demo/allEvents/cutProgress").GetBinContent(1))
       dbremNTotalEvents.Write("totalEvents_DBrem_"+mass)
       dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount_EnBin").Clone()
       dbremNTotalEvents.Write("totalEvents_DBrem_"+mass+"_EnBin")
@@ -86,8 +94,37 @@ def main():
          dbremHcalEnergy = sigfile.Get("demo/partialDisappear/ConeEnergy"+variant).Clone()
          dbremHcalEnergy.Write("hcalEnergy_DBrem_"+mass+variant)
          dbremNEvents = sigfile.Get("demo/partialDisappear/eventCount"+variant).Clone()
+         #dbremNEvents.Scale(1/2000.)
          dbremNEvents.Write("nEvents_DBrem_"+mass+variant)
          dbremStaDEoverE = sigfile.Get("demo/partialDisappear/StandaloneMuondEoverE"+variant).Clone()    
+         dbremStaDEoverE.Write("staDEoverE_DBrem_"+mass+variant)
+
+   #Fill partial region large dPhi signal
+   partialStaDphi.cd()
+   dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
+   dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
+   dyNTotalEvents.Write("totalEvents_DY")
+   for variant in variants:
+      dyHcalEnergy = dyFile.Get("demo/partialDisappear_largeCSCDefl/ConeEnergy"+variant).Clone()
+      dyHcalEnergy.Write("hcalEnergy_DY"+variant)
+      dyNEvents = dyFile.Get("demo/partialDisappear_largeCSCDefl/eventCount"+variant).Clone()
+      dyNEvents.Write("nEvents_DY"+variant)
+      dyStaDEoverE = dyFile.Get("demo/partialDisappear_largeCSCDefl/StandaloneMuondEoverE"+variant).Clone()
+      dyStaDEoverE.Write("staDEoverE_DY"+variant)
+   
+   for sigfile, mass in sigFiles:
+      dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount").Clone()
+      dbremNTotalEvents.SetBinContent(1,sigfile.Get("demo/allEvents/cutProgress").GetBinContent(1))
+      dbremNTotalEvents.Write("totalEvents_DBrem_"+mass)
+      dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount_EnBin").Clone()
+      dbremNTotalEvents.Write("totalEvents_DBrem_"+mass+"_EnBin")
+      for variant in sigvariants:
+         dbremHcalEnergy = sigfile.Get("demo/partialDisappear_largeCSCDefl/ConeEnergy"+variant).Clone()
+         dbremHcalEnergy.Write("hcalEnergy_DBrem_"+mass+variant)
+         dbremNEvents = sigfile.Get("demo/partialDisappear_largeCSCDefl/eventCount"+variant).Clone()
+         #dbremNEvents.Scale(1/2000.)
+         dbremNEvents.Write("nEvents_DBrem_"+mass+variant)
+         dbremStaDEoverE = sigfile.Get("demo/partialDisappear_largeCSCDefl/StandaloneMuondEoverE"+variant).Clone()    
          dbremStaDEoverE.Write("staDEoverE_DBrem_"+mass+variant)
 
    resultsDir = "../MuFilter/results"
@@ -102,6 +139,8 @@ def main():
          eff = calcScaleFactor("passSig/eventCount"+variant,monitorFile,resultFile)
          ExpectedNevents = cx*1000*float(59.8)*eff
          NEvents = resultFile.Get("demo/passSig/eventCount"+variant).Clone()
+         if(NEvents.Integral()<0):
+            print("Broken file! Name is: "+name+".\n")
          if(NEvents.Integral()>0):
             NEvents.Scale(ExpectedNevents/NEvents.Integral())
          NEvents.Write("nEvents_"+name+variant)
@@ -114,6 +153,18 @@ def main():
          NEvents.Write("nEvents_"+name+variant)
          StaDEoverE = resultFile.Get("demo/partialDisappear/StandaloneMuondEoverE"+variant).Clone()    
          StaDEoverE.Write("staDEoverE_"+name+variant)
+         partialStaDphi.cd()
+         eff = calcScaleFactor("partialDisappearLargeStaDphi/StandaloneMuondEoverE"+variant,monitorFile,resultFile)
+         ExpectedNevents = cx*1000*float(59.8)*eff
+         NEvents = resultFile.Get("demo/partialDisappearLargeStaDphi/eventCount"+variant).Clone()
+         if(NEvents.Integral()>0):
+            NEvents.Scale(ExpectedNevents/NEvents.Integral())
+         NEvents.Write("nEvents_"+name+variant)
+         StaDEoverE = resultFile.Get("demo/partialDisappearLargeStaDphi/StandaloneMuondEoverE"+variant).Clone()    
+         StaDEoverE.Write("staDEoverE_"+name+variant)
+         hcalEnergy = dyFile.Get("demo/partialDisappear_largeCSCDefl/ConeEnergy"+variant).Clone()
+         hcalEnergy.Write("hcalEnergy_"+name+variant)
+
 
    writeFile.Close()
    dyFile.Close()

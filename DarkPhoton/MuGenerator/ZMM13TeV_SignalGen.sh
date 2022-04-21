@@ -13,7 +13,6 @@ source /local/grid/cmssoft/cms/cmsset_default.sh
 cmsenv
 cmsRun $STARTDIR/$scriptname $job 
 cmsRun $STARTDIR/ZMM13TeV_pythia8_SIMtoL1_cfg.py $job
-#cmsRun $STARTDIR/ZMM13TeV_pythia8_L1toRECO_cfg.py $job
 cmsRun $STARTDIR/ZMM13TeV_pythia8_L1toAOD_cfg.py $job
 rm $scratch/ZMM13TeV+signal_"$job"_gensim.root
 rm $scratch/ZMM13TeV+signal_"$job"_step1.root

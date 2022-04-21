@@ -12,6 +12,7 @@
 #include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
 #include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DarkPhoton/MuAnalyzer/interface/MuPXEventInfo.h"
 #include "TTree.h"
@@ -28,6 +29,7 @@ class MuPXHistograms{
     void IncCutFlow(double weight);
     void ResetCutFlow();
     void FillHists(MuPXEventInfo, bool binIso=false, bool isMC=true, bool makeTuples = false);
+    void PlotECALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
   public:
     //Event numbers
     int event;
@@ -74,6 +76,10 @@ class MuPXHistograms{
     TH2F* m_BigEtadEtadPhi;
     TH2F* m_SmallEtadEtadPhi;
     TH1F* m_NPassingTag;
+    TH2F* m_ECAL_ieta_iphi;
+    TH2F* m_ECALEtaPhi;
+    TH2F* m_ECAL_ix_iy_plusZ;
+    TH2F* m_ECAL_ix_iy_minusZ;
     TH1F* m_EcalSplitAdjMuonTrackMass[100];
     TH1F* m_TrackSplitAdjMuonTrackMass[100];
     TH1F* m_SplitMuonsTrackMass[20][20];
@@ -83,7 +89,14 @@ class MuPXHistograms{
     TH1F* m_ProbeTrackIso;
     TH1F* m_ProbeHcalIso;
     TH1F* m_ProbeEcalIso;
+    TH1F* m_ProbeEcalIso0p2;
+    TH1F* m_ProbeEcalIso0p1;
+    TH1F* m_ProbeEcalIso0p05;
     TH2F* m_ProbeCombinedIso;     
+    TH1F* m_ConeHits;
+    TH1F* m_ConeEnergy;
+    TH1F* m_HECellsFound;
+    TH1F* m_HitsOverThresh;
     double cutProgress;
     //Multiple Paired Track Hists
     TH1F* m_SmallestCone;
@@ -102,6 +115,7 @@ class MuPXHistograms{
     //Calo Jet 
     TH1F* m_ProbeJetE;
     TH1F* m_CaloJetPt;
+    TH2F* m_CaloJetPtEta;
     TH1F* m_ProbeCaloJetDr;
     TH1F* m_TagCaloJetE;
     TH2F* m_CaloJetEcalE;
@@ -134,6 +148,7 @@ class MuPXHistograms{
 //    TH1F* m_LooseMatch[10][10];
     TH1F* m_staMinDr;
     TH1F* m_standaloneE;
+    TH1F* m_standaloneDPhi;
     TH1F* m_ProbeDCA;
     TH1F* m_ProbeLongDCA;
     TH2F* m_ProbeDCAPhi;
@@ -152,5 +167,7 @@ class MuPXHistograms{
     TH1F* m_standaloneDE_ISOdown;
     TH1F* m_standaloneDE_Trigup;
     TH1F* m_standaloneDE_Trigdown;
+    TH1F* m_matchGenTau;
+    TH1F* m_matchGenEle;
 };
 #endif

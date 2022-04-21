@@ -41,18 +41,25 @@ class stackInfo:
       self.stack("allEvents/GenStandaloneMuondEoverE","Final Muon P - Standalone P / Final Muon P", True, tag, outDir)
       self.stack("allEvents/DisGenStandaloneMuondEoverE","Final Muon P - Displaced Standalone P / final Muon P", True, tag, outDir)
       self.stack("allEvents/HitsOverThresh","Hits along probe trajectory",True,tag,outDir)
+      self.stack("allEvents/MuInitialE","#mu Energy Before Dark Bremsstrahlung (GeV)",True,tag,outDir,True,SigOnly=True)
+      self.stack("allEvents/MuFinalE","#mu Energy After Dark Bremsstrahlung (GeV)",True,tag,outDir,True,SigOnly=True)
+      self.stack("allEvents/DeflectingAngle","#mu Deflection angle (rad)",True,tag,outDir,xmax=1.4,SigOnly=True)
+      self.stack("allEvents/DrtoNearestStandalone","#Delta R from Probe track to Standalone Muon",True,tag,outDir,xmax=4)
+      self.stack("allEvents/StandalonedPhiPosQ","#Delta #phi from Probe track to Standalone Muon",True,tag,outDir, lab_x0=0.2, lab_y0=0.7, y_max=0.5)
+      self.stack("allEvents/StandalonedPhiNegQ","#Delta #phi from Probe track to Standalone Muon",True,tag,outDir, lab_x0=0.6, y_max=0.5)
       self.cutFlowText(outDir)
 
-   def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1):
-      lab_x0=0.55
-      lab_y0=0.65
-      leg = ROOT.TLegend(lab_x0,lab_y0,lab_x0+0.4,lab_y0+0.1)
+   def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1,SigOnly=False,lab_x0=0.55,lab_y0=0.7,y_min=-1,y_max=-1):
+      leg = ROOT.TLegend(lab_x0,lab_y0,lab_x0+0.3,lab_y0+0.1)
       leg.SetBorderSize(0)
       hists = []
       NtotalEvents=0
       #nextname = name[:-1]+str(int(name[-1])+1)
       #print nextname
       for mcFile in self.mcFiles:
+         if SigOnly:
+            if "SM" in mcFile.label:
+               continue
          hist=(mcFile.mcfile.Get("demo/"+name).Clone())
          if scale:
             hist.Scale(1./hist.GetBinContent(2))
@@ -63,6 +70,8 @@ class stackInfo:
          hist.SetLineColor(mcFile.color)
          hist.SetDirectory(0)
          hist.SetStats(0)
+         if(rebin):
+            hist=hist.Rebin(8)
          hists.append(hist)
          leg.AddEntry(hist, mcFile.label,"l")
 
@@ -101,8 +110,10 @@ class stackInfo:
       hists[0].GetXaxis().SetLabelFont(43)
       hists[0].GetXaxis().SetLabelSize(15)
       hists[0].GetXaxis().SetTickSize(0.07)
-      hists[0].SetMinimum(0.0001)
-      hists[0].SetMaximum(1.0)
+      if(y_min>0):
+         hists[0].SetMinimum(y_min)
+      if(y_max>0):
+         hists[0].SetMaximum(y_max)
       if xmax>0:
          hists[0].GetXaxis().SetRangeUser(0,xmax)
       xlabel = ROOT.TPaveText(0.2,0.0,0.99,0.06,"brNDC")

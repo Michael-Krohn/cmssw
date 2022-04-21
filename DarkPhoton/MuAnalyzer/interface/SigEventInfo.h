@@ -16,6 +16,7 @@ class SigEventInfo{
   public:
     SigEventInfo();
     double eventWeight;
+    double dbremWeight;
     double genEventWeight;
     std::vector<double> PuUpDownWeights;
     double muRocWeight;
@@ -33,6 +34,9 @@ class SigEventInfo{
     int nPairedProbes;
     double probeTrackIso;
     double probeEcalIso;
+    double probeEcalIso0p1;
+    double probeEcalIso0p2;
+    double probeEcalIso0p05;
     bool isLoose;
     bool isTight;
     bool isHighPurity;
@@ -47,6 +51,7 @@ class SigEventInfo{
     //CSC parameters
     double minCSCImpactParameter;
     double cscMinDR;
+    double cscRecHitMinDR;
     double cscChiSq;
     double cscHitAngleChange;
     //Transient Track Studies
@@ -59,12 +64,14 @@ class SigEventInfo{
     double dcal;
     //HCAL
     int nCellsFound;
+    int nNeighborCellsFound;
     int iEta;
     double cellCenterDEta;
     double cellCenterDPhi;
     double coneEnergy;
     int coneHits;
     double hitEnergies[7];
+    double neighborHitEnergies[7];
     int hitsOverThresh;
     double vtxZ;
     double vtxPerp;
@@ -92,6 +99,11 @@ class SigEventInfo{
     int nEle;
     int nExtraEle;
     int nExtraMuon;
+    int probeCharge;
+    double CSCdEta;
+    double CSCdPhi;
+    double stadEta;
+    double stadPhi;
     double staChi2;
     int staNHits;
     double staTransDCA;

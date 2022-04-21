@@ -13,7 +13,8 @@
 class ECAL{
   public:
     ECAL();
-    double GetIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<EcalRecHitCollection>, edm::EDGetTokenT<EcalRecHitCollection>, const reco::TransientTrack);
+    double GetIsolation(const edm::Event&, const edm::EventSetup&, edm::EDGetTokenT<EcalRecHitCollection>, edm::EDGetTokenT<EcalRecHitCollection>, const reco::TransientTrack, double dR=0.4);
+    std::vector<std::pair<double,double>> badCellPositions;
 };
 
 #endif

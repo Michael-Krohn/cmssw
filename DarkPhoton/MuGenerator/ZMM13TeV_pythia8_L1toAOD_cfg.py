@@ -27,7 +27,7 @@ process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(500)
+    input = cms.untracked.int32(6284)
 )
 
 # Input source
@@ -42,7 +42,7 @@ process.options = cms.untracked.PSet(
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
-    annotation = cms.untracked.string('--fileout nevts:500'),
+    annotation = cms.untracked.string('--fileout nevts:6284'),
     name = cms.untracked.string('Applications'),
     version = cms.untracked.string('$Revision: 1.19 $')
 )
@@ -58,14 +58,17 @@ process.AODSIMoutput = cms.OutputModule("PoolOutputModule",
     ),
     eventAutoFlushCompressedSize = cms.untracked.int32(31457280),
     fileName = cms.untracked.string('file:ZMM13TeV+signal_'+str(sys.argv[2])+'_AOD.root'),
-    outputCommands = process.AODSIMEventContent.outputCommands
+    outputCommands = process.AODSIMEventContent.outputCommands +
+	cms.untracked.vstring(
+	'keep *_hbhereco_*_*'
+    )
 )
-
+getattr(process, "AODSIMoutput").outputCommands.append("keep *_*_DBrem*_*")
 # Additional output definition
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '102X_upgrade2018_realistic_v17', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '106X_upgrade2018_realistic_v11_L1v1', '')
 
 # Path and EndPath definitions
 process.raw2digi_step = cms.Path(process.RawToDigi)

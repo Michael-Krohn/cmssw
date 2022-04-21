@@ -25,7 +25,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 if(options.runLocally):
 	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 	import FWCore.Utilities.FileUtils as FileUtils
-	mylist = FileUtils.loadListFromFile ('datafiles/DYJets.txt')
+	mylist = FileUtils.loadListFromFile ('datafiles/DYJets_mumuFilter_combined.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -35,8 +35,9 @@ process.options = cms.untracked.PSet(
 )
 
 process.source = cms.Source("PoolSource",
+    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
     #fileNames = cms.untracked.vstring("root://cms-xrd-global.cern.ch///store/mc/RunIISummer19UL18RECO/WJetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8/AODSIM/106X_upgrade2018_realistic_v11_L1v1-v1/10003/05215DB9-A1EB-D449-9332-2005BDA65284.root")
-    fileNames = cms.untracked.vstring()
+    fileNames = readFiles
 )
 
 process.MCWeights = cms.EDAnalyzer('WeightsFinder',

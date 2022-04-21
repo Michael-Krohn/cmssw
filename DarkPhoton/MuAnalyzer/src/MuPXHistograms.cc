@@ -9,9 +9,13 @@
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
+#include "DataFormats/EcalRecHit/interface/EcalRecHitCollections.h"
 #include "Geometry/CSCGeometry/interface/CSCGeometry.h"
 #include "Geometry/CSCGeometry/interface/CSCChamber.h"
 #include "DataFormats/MuonDetId/interface/CSCDetId.h"
+#include "DataFormats/EcalDetId/interface/EcalSubdetector.h"
+#include "DataFormats/EcalDetId/interface/EBDetId.h"
+#include "DataFormats/EcalDetId/interface/EEDetId.h"
 #include "Geometry/CSCGeometry/interface/CSCLayer.h"
 #include "Geometry/CSCGeometry/interface/CSCLayerGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
@@ -31,39 +35,46 @@ MuPXHistograms::MuPXHistograms()
 void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_eventWeight = histFolder.make<TH1F>("eventWeight",";Weight; Events",200, -100, 100);
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
-  m_eventNumbers = histFolder.make<TTree>("eventNumbers","Tree containing selected event numbers)");
+  m_eventNumbers = histFolder.make<TTree>("eventNumbers","Tree containing selected event numbers");
   m_eventNumbers->Branch("lumi",&lumi);
   m_eventNumbers->Branch("run",&run);
   m_eventNumbers->Branch("event",&event);
   m_genEventCount = histFolder.make<TH1F>("genEventCount","; ; Events",1,0,1);
-  m_SigCat = histFolder.make<TH1F>("Signal Category", "; Signal Category", 2, -0.5, 1.5);
+  m_SigCat = histFolder.make<TH1F>("Signal Category", "; Signal Category", 3, -0.5, 2.5);
+  m_ConeHits = histFolder.make<TH1F>("ConeHits", "; Hits in Cone; Events", 50,-0.5,49.5);
+  m_ConeEnergy = histFolder.make<TH1F>("ConeEnergy", "; Energy in Matched Hits (GeV); Events", 200,0,20);
+  m_HitsOverThresh = histFolder.make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
+  m_HECellsFound = histFolder.make<TH1F>("NHECellsFound","; Cells found in HE; Number of Events", 30,0,30);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 30, -.5, 29.5);
+  std::vector<std::string> cutLabels = {"AllEvents","TagCutBasedId","TagPFIsoTight","TagPtEta","TagIsGlobal","Probe Pt","Probe Eta","Probe Quality","Probe Vtx","ProbeLongDCA","ProbeTransDCA","TagProbeCharge","TagProbeVtx","TagProbeVtxQual","TagProbeMass","ProbeTrackEcalIso","NoOtherTags"};
+  for(uint8_t i=0;i<cutLabels.size();i++){m_cutProgress->GetXaxis()->SetBinLabel(i+2,cutLabels[i].c_str());}
   m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50  , 150  );
-//  if(binIso)
-//  {
-  TFileDirectory ecalIsoScan = histFolder.mkdir("ecalIsoScan");
-  TFileDirectory tkIsoScan = histFolder.mkdir("tkIsoScan");
-  TFileDirectory twoDimIsoScan = histFolder.mkdir("TwoDimIsoScan");
-  for(int i=0;i<100;i++)
+  if(binIso)
   {
-     std::string name = "EcalMuonsTrackMass"+std::to_string(i);
-     std::string adjname = "adj"+name; 
-     m_EcalSplitAdjMuonTrackMass[i] = ecalIsoScan.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
-  }
-  for(int i=0;i<100;i++)
-  {
-     std::string name = "TrackMuonsTrackMass"+std::to_string(i);
-     std::string adjname = "adj"+name;
-     m_TrackSplitAdjMuonTrackMass[i] = tkIsoScan.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
-  }
-  for(int i=0;i<20;i++)
-  {
-     for(int j=0;j<20;j++)
+     TFileDirectory ecalIsoScan = histFolder.mkdir("ecalIsoScan");
+     TFileDirectory tkIsoScan = histFolder.mkdir("tkIsoScan");
+     TFileDirectory twoDimIsoScan = histFolder.mkdir("TwoDimIsoScan");
+     for(int i=0;i<100;i++)
      {
-        std::string name = "MuonsTrackMass"+std::to_string(i)+"_"+std::to_string(j);
-        m_SplitMuonsTrackMass[i][j] = twoDimIsoScan.make<TH1F>(name.c_str(), "; MuonTrackMass (GeV); Events", 100,50,150);
-        std::string tuplename = "tuple"+name;
-        m_TupleSplitMuonsTrackMass[i][j] = twoDimIsoScan.make<TNtuple>(tuplename.c_str(), "X values and weights","x:y");
+        std::string name = "EcalMuonsTrackMass"+std::to_string(i);
+        std::string adjname = "adj"+name; 
+        m_EcalSplitAdjMuonTrackMass[i] = ecalIsoScan.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
+     }
+     for(int i=0;i<100;i++)
+     {
+        std::string name = "TrackMuonsTrackMass"+std::to_string(i);
+        std::string adjname = "adj"+name;
+        m_TrackSplitAdjMuonTrackMass[i] = tkIsoScan.make<TH1F>(adjname.c_str(), "; MuonTrackMass (GeV); Events", 110, 50, 160);  
+     }
+     for(int i=0;i<20;i++)
+     {
+        for(int j=0;j<20;j++)
+        {
+           std::string name = "MuonsTrackMass"+std::to_string(i)+"_"+std::to_string(j);
+           m_SplitMuonsTrackMass[i][j] = twoDimIsoScan.make<TH1F>(name.c_str(), "; MuonTrackMass (GeV); Events", 100,50,150);
+           std::string tuplename = "tuple"+name;
+           m_TupleSplitMuonsTrackMass[i][j] = twoDimIsoScan.make<TNtuple>(tuplename.c_str(), "X values and weights","x:y");
+        }
      }
   }
   m_TagEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
@@ -78,11 +89,17 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_ProbeDCA = histFolder.make<TH1F>("ProbeDCA","; Probe Distance of Closest Approach;Events",200,0,0.05);
   m_ProbeLongDCA = histFolder.make<TH1F>("ProbeLongDCA","; Probe Longitudinal Distance of Closest Approach;Events",200,0,0.3);
   m_ProbeDCAPhi = histFolder.make<TH2F>("ProbeDCAPhi","; Probe Distance of Closest Approach;Probe Phi;Events",200,0,0.2,100,-3.15,3.15);
-
+  m_ECAL_ieta_iphi = histFolder.make<TH2F>("ECALiEtaiPhi","; i#eta; i#phi; Events", 199,-99.5,99.5,288,0.5,288.5);
+   m_ECAL_ix_iy_plusZ = histFolder.make<TH2F>("ECALixiyPlusZ","; ix; iy; Events", 100,0.5,100.5,100,0.5,100.5);
+   m_ECAL_ix_iy_minusZ = histFolder.make<TH2F>("ECALixiyMinusZ","; ix; iy; Events", 100,0.5,100.5,100,0.5,100.5);
+  m_ECALEtaPhi = histFolder.make<TH2F>("EcalTrackEtaPhi","; EE Hit #eta; EE Hit #phi; Events", 100, -2.6,2.6, 100, -3.15, 3.15);
   m_ProbeEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi","; Probe Track #eta; Probe Track #phi; Events", 100, -2.6,2.6, 100, -3.15, 3.15);
   m_ProbeTrackIso = histFolder.make<TH1F>("ProbeTrackIsolation","; Track Based Isolation; Events",200,0,5);
   m_ProbeHcalIso = histFolder.make<TH1F>("ProbeHcalIsolation","; Hcal Energy in matched hits (GeV); Events", 200, 0, 100);
   m_ProbeEcalIso = histFolder.make<TH1F>("ProbeEcalIsolation","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
+  m_ProbeEcalIso0p2 = histFolder.make<TH1F>("ProbeEcalIsolation0p2","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
+  m_ProbeEcalIso0p1 = histFolder.make<TH1F>("ProbeEcalIsolation0p1","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
+  m_ProbeEcalIso0p05 = histFolder.make<TH1F>("ProbeEcalIsolation0p05","; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   m_ProbeCombinedIso = histFolder.make<TH2F>("ProbeCombinedIsolation","; Track Based Isolation; Hcal energy in matched hits (GeV); Events", 200, 0, 5, 200, 0, 8);
   m_BigEtadEtadPhi = histFolder.make<TH2F>("BigEtaCellCenterDistance","; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
   m_SmallEtadEtadPhi = histFolder.make<TH2F>("SmallEtaCellCenterDistance","; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
@@ -108,6 +125,7 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_TagCaloJetE = histFolder.make<TH1F>("TagCaloGetE","; Tag Muon Calo Jet E (GeV); Events", 100, 0, 200);
   m_CaloJetEcalE = histFolder.make<TH2F>("CaloEmEcalIso",";Calo Jet Ecal E; Ecal Iso; Events", 100, 0, 200, 100,0, 200);
   m_CaloJetPt = histFolder.make<TH1F>("CaloJetPt",";Calo Jet Pt (GeV);Events",100,0,200);
+  m_CaloJetPtEta = histFolder.make<TH2F>("CaloJetPtEta",";Calo Jet Pt (GeV);Probe Eta; Events",50,0,200,20,1.2,2.6);
   m_CaloJetEcalEnergy = histFolder.make<TH1F>("CaloEm",";Calo Jet Ecal E; Events",100,0,200);
   m_CaloJetHcalE = histFolder.make<TH2F>("CaloHadHcalIso",";Calo Jet Hcal E; Hcal Iso; Events", 100, 0, 200, 100,0, 200);
   m_CaloJetEcalHcal = histFolder.make<TH2F>("CaloEMHad",";Calo Jet Ecal E; Calo Jet Hcal E; Events", 100, 0, 200, 100,0, 200);
@@ -145,6 +163,7 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   }*/
   m_staMinDr = histFolder.make<TH1F>("staMinDr",";Min #Delta R from Probe to Standalone Muon; Events", 100,0,5);
   m_standaloneE = histFolder.make<TH1F>("standaloneE",";Energy of nearest standalone muon to probe (GeV);Events",100,0,100);
+  m_standaloneDPhi = histFolder.make<TH1F>("standaloneDPhi",";#Delta#pi;Events",100,-1.0,1.0);
   m_standaloneDE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1);
   m_standaloneDE_PUup = histFolder.make<TH1F>("StandaloneMuondEoverE_PUup","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1);
   m_standaloneDE_PUdown = histFolder.make<TH1F>("StandaloneMuondEoverE_PUdown","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1);
@@ -178,6 +197,12 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
   m_TrigSF = histFolder.make<TH1F>("TrigSF",";Tight muon Trigger scale factor; Events",100,0.9,1.1);
   m_TrigSFup = histFolder.make<TH1F>("TrigSFup",";Tight muon Trigger scale factor up; Events",100,0.9,1.1);
   m_TrigSFdown = histFolder.make<TH1F>("TrigSFdown",";Tight muon Trigger scale factor down; Events",100,0.9,1.1);
+  m_matchGenEle = histFolder.make<TH1F>("MatchGenEle",";Match Probe to Gen Electron; Events",2,-0.5,1.5);
+  m_matchGenEle->GetXaxis()->SetBinLabel(1,"Fail Matching");
+  m_matchGenEle->GetXaxis()->SetBinLabel(2,"Pass Matching"); 
+  m_matchGenTau = histFolder.make<TH1F>("MatchGenTau",";Match Probe to Gen Tau; Events",2,-0.5,1.5);
+  m_matchGenTau->GetXaxis()->SetBinLabel(1,"Fail Matching");
+  m_matchGenTau->GetXaxis()->SetBinLabel(2,"Pass Matching"); 
   eventWeightPUup = 1;
   eventWeightPUdown = 1;
   eventWeightIDup = 1;
@@ -248,22 +273,32 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
      m_SigCat->Fill(info.sigCat,info.eventWeight);
      m_staMinDr->Fill(info.staMinDr,info.eventWeight);
      m_standaloneE->Fill(info.standaloneE,info.eventWeight);
-     if(info.standaloneE>0)
+     if(info.probeCharge>0){m_standaloneDPhi->Fill(info.stadPhi,info.eventWeight);}
+     else{m_standaloneDPhi->Fill(info.stadPhi,info.eventWeight);}
+     m_standaloneDE->Fill(info.standaloneDEoverE,info.eventWeight);
+     if(isMC)
      {
-        m_standaloneDE->Fill(info.standaloneDEoverE,info.eventWeight);
-        if(isMC)
-        {
-           m_standaloneDE_PUup->Fill(info.standaloneDEoverE,eventWeightPUup);
-           m_standaloneDE_PUdown->Fill(info.standaloneDEoverE,eventWeightPUdown);
-           m_standaloneDE_IDup->Fill(info.standaloneDEoverE,eventWeightIDup);
-           m_standaloneDE_IDdown->Fill(info.standaloneDEoverE,eventWeightIDdown);
-           m_standaloneDE_Trigup->Fill(info.standaloneDEoverE,eventWeightTrigup);
-           m_standaloneDE_Trigdown->Fill(info.standaloneDEoverE,eventWeightTrigdown);
-        }
+        m_standaloneDE_PUup->Fill(info.standaloneDEoverE,eventWeightPUup);
+        m_standaloneDE_PUdown->Fill(info.standaloneDEoverE,eventWeightPUdown);
+        m_standaloneDE_IDup->Fill(info.standaloneDEoverE,eventWeightIDup);
+        m_standaloneDE_IDdown->Fill(info.standaloneDEoverE,eventWeightIDdown);
+        m_standaloneDE_Trigup->Fill(info.standaloneDEoverE,eventWeightTrigup);
+        m_standaloneDE_Trigdown->Fill(info.standaloneDEoverE,eventWeightTrigdown);
+        if(info.matchGenTau){m_matchGenTau->Fill(1.,info.eventWeight);}
+        else{m_matchGenTau->Fill(0.,info.eventWeight);}
+        if(info.matchGenEle){m_matchGenEle->Fill(1.,info.eventWeight);}
+        else{m_matchGenEle->Fill(0.,info.eventWeight);}
      }
      m_ProbeTrackIso->Fill(info.probeTrackIso/info.probeTrack->pt(),info.eventWeight);
      m_ProbeEcalIso->Fill(info.probeEcalIso,info.eventWeight);
+     m_ProbeEcalIso0p2->Fill(info.probeEcalIso0p2,info.eventWeight);
+     m_ProbeEcalIso0p1->Fill(info.probeEcalIso0p1,info.eventWeight);
+     m_ProbeEcalIso0p05->Fill(info.probeEcalIso0p05,info.eventWeight);
      m_ProbeHcalIso->Fill(info.probeHcalIso,info.eventWeight);
+     m_ConeHits->Fill(info.coneHits,info.eventWeight);
+     m_HitsOverThresh->Fill(info.hitsOverThresh,info.eventWeight);
+     m_ConeEnergy->Fill(info.coneEnergy,info.eventWeight);
+     m_HECellsFound->Fill(info.nCellsFound,info.eventWeight);
      if(fabs(info.iEta)>20){m_BigEtadEtadPhi->Fill(info.cellCenterDEta,info.cellCenterDPhi,info.eventWeight);}
      else{m_SmallEtadEtadPhi->Fill(info.cellCenterDEta,info.cellCenterDPhi,info.eventWeight);}
      m_TagEta->Fill(info.tagMuon->eta(),info.eventWeight);
@@ -304,8 +339,8 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
           m_TrackSplitAdjMuonTrackMass[99]->Fill(info.adjMuonTrackMass,info.eventWeight);
         }
         m_SplitMuonsTrackMass[ecalbin][tkbin]->Fill(info.adjMuonTrackMass,info.eventWeight); 
+        if(makeTuples){m_TupleSplitMuonsTrackMass[ecalbin][tkbin]->Fill(info.adjMuonTrackMass,info.eventWeight);}
      }
-     if(makeTuples){m_TupleSplitMuonsTrackMass[ecalbin][tkbin]->Fill(info.adjMuonTrackMass,info.eventWeight);}
      if(info.averageDr>0)
      {
         m_SmallestCone->Fill(info.smallestCone,info.eventWeight);
@@ -322,6 +357,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
      m_ProbeJetDr->Fill(info.nearestJetDr,info.eventWeight);
      //Calo Jets
      m_CaloJetPt->Fill(info.caloJetPt,info.eventWeight);
+     m_CaloJetPtEta->Fill(info.caloJetPt,fabs(info.probeTrack->eta()));
      m_ProbeJetE->Fill(info.probeCaloJetE,info.eventWeight); 
      m_TagCaloJetE->Fill(info.tagCaloJetE, info.eventWeight);
      m_ProbeCaloJetDr->Fill(info.minProbeCaloJetDr, info.eventWeight);
@@ -380,3 +416,53 @@ void MuPXHistograms::ResetCutFlow()
    cutProgress = -0.5;
 }
 
+void MuPXHistograms::PlotECALHits(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label)
+{
+   edm::Handle<EcalRecHitCollection> rechitsEE;
+   iEvent.getByToken(reducedEndcapRecHitCollection_Label, rechitsEE);
+   edm::Handle<EcalRecHitCollection> rechitsEB;
+   iEvent.getByToken(reducedBarrelRecHitCollection_Label, rechitsEB);
+   edm::ESHandle<CaloGeometry> TheCALOGeometry;
+   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
+   const CaloGeometry* caloGeom = TheCALOGeometry.product();
+   for(EcalRecHitCollection::const_iterator hit = rechitsEE->begin(); hit!= rechitsEE->end(); hit++) 
+   {
+            if((*hit).energy()>0)
+            {
+               const DetId id = (*hit).detid();
+               if(id.subdetId()==1)
+               {
+                  EBDetId ecid(id);
+                  int iEta=ecid.ieta();
+                  int iPhi=ecid.iphi();
+                  m_ECAL_ieta_iphi->Fill(iEta,iPhi);
+               }
+               else if(id.subdetId()==2)
+               {
+                  EEDetId ecid(id);
+                  int ix=ecid.ix();
+                  int iy=ecid.iy();
+                  int zside=ecid.zside();
+                  if(zside>0){m_ECAL_ix_iy_plusZ->Fill(ix,iy);}
+                  else{m_ECAL_ix_iy_minusZ->Fill(ix,iy);}
+                  const GlobalPoint hitPos = caloGeom->getSubdetectorGeometry(id)->getGeometry(id)->getPosition();
+                  m_ECALEtaPhi->Fill(hitPos.eta(),hitPos.phi());
+               }
+            }
+   }
+   for(EcalRecHitCollection::const_iterator hit = rechitsEB->begin(); hit!= rechitsEB->end(); hit++) 
+   {
+      if((*hit).energy()>0)
+      {
+         const DetId id = (*hit).detid();
+         if(id.subdetId()==1)
+         {
+            EBDetId ecid(id);
+            int iEta=ecid.ieta();
+            int iPhi=ecid.iphi();
+            m_ECAL_ieta_iphi->Fill(iEta,iPhi);
+         }
+      }
+   }
+   return;
+}
