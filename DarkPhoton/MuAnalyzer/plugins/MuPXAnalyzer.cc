@@ -178,6 +178,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetToken m_PUInfoToken;
     edm::EDGetTokenT<reco::CandidateView> candToken_;
     bool m_isMC;
+    bool m_xrootd;
     bool m_offPeakCR;
     bool m_signalRegion;
     bool m_makeTuples;
@@ -240,6 +241,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
   m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false)),
+  m_xrootd (iConfig.getUntrackedParameter<bool>("xrootd",false)),
   m_offPeakCR (iConfig.getUntrackedParameter<bool>("offPeakCR",false)),
   m_signalRegion(iConfig.getUntrackedParameter<bool>("signalRegion",false)),
   m_makeTuples(iConfig.getUntrackedParameter<bool>("makeTuples",false)),
@@ -259,21 +261,34 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   }
   usesResource("TFileService");
   edm::Service<TFileService> fs;
-
-  TFile *puFile = TFile::Open("/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root");
+  std::string puFilename, puUpFilename, puDownFilename,MCPuFilename;
+  if (m_xrootd)
+  {
+    puFilename = "root://cmseos.fnal.gov//store/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root";
+    puUpFilename = "root://cmseos.fnal.gov//store/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-72400ub-99bins.root";
+    puDownFilename = "root://cmseos.fnal.gov//store/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-66000ub-99bins.root";
+    MCPuFilename = "root://cmseos.fnal.gov//store/user/revering/dphoton/PileupHists/DYJets_Private_MCWeights.root";
+  }
+  else
+  {
+    puFilename = "/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root";
+    puUpFilename = "/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-72400ub-99bins.root";
+    puDownFilename = "/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-66000ub-99bins.root";
+    MCPuFilename = "/hdfs/cms/user/revering/dphoton/PileupHists/DYJets_Private_MCWeights.root";
+  }
+  TFile *puFile = TFile::Open(puFilename.c_str());
   fPUDataHist_ = (TH1F*)puFile->Get("pileup");
   fPUDataHist_->SetDirectory(0);
   puFile->Close();
-  TFile *puUpFile = TFile::Open("/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-72400ub-99bins.root");
+  TFile *puUpFile = TFile::Open(puUpFilename.c_str());
   fPUDataUpHist_ = (TH1F*)puUpFile->Get("pileup");
   fPUDataUpHist_->SetDirectory(0);
   puUpFile->Close();
-  TFile *puDownFile = TFile::Open("/hdfs/cms/user/revering/dphoton/PileupHists/PileupHistogram-goldenJSON-13tev-2018-66000ub-99bins.root");
+  TFile *puDownFile = TFile::Open(puDownFilename.c_str());
   fPUDataDownHist_ = (TH1F*)puDownFile->Get("pileup");
   fPUDataDownHist_->SetDirectory(0);
   puDownFile->Close();
-
-  TFile *MCPuFile = TFile::Open("/hdfs/cms/user/revering/dphoton/PileupHists/DYJets_Private_MCWeights.root");
+  TFile *MCPuFile = TFile::Open(MCPuFilename.c_str());
   fPUMCHist_= (TH1F*)MCPuFile->Get("MCWeights/TrueNumInteractions");
   fPUDataHist_->Scale(1./fPUDataHist_->Integral());
   fPUDataUpHist_->Scale(1./fPUDataUpHist_->Integral());
@@ -321,7 +336,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   using namespace std;
   using namespace reco;
   using namespace pat;
-  Muons myMuons;
+  Muons myMuons(m_xrootd);
   MuPXEventInfo info;
   Tracks myTracks;
   Jets myJets;
@@ -329,7 +344,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   CSC myCSCs;
   ECAL myECAL;
   info.cutProgress=0;
-
   edm::ESHandle<MagneticField> theMGField;
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
@@ -352,7 +366,6 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      weight_=1;
      nPUmean_=0;
   }
-
   info.eventWeight = weight_;
   info.genEventWeight = weight_;
   info.cutProgress++;

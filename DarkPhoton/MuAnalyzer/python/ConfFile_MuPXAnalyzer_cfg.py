@@ -40,6 +40,12 @@ options.register( 'offPeakCR',
                                   VarParsing.varType.bool,
                                   "True if analyzing off-peak mu+X data control region")
 
+options.register( 'xrootd',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if reading pileup and ID efficencies from eos")
+
 options.parseArguments()
 
 
@@ -71,9 +77,9 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/TTTo2L2Nu_SignalRegion.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/runA_0.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/offPeakCR.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/runA_0.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -89,7 +95,7 @@ process.source = cms.Source("PoolSource",
 if(options.isMC):
    process.source.duplicateCheckMode = cms.untracked.string("noDuplicateCheck")
 else:
-   process.source.lumisToProcess = LumiList.LumiList(filename = "/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/json/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt").getVLuminosityBlockRange()
+   process.source.lumisToProcess = LumiList.LumiList(filename = "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt").getVLuminosityBlockRange()
 
 process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     recoMuons = cms.InputTag("muons"),
@@ -112,6 +118,7 @@ process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     StandAloneTracks = cms.InputTag("standAloneMuons"),
     isMC = cms.untracked.bool(options.isMC),
     signalRegion = cms.untracked.bool(options.signalRegion),
+    xrootd = cms.untracked.bool(options.xrootd),
     makeTuples = cms.untracked.bool(options.makeTuples),
     makeSplits = cms.untracked.bool(options.makeSplits),
     offPeakCR = cms.untracked.bool(options.offPeakCR)

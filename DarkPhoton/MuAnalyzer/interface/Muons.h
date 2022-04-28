@@ -14,7 +14,7 @@
 class Muons{
 
   public:
-    Muons();
+    Muons(bool xrootd=false);
 
     int SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken);
     double MuonRoccorWeight(const reco::Muon* muon, edm::Handle<reco::GenParticleCollection> genParticles); 

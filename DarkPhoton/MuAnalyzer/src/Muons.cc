@@ -8,17 +8,27 @@
 #include <TMath.h>
 #include <TRandom3.h>
 
-Muons::Muons()
+Muons::Muons(bool xrootd)
 {
   highmuonpt=0;
   secondhighmuonpt=0;
 
-  rc.init("/hdfs/cms/user/revering/dphoton/RoccoR2018UL.txt");
+  rc.init(edm::FileInPath("DarkPhoton/MuAnalyzer/text/RoccoR2018UL.txt").fullPath());
   randEng = TRandom3();
+  std::string iMuon_ID_eff,iMuon_ISO_eff,iMuon_Trig_eff;
+  if(xrootd)
+  {
+    iMuon_ID_eff="root://cmseos.fnal.gov//store/user/revering/muonefficiencies/Efficiencies_muon_generalTracks_Z_Run2018_UL_ID.root";
+    iMuon_ISO_eff="root://cmseos.fnal.gov//store/user/revering/muonefficiencies/Efficiencies_muon_generalTracks_Z_Run2018_UL_ISO.root";
+    iMuon_Trig_eff="root://cmseos.fnal.gov//store/user/revering/muonefficiencies/Efficiencies_muon_generalTracks_Z_Run2018_UL_SingleMuonTriggers.root";
+  }
+  else 
+  {
+    iMuon_ID_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_Z/Efficiencies_muon_generalTracks_Z_Run2018_UL_ID.root";
+    iMuon_ISO_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_Z/Efficiencies_muon_generalTracks_Z_Run2018_UL_ISO.root";
+    iMuon_Trig_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_trigger/Efficiencies_muon_generalTracks_Z_Run2018_UL_SingleMuonTriggers.root";
+  }
 
-  std::string iMuon_ID_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_Z/Efficiencies_muon_generalTracks_Z_Run2018_UL_ID.root";
-  std::string iMuon_ISO_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_Z/Efficiencies_muon_generalTracks_Z_Run2018_UL_ISO.root";
-  std::string iMuon_Trig_eff="${CMSSW_BASE}/src/DarkPhoton/MuAnalyzer/muonefficiencies/Run2/UL/2018/2018_trigger/Efficiencies_muon_generalTracks_Z_Run2018_UL_SingleMuonTriggers.root";
   TFile *lFile_ID = TFile::Open(iMuon_ID_eff.c_str(),"READ");
   Muon_TightID = (TH2D*) lFile_ID->Get("NUM_TightID_DEN_TrackerMuons_abseta_pt");
   Muon_TightID->SetDirectory(0);
