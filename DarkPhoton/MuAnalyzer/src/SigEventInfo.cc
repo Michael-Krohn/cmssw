@@ -8,6 +8,7 @@ SigEventInfo::SigEventInfo()
    eventWeight = 1;
    genEventWeight = 1;
    muRocWeight=1;
+   filledWeights=false;
    dbremZ = -1;
    dbremPerp = -1;
    sigCat = -1;
@@ -25,12 +26,16 @@ SigEventInfo::SigEventInfo()
    isLoose=false;
    isTight=false;
    isHighPurity=false;
+   minGenMuDr=10000;
+   minGenDE=-10;
    probeReducedChi=-1;
    tagMuonEta=0;
    tagMuonPt=-1;
+   minSimCSCDr=100;
+   minSimCSCELoss=-1;
    probeTrackEta=0;
    probeTrackPhi=0;
-   probeTrackPt=-1;
+   probeTrackPt=-1.;
    pairVtxChi=-1;
    diMuonMass=-1;
    minCSCImpactParameter=-1;

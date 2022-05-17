@@ -20,7 +20,7 @@
 #include <iostream>
 
 #include <TH1.h>
-
+#include <TH2.h>
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
@@ -38,7 +38,7 @@
 
 // for vertexing
 #include "FWCore/Framework/interface/ESHandle.h"
-
+#include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 //Triggers
 #include "FWCore/Common/interface/TriggerNames.h"
 
@@ -73,8 +73,14 @@ class DBremMatChecker : public edm::one::EDAnalyzer<edm::one::SharedResources>  
     edm::EDGetToken m_dbremweighttoken;
     edm::EDGetToken m_dbremInitialEToken;
     edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
+    edm::EDGetToken m_dbremXToken;
+    edm::EDGetToken m_dbremYToken; 
+    edm::EDGetToken m_dbremZToken; 
     TFileDirectory histFolder;
     TH1F* m_DBremMat;
+    TH2F* m_DBremLocation;
+    TH2F* m_DBremLocationBrass;
+    TH2F* m_DBremLocationCopper;
     double weight_;
 };
 
@@ -98,8 +104,15 @@ DBremMatChecker::DBremMatChecker(const edm::ParameterSet& iConfig)
   
   m_dbremweighttoken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremweighttag"));
   m_dbremInitialEToken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremInitialETag"));
+  m_dbremXToken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremXTag"));
+  m_dbremYToken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremYTag"));
+  m_dbremZToken = consumes<float>(iConfig.getParameter<edm::InputTag>("dbremZTag"));
   histFolder = fs->mkdir("allEvents");
-  m_DBremMat = histFolder.make<TH1F>("DBremMaterial",";Material A;Weight",200,0.5,200.5);
+  m_DBremMat = histFolder.make<TH1F>("DBremMaterial",";Material Z;Weight",200,0.5,200.5);
+  m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
+  m_DBremLocationBrass = histFolder.make<TH2F>("DarkBremLocationBrass",";Z;#rho;Events",150,0,600,150,0,600);
+  m_DBremLocationCopper = histFolder.make<TH2F>("DarkBremLocationCopper",";Z;#rho;Events",150,0,600,150,0,600);
+
   weight_=0;
 }
 
@@ -119,7 +132,7 @@ void DBremMatChecker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 { 
   using namespace edm;
   using namespace std;
-  edm::Handle<float> dbremweight, dbremInitialE;
+  edm::Handle<float> dbremweight, dbremInitialE, dbremX, dbremY, dbremZ;
   iEvent.getByToken(m_dbremweighttoken,dbremweight);
   edm::Handle<GenEventInfoProduct> eventInfo;
   iEvent.getByToken(m_genInfoToken, eventInfo);
@@ -128,9 +141,18 @@ void DBremMatChecker::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   {
     iEvent.getByToken(m_dbremInitialEToken,dbremInitialE);
     weight_ = *dbremweight*weight_;
-    if(*dbremweight>0.01){return;}
-    double g_per_mol = 6.2425*pow(10,21);
-    m_DBremMat->Fill(*dbremInitialE/g_per_mol,weight_);
+    if(*dbremweight>0.0001){return;}
+    //double g_per_mol = 6.2425*pow(10,21);
+    //printf("Dbrem material is %f.\n",*dbremInitialE);
+    iEvent.getByToken(m_dbremXToken,dbremX);
+    iEvent.getByToken(m_dbremYToken,dbremY);
+    iEvent.getByToken(m_dbremZToken,dbremZ);
+    m_DBremMat->Fill(*dbremInitialE*1000.,weight_);
+    GlobalPoint vtx(*dbremX/10.,*dbremY/10.,*dbremZ/10.);
+    m_DBremLocation->Fill(fabs(vtx.z()),vtx.perp(),weight_);
+    double matA = *dbremInitialE*1000.;
+    if(matA>28.5&&matA<30.5){m_DBremLocationBrass->Fill(fabs(vtx.z()),vtx.perp(),weight_);}
+    if(matA>25.5&&matA<26.5){m_DBremLocationCopper->Fill(fabs(vtx.z()),vtx.perp(),weight_);}
   }
   else{return;}
 }

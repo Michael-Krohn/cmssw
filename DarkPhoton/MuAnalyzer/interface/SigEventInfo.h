@@ -18,6 +18,7 @@ class SigEventInfo{
     double eventWeight;
     double dbremWeight;
     double genEventWeight;
+    bool filledWeights;
     std::vector<double> PuUpDownWeights;
     double muRocWeight;
     std::vector<double> muIdWeights;
@@ -48,6 +49,8 @@ class SigEventInfo{
     double probeTrackPt;
     double pairVtxChi;
     double diMuonMass;
+    double minSimCSCDr;
+    double minSimCSCELoss;
     //CSC parameters
     double minCSCImpactParameter;
     double cscMinDR;
@@ -88,6 +91,8 @@ class SigEventInfo{
     double caloConeE;
     int caloConeHits;
     //Gen Matching
+    double minGenMuDr;
+    double minGenDE;
     double genProbeMatchdE;
     double genProbeMatchdR;
     double probeMuondE;

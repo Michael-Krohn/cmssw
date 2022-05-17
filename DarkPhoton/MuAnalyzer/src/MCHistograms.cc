@@ -98,9 +98,13 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_HitsOverThresh = histFolder.make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8,-0.5,7.5);
   m_BremDepth = histFolder.make<TH1F>("BremDepth", "; Depth of Dark Brem; Events", 8,-0.5,7.5);
   m_CSC_dR = histFolder.make<TH1F>("dRtoNearestCSC","; dR from Projected Track to Nearest CSC hit; Events", 400,0,4);
+  m_minSimCSCDr = histFolder.make<TH1F>("dRtoNearestSimCSC","; dR from Projected Track to Nearest Sim CSC hit; Events", 200,0,4);
+  m_minSimCSCELoss = histFolder.make<TH1F>("minSimCSCEloss",";E Loss in Nearest Sim CSC Hit; Events",50,0,10);
   m_CSC_recHitdR = histFolder.make<TH1F>("dRtoNearestCSCRecHit","; dR from Projected Track to Nearest CSC rec hit; Events", 200,0,4);
   m_MuonMotherdE = histFolder.make<TH1F>("MuonMotherdE","; #Delta E / E; Events",100,0,1);
   m_MuonMotherdR = histFolder.make<TH1F>("MuonMotherdR","; #Delta R; Events",200,0,4);
+  m_minGenMuDr = histFolder.make<TH1F>("minGenMuDr","; #Delta R; Events",200,0,4);
+  m_minGenMuDE = histFolder.make<TH1F>("minGenMuDE","; #Delta E over E; Events",200,-1,1);
   m_CSCHitChiSq = histFolder.make<TH1F>("CSCChiSquared","; #Chi^2; Events",200,0,10);
   m_CSCHitAngleChange = histFolder.make<TH1F>("CSCDeflection","; #Theta; Events", 200, 0, 3.15);
   m_StandaloneMuonE = histFolder.make<TH1F>("StandaloneMuonE","; Energy (GeV); Events", 200, 0, 200);
@@ -195,15 +199,19 @@ void MCHistograms::book(TFileDirectory histFolder){
 
 void MCHistograms::FillHists(SigEventInfo info)
 {
-   double eventWeightPUup = info.eventWeight*info.PuUpDownWeights[0]/info.pileupWeight; 
-   double eventWeightPUdown = info.eventWeight*info.PuUpDownWeights[1]/info.pileupWeight; 
-   double eventWeightIDup = info.eventWeight*info.muIdWeights[1]/info.muIdWeights[0];
-   double eventWeightIDdown = info.eventWeight*info.muIdWeights[2]/info.muIdWeights[0];
-   double eventWeightISOup = info.eventWeight*info.muIsoWeights[1]/info.muIsoWeights[0];
-   double eventWeightISOdown = info.eventWeight*info.muIsoWeights[2]/info.muIsoWeights[0];
-   double eventWeightTrigup = info.eventWeight*info.muTrigWeights[1]/info.muTrigWeights[0];
-   double eventWeightTrigdown = info.eventWeight*info.muTrigWeights[2]/info.muTrigWeights[0];
-   double eventWeightEnBin = info.eventWeight*info.energyBinSF;
+   double eventWeightPUup, eventWeightPUdown, eventWeightIDup, eventWeightIDdown, eventWeightISOup, eventWeightISOdown, eventWeightTrigup, eventWeightTrigdown, eventWeightEnBin;
+   if(info.filledWeights)
+   {   
+      eventWeightPUup = info.eventWeight*info.PuUpDownWeights[0]/info.pileupWeight; 
+      eventWeightPUdown = info.eventWeight*info.PuUpDownWeights[1]/info.pileupWeight; 
+      eventWeightIDup = info.eventWeight*info.muIdWeights[1]/info.muIdWeights[0];
+      eventWeightIDdown = info.eventWeight*info.muIdWeights[2]/info.muIdWeights[0];
+      eventWeightISOup = info.eventWeight*info.muIsoWeights[1]/info.muIsoWeights[0];
+      eventWeightISOdown = info.eventWeight*info.muIsoWeights[2]/info.muIsoWeights[0];
+      eventWeightTrigup = info.eventWeight*info.muTrigWeights[1]/info.muTrigWeights[0];
+      eventWeightTrigdown = info.eventWeight*info.muTrigWeights[2]/info.muTrigWeights[0];
+      eventWeightEnBin = info.eventWeight*info.energyBinSF;
+   }
    m_dbremWeight->Fill(info.dbremWeight);
    m_PileupWeights->Fill(info.pileupWeight);
    m_PUmean->Fill(info.nPUmean);
@@ -220,15 +228,18 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_eventCount_Trigdown->Fill(0.5,eventWeightTrigdown);
    m_eventCount_EnBin->Fill(0.5,eventWeightEnBin);
    m_muRocWeight->Fill(info.muRocWeight,info.eventWeight);
-   m_IDSF->Fill(info.muIdWeights[0],info.eventWeight);
-   m_IDSFup->Fill(info.muIdWeights[1],eventWeightIDup);
-   m_IDSFdown->Fill(info.muIdWeights[2],eventWeightIDdown);
-   m_ISOSF->Fill(info.muIsoWeights[0],info.eventWeight);
-   m_ISOSFup->Fill(info.muIsoWeights[1],eventWeightISOup);
-   m_ISOSFdown->Fill(info.muIsoWeights[2],eventWeightISOdown);
-   m_TrigSF->Fill(info.muTrigWeights[0],info.eventWeight);
-   m_TrigSFup->Fill(info.muTrigWeights[1],eventWeightTrigup);
-   m_TrigSFdown->Fill(info.muTrigWeights[2],eventWeightTrigdown);
+   if(info.filledWeights)
+   {
+     m_IDSF->Fill(info.muIdWeights[0],info.eventWeight);
+     m_IDSFup->Fill(info.muIdWeights[1],eventWeightIDup);
+     m_IDSFdown->Fill(info.muIdWeights[2],eventWeightIDdown);
+     m_ISOSF->Fill(info.muIsoWeights[0],info.eventWeight);
+     m_ISOSFup->Fill(info.muIsoWeights[1],eventWeightISOup);
+     m_ISOSFdown->Fill(info.muIsoWeights[2],eventWeightISOdown);
+     m_TrigSF->Fill(info.muTrigWeights[0],info.eventWeight);
+     m_TrigSFup->Fill(info.muTrigWeights[1],eventWeightTrigup);
+     m_TrigSFdown->Fill(info.muTrigWeights[2],eventWeightTrigdown);
+   }
    m_EventWeights->Fill(info.eventWeight);
    m_signalCategory->Fill(info.sigCat,info.eventWeight);
    m_DBremLocation->Fill(info.vtxZ,info.vtxPerp,info.eventWeight);
@@ -266,10 +277,14 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter,info.eventWeight);
    m_CSC_dR->Fill(info.cscMinDR,info.eventWeight);
    m_CSC_recHitdR->Fill(info.cscRecHitMinDR,info.eventWeight);
+   m_minSimCSCDr->Fill(info.minSimCSCDr,info.eventWeight);
+   m_minSimCSCELoss->Fill(info.minSimCSCELoss,info.eventWeight);
    m_CSCHitChiSq->Fill(info.cscChiSq,info.eventWeight);
    m_nEle->Fill(info.nEle,info.eventWeight);
    m_nExtraEle->Fill(info.nExtraEle,info.eventWeight);
    m_nExtraMuon->Fill(info.nExtraMuon,info.eventWeight);
+   m_minGenMuDr->Fill(info.minGenMuDr,info.eventWeight);
+   m_minGenMuDE->Fill(info.minGenDE,info.eventWeight);
    if(info.cscHitAngleChange<10)
    {
       m_CSCHitAngleChange->Fill(info.cscHitAngleChange,info.eventWeight);
@@ -315,15 +330,18 @@ void MCHistograms::FillHists(SigEventInfo info)
       m_StandaloneMuonE->Fill(info.standaloneE,info.eventWeight);
       m_HEEnergyStandaloneDEoverE->Fill(info.coneEnergy,info.standaloneDEoverE,info.eventWeight); 
       m_StandalonedE->Fill(info.standaloneDEoverE,info.eventWeight);
-      m_StandalonedE_PUup->Fill(info.standaloneDEoverE,eventWeightPUup);
-      m_StandalonedE_PUdown->Fill(info.standaloneDEoverE,eventWeightPUdown);
-      m_StandalonedE_IDup->Fill(info.standaloneDEoverE,eventWeightIDup);
-      m_StandalonedE_IDdown->Fill(info.standaloneDEoverE,eventWeightIDdown);
-      m_StandalonedE_ISOup->Fill(info.standaloneDEoverE,eventWeightISOup);
-      m_StandalonedE_ISOdown->Fill(info.standaloneDEoverE,eventWeightISOdown);
-      m_StandalonedE_Trigup->Fill(info.standaloneDEoverE,eventWeightTrigup);
-      m_StandalonedE_Trigdown->Fill(info.standaloneDEoverE,eventWeightTrigdown);
-      m_StandalonedE_EnBin->Fill(info.standaloneDEoverE,eventWeightEnBin);
+      if(info.filledWeights)
+      {
+        m_StandalonedE_PUup->Fill(info.standaloneDEoverE,eventWeightPUup);
+        m_StandalonedE_PUdown->Fill(info.standaloneDEoverE,eventWeightPUdown);
+        m_StandalonedE_IDup->Fill(info.standaloneDEoverE,eventWeightIDup);
+        m_StandalonedE_IDdown->Fill(info.standaloneDEoverE,eventWeightIDdown);
+        m_StandalonedE_ISOup->Fill(info.standaloneDEoverE,eventWeightISOup);
+        m_StandalonedE_ISOdown->Fill(info.standaloneDEoverE,eventWeightISOdown);
+        m_StandalonedE_Trigup->Fill(info.standaloneDEoverE,eventWeightTrigup);
+        m_StandalonedE_Trigdown->Fill(info.standaloneDEoverE,eventWeightTrigdown);
+        m_StandalonedE_EnBin->Fill(info.standaloneDEoverE,eventWeightEnBin);
+      }
    }
    m_AllVertexOffset->Fill(info.closestApproach,info.eventWeight);  
    m_HECellsFound->Fill(info.nCellsFound,info.eventWeight);
@@ -354,15 +372,18 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_TrackMotherdE->Fill(info.genProbeMatchdE,info.eventWeight);
    m_BremDepth->Fill(info.bremDepth,info.eventWeight);
    m_ConeEnergy->Fill(info.coneEnergy,info.eventWeight);
-   m_ConeEnergy_PUup->Fill(info.coneEnergy,eventWeightPUup);
-   m_ConeEnergy_PUdown->Fill(info.coneEnergy,eventWeightPUdown);
-   m_ConeEnergy_IDup->Fill(info.coneEnergy,eventWeightIDup);
-   m_ConeEnergy_IDdown->Fill(info.coneEnergy,eventWeightIDdown);
-   m_ConeEnergy_ISOup->Fill(info.coneEnergy,eventWeightISOup);
-   m_ConeEnergy_ISOdown->Fill(info.coneEnergy,eventWeightISOdown);
-   m_ConeEnergy_Trigup->Fill(info.coneEnergy,eventWeightTrigup);
-   m_ConeEnergy_Trigdown->Fill(info.coneEnergy,eventWeightTrigdown);
-   m_ConeEnergy_EnBin->Fill(info.coneEnergy,eventWeightEnBin);
+   if(info.filledWeights)
+   {
+      m_ConeEnergy_PUup->Fill(info.coneEnergy,eventWeightPUup);
+      m_ConeEnergy_PUdown->Fill(info.coneEnergy,eventWeightPUdown);
+      m_ConeEnergy_IDup->Fill(info.coneEnergy,eventWeightIDup);
+      m_ConeEnergy_IDdown->Fill(info.coneEnergy,eventWeightIDdown);
+      m_ConeEnergy_ISOup->Fill(info.coneEnergy,eventWeightISOup);
+      m_ConeEnergy_ISOdown->Fill(info.coneEnergy,eventWeightISOdown);
+      m_ConeEnergy_Trigup->Fill(info.coneEnergy,eventWeightTrigup);
+      m_ConeEnergy_Trigdown->Fill(info.coneEnergy,eventWeightTrigdown);
+      m_ConeEnergy_EnBin->Fill(info.coneEnergy,eventWeightEnBin);
+   }
    int neighborConeHits=0;
    double neighborConeEnergy=0;
    for(int i=0;i<7;i++)

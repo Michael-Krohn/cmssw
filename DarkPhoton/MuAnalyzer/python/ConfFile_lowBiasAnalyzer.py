@@ -1,0 +1,50 @@
+import FWCore.ParameterSet.Config as cms
+from FWCore.ParameterSet.VarParsing import VarParsing
+
+options = VarParsing ('analysis')
+
+options.register( 'scaleFactor',
+                                  100,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.float,
+                                  "Reweighting factor for dark brem process")
+
+process = cms.Process("TEST")
+
+process.load("FWCore.MessageService.MessageLogger_cfi")
+process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.load("TrackingTools/TransientTrack/TransientTrackBuilder_cfi")
+process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
+process.load("Configuration.StandardSequences.MagneticField_cff")
+process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
+
+process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v17')
+
+process.MessageLogger.cerr.threshold = 'INFO'
+process.MessageLogger.cerr.INFO = cms.untracked.PSet(
+    limit = cms.untracked.int32(0)
+)
+
+process.options = cms.untracked.PSet(
+ SkipEvent = cms.untracked.vstring( "Error: uninitialized ProxyBase used" ),
+ IgnoreCompletely = cms.untracked.vstring( "ProductNotFound" )
+ #SkipEvent = cms.untracked.vstring('ProductNotFound')
+)
+
+process.source = cms.Source("PoolSource",
+    duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
+#    fileNames = cms.untracked.vstring("file:/hdfs/cms/user/revering/dphoton/privateProduction/DYJetsToMM_M-50_TuneCP5_13TeV_EndcapDBrem_mAp0p2_simMat/220426_153133/0000/SIM_100.root")
+    fileNames = readFiles
+)
+
+process.demo = cms.EDAnalyzer('LowBiasAnalyzer',
+    dbremweighttag = cms.InputTag("g4SimHits","DBremEventWeight"),
+    scaleFactor = cms.untracked.double(options.scaleFactor)
+)
+
+process.TFileService = cms.Service("TFileService",
+                                   fileName = cms.string("DiMuon_Histos.root"),
+				   closeFileFast = cms.untracked.bool(False)
+)
+
+process.p = cms.Path(process.demo)

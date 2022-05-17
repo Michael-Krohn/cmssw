@@ -53,8 +53,10 @@
 //for Standalone Muon Tracking
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
 #include "Geometry/CommonDetUnit/interface/GlobalTrackingGeometry.h"
+#include "Geometry/Records/interface/MuonGeometryRecord.h"
 #include "MagneticField/Engine/interface/MagneticField.h"
 #include "MagneticField/Records/interface/IdealMagneticFieldRecord.h"
+#include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 
 // for vertexing
 #include "FWCore/Framework/interface/ESHandle.h"
@@ -457,6 +459,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         {
            edm::Handle<reco::GenParticleCollection> genParticles;
            iEvent.getByToken(m_genParticleToken, genParticles);
+           info.filledWeights = true;
            info.muRocWeight = myMuons.MuonRoccorWeight((*muon),genParticles);
            info.muIdWeights = myMuons.MuonTightIDWeight((*muon)->pt(),(*muon)->eta());
            info.muIsoWeights = myMuons.MuonTightIsoWeight((*muon)->pt(),(*muon)->eta());

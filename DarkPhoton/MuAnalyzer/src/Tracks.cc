@@ -64,6 +64,30 @@ int Tracks::SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<
   return cutProgress;
 }
 
+int Tracks::SelectUnpairedTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,edm::Handle<reco::VertexCollection> vtxHandle){
+  int cutProgress = 0;
+  edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
+  iEvent.getByToken(trackCollection_label,thePATTrackHandle);
+  highendcaptrackpt = 0;
+  for(std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end(); ++iTrack ) {
+      if(iTrack->pt()<20) continue;
+      if(cutProgress==0){cutProgress=1;}
+      selectedTracks.push_back(&(*iTrack));
+      if(fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.45) continue;
+      if(cutProgress==1){cutProgress=2;}
+      if(!iTrack->quality(reco::Track::qualityByName("highPurity"))) continue;
+      if(cutProgress==2){cutProgress=3;}
+      trackSelected=true;
+      if (iTrack->pt()>highendcaptrackpt)
+      { 
+         highptendcaptrack = &(*iTrack);
+         highendcaptrackpt = iTrack->pt();
+      }
+      selectedEndcapTracks.push_back(&(*iTrack));
+  }
+  return cutProgress;
+}
+
 int Tracks::MatchMuonToTrack(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
   int cutProgress = 0;
   edm::Handle<std::vector<reco::Track> > thePATTrackHandle;
