@@ -60,6 +60,8 @@ class MCHistograms{
     TH2F* m_ProbeTrackEtaPhi;
     TH1F* m_ProbeMuonEta;
     TH1F* m_ProbeMuonPt;
+    TH1F* m_minGenMuDr;
+    TH1F* m_minGenMuDE;
     TH1F* m_NeighborHCALHits;
     TH1F* m_NeighborHCALEnergy;
     TH1F* m_NeighborHEHitByDepth;
@@ -74,6 +76,8 @@ class MCHistograms{
     TH1F* m_ConeEnergy_Trigup;
     TH1F* m_ConeEnergy_Trigdown;
     TH1F* m_ConeEnergy_EnBin;
+    TH1F* m_minSimCSCDr;
+    TH1F* m_minSimCSCELoss;
     TH1F* m_nMatchedMuons;
     TH1F* m_HitsOverThresh;
     TH2F* m_DBremLocation;

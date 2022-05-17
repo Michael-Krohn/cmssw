@@ -24,13 +24,16 @@ process.options = cms.untracked.PSet(
 
 process.source = cms.Source("PoolSource",
     duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
-#    fileNames = cms.untracked.vstring("file:/hdfs/cms/user/revering/dphoton/privateProduction/DYJetsToMM_M-50_TuneCP5_13TeV_EndcapDBrem_mAp0p2_simMat/220426_153133/0000/SIM_100.root")
+    #fileNames = cms.untracked.vstring("root://cmseos.fnal.gov//store/user/revering/DYJetsToMM_EndcapDBrem_mAp1p5_M-50_TuneCP5_13TeV-madgraphMLM-pythia8_revering/RunIISummer20UL18_SIM/220429_162528/0000/SIM_1.root")
     fileNames = readFiles
 )
 
 process.demo = cms.EDAnalyzer('DBremMatChecker',
     dbremweighttag = cms.InputTag("g4SimHits","DBremEventWeight"),
     dbremInitialETag = cms.InputTag("g4SimHits","DBremInitialEnergy"),
+    dbremXTag = cms.InputTag("g4SimHits","DBremLocationX"),
+    dbremYTag = cms.InputTag("g4SimHits","DBremLocationY"),
+    dbremZTag = cms.InputTag("g4SimHits","DBremLocationZ"),
 )
 
 process.TFileService = cms.Service("TFileService",

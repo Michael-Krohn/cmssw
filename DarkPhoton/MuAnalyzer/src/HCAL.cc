@@ -594,7 +594,7 @@ double HCAL::GetIsolation(const edm::Event& iEvent, const edm::EventSetup& iSetu
       TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
       math::XYZVector idPositionRoot(hitPos.x(),hitPos.y(),hitPos.z());
       math::XYZVector trajRoot(traj.position().x(),traj.position().y(),traj.position().z());
-      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.2)
+      if(ROOT::Math::VectorUtil::DeltaR(idPositionRoot,trajRoot)<0.4)
       {
          MatchedEnergy+=hbherechit->energy();
       }

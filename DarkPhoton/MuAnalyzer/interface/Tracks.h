@@ -23,6 +23,7 @@ class Tracks{
     Tracks();
 
     int SelectTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
+    int SelectUnpairedTracks(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle);
     int MatchMuonToTrack(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, const reco::Muon* Tag, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     int PairTracks(std::vector<const reco::Track*>::const_iterator& Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
     int PairTracks(const reco::Track* Track, const reco::TrackRef MuonTrack, edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
