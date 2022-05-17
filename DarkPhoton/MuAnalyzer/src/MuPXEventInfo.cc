@@ -55,6 +55,7 @@ MuPXEventInfo::MuPXEventInfo()
        pileupWeights.push_back(1);
     }
     standaloneE=-1;
+    cscMinDR=-1;
     stadPhi=-10;
     probeCharge=0;
     standaloneDEoverE=-10;

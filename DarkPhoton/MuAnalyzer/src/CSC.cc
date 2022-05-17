@@ -149,26 +149,21 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
        if(iTrack->eta() < 0 && iDetId.endcap() == 1) continue;
        if(iTrack->eta() > 0 && iDetId.endcap() == 2) continue;
 
-
        //Only using 1st layer of CSCs
        //if(iDetId.station() != 1) continue;
 
        DetId TheDetUnitId(iSegment->cscDetId());
        const GeomDetUnit *TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
 
-       double dPhi = fabs(iTrack->momentum().phi() - TheUnit->toGlobal(iSegment->localPosition()).phi());
-       //double dPhi = fabs(one_momentum.phi() - TheUnit->position().phi());
-       if(dPhi > ROOT::Math::Pi()) dPhi -= 2*ROOT::Math::Pi();
-
        LocalPoint TheLocalPosition = iSegment->localPosition();
        const BoundPlane& TheSurface = TheUnit->surface();
        GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+       TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
 
-       if(minDR > sqrt(( pow((iTrack->momentum().eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)))){
-          minDR = sqrt(( pow((iTrack->momentum().eta() - TheGlobalPosition.eta()),2.0) + pow(dPhi, 2.0)));
-//       if(minDR > sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)))){
-//         minDR = sqrt(( pow((one_momentum.eta() - TheUnit->position().eta()),2.0) + pow(dPhi, 2.0)));
-         TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+       if(minDR > deltaR(traj.position().eta(),traj.position().phi(),TheGlobalPosition.eta(),TheGlobalPosition.phi()))
+       { 
+         minDR = deltaR(traj.position().eta(),traj.position().phi(),TheGlobalPosition.eta(),TheGlobalPosition.phi());
+
          CSCdEta = traj.position().eta()-TheGlobalPosition.eta();
          CSCdPhi = traj.position().phi()-TheGlobalPosition.phi();
 
@@ -179,9 +174,6 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
          CSCTraj = TheUnit->toGlobal(iSegment->localDirection());
          CSCChiSq = iSegment->chi2();     
        }
-
-       TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
-        
 
        if (minTotalImpactParameter > sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter())){
 	 minTotalImpactParameter = sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter());

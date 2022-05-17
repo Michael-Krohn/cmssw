@@ -87,6 +87,7 @@ class MuPXEventInfo{
     std::vector<int> highPtNonMuPdgIds;
     int nLooseMuons;
     double tagPdgId;
+    double cscMinDR;
     double staMinDr;
     double standaloneE;
     int nEle;

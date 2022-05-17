@@ -12,7 +12,6 @@ Muons::Muons(bool xrootd)
 {
   highmuonpt=0;
   secondhighmuonpt=0;
-
   rc.init(edm::FileInPath("DarkPhoton/MuAnalyzer/text/RoccoR2018UL.txt").fullPath());
   randEng = TRandom3();
   std::string iMuon_ID_eff,iMuon_ISO_eff,iMuon_Trig_eff;

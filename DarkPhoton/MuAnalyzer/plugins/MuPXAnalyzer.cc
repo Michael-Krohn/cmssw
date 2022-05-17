@@ -669,6 +669,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     info.cellCenterDPhi=myHCAL.Tdphi;
     GlobalPoint FillerPoint;
     myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack,transientTrackBuilder->build(selectedTrack), FillerPoint); 
+    info.cscMinDR=myCSCs.minDR;
     if(info.sigCat==1&&myCSCs.minDR<0.05)
     {
        info.sigCat=0;
@@ -749,7 +750,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
              {
                 if(m_offPeakCR)
                 {
-                   if(info.coneHits>1&&info.caloJetPt<0){passSig.FillHists(info,false,m_isMC);}
+                   if(info.coneHits>1&&info.caloJetPt<0){passSig.FillHists(info,false,m_isMC,m_makeTuples);}
                 }
                 else if(info.caloJetPt<0){passSig.FillHists(info,false,m_isMC);}
              }

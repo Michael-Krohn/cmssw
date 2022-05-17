@@ -77,6 +77,7 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
         }
      }
   }
+  m_TupleMuonsTrackMass = histFolder.make<TNtuple>("TupleMuonsTrackMass", "X values and weights","x:y");
   m_TagEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
   m_TagPt = histFolder.make<TH1F>("TaggingMuonPt","; Tagging Muon pt (GeV); Events", 200, 0, 120);
   m_TagPhi = histFolder.make<TH1F>("TaggingMuonPhi","; Tagging Muon phi; Events", 100, -3.15, 3.15);
@@ -162,6 +163,7 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso){
      }
   }*/
   m_staMinDr = histFolder.make<TH1F>("staMinDr",";Min #Delta R from Probe to Standalone Muon; Events", 100,0,5);
+  m_cscMinDr = histFolder.make<TH1F>("cscMinDr",";Min #Delta R from Probe to nearest CSC hit; Events", 500,0,5);
   m_standaloneE = histFolder.make<TH1F>("standaloneE",";Energy of nearest standalone muon to probe (GeV);Events",100,0,100);
   m_standaloneDPhi = histFolder.make<TH1F>("standaloneDPhi",";#Delta#pi;Events",100,-1.0,1.0);
   m_standaloneDE = histFolder.make<TH1F>("StandaloneMuondEoverE","; (Standalone E - Probe E)/Probe E; Events", 200, -1,1);
@@ -271,7 +273,8 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
      m_ProbeLongDCA->Fill(info.probeLongDCA,info.eventWeight);
      m_ProbeDCAPhi->Fill(info.probeDCA,info.probeTrack->phi(),info.eventWeight);
      m_SigCat->Fill(info.sigCat,info.eventWeight);
-     m_staMinDr->Fill(info.staMinDr,info.eventWeight);
+     m_staMinDr->Fill(info.staMinDr,info.eventWeight); 
+     m_cscMinDr->Fill(info.cscMinDR,info.eventWeight);
      m_standaloneE->Fill(info.standaloneE,info.eventWeight);
      if(info.probeCharge>0){m_standaloneDPhi->Fill(info.stadPhi,info.eventWeight);}
      else{m_standaloneDPhi->Fill(info.stadPhi,info.eventWeight);}
@@ -346,6 +349,7 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
         m_SmallestCone->Fill(info.smallestCone,info.eventWeight);
         m_AverageDr->Fill(info.averageDr,info.eventWeight);
      }
+     if(makeTuples){m_TupleMuonsTrackMass->Fill(info.adjMuonTrackMass,info.eventWeight);}
      m_TagProbeDr->Fill(deltaR(info.probeTrack->eta(),info.probeTrack->phi(),info.tagMuon->eta(),info.tagMuon->phi()),info.eventWeight);
      m_TagTrackIso->Fill(info.tagTrackIso/info.tagMuon->pt(),info.eventWeight);
      m_TagEcalIso->Fill(info.tagEcalIso,info.eventWeight);

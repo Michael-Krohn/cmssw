@@ -84,6 +84,7 @@ class MuPXHistograms{
     TH1F* m_TrackSplitAdjMuonTrackMass[100];
     TH1F* m_SplitMuonsTrackMass[20][20];
     TNtuple* m_TupleSplitMuonsTrackMass[20][20];
+    TNtuple* m_TupleMuonsTrackMass;
     TH1F* m_AdjustedMuTrackMass;
     TH1F* m_TagProbeVtxChi;
     TH1F* m_ProbeTrackIso;
@@ -147,6 +148,7 @@ class MuPXHistograms{
     TH1F* m_MotherMatch;
 //    TH1F* m_LooseMatch[10][10];
     TH1F* m_staMinDr;
+    TH1F* m_cscMinDr;
     TH1F* m_standaloneE;
     TH1F* m_standaloneDPhi;
     TH1F* m_ProbeDCA;

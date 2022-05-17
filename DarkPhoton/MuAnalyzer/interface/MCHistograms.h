@@ -60,6 +60,7 @@ class MCHistograms{
     TH2F* m_ProbeTrackEtaPhi;
     TH1F* m_ProbeMuonEta;
     TH1F* m_ProbeMuonPt;
+    TH2F* m_ProbeTrackPtEta;
     TH1F* m_NeighborHCALHits;
     TH1F* m_NeighborHCALEnergy;
     TH1F* m_NeighborHEHitByDepth;

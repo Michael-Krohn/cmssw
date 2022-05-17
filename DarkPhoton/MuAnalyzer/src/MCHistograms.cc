@@ -80,6 +80,7 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_NMatchNHitLocation = histFolder.make<TH2F>("NMatchNHitLocation",";Z;#rho;Events",150,0,600,150,0,600);
   m_ProbeTrackPt = histFolder.make<TH1F>("ProbeTrackPt",";#Pt (GeV); Events", 200, 0, 100);
   m_ProbeTrackEta = histFolder.make<TH1F>("ProbeTrackEta",";#eta; Events", 200, -4, 4);
+  m_ProbeTrackPtEta = histFolder.make<TH2F>("ProbeTrackPtEta",";#Pt (GeV);#eta; Events", 50, 20, 70,80,-4,4);
   m_ProbeTrackEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi",";#eta;#phi;Events",100,-2.6,2.6,100,-3.15,3.15);
   m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation",";Z;#rho;Events",150,0,600,150,0,600);
   m_DeflectingAngle = histFolder.make<TH1F>("DeflectingAngle",";Muon Deflection Angle;Events",100,0,3.16);
@@ -165,7 +166,7 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_SmallEtaAlldEtadPhiMuPlusEtaMinus = histFolder.make<TH2F>("SAllMuPlusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
   m_SmallEtaAlldEtadPhiMuMinusEtaPlus = histFolder.make<TH2F>("SAllMuMinusEtaPlus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
   m_SmallEtaAlldEtadPhiMuMinusEtaMinus = histFolder.make<TH2F>("SAllMuMinusEtaMinus","; #eta; #phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);*/
-  m_MinCSCImpactParameter = histFolder.make<TH1F>("CSCMinImpact", "; CSC Min Impact Parameter; Events", 300, 0, 1000);
+  m_MinCSCImpactParameter = histFolder.make<TH1F>("CSCMinImpact", "; CSC Min Impact Parameter; Events", 300, 0, 10);
   m_PairVtxChi = histFolder.make<TH1F>("PairedVtxReducedChiSq", "; Paired Vertex Reduced #Chi Squared; Events", 100, 0, 10);
   m_TrackIsolation = histFolder.make<TH1F>("TrackIsolation","; Track Based Isolation; Events",200,0,5);
   m_TrackQuality = histFolder.make<TH1F>("TrackQuality","; Track Quality; N Tracks",3,-0.5,2.5);
@@ -255,6 +256,7 @@ void MCHistograms::FillHists(SigEventInfo info)
    m_TagMuonPt->Fill(info.tagMuonPt,info.eventWeight); 
    m_ProbeTrackPt->Fill(info.probeTrackPt,info.eventWeight);
    m_ProbeTrackEta->Fill(info.probeTrackEta,info.eventWeight);
+   m_ProbeTrackPtEta->Fill(info.probeTrackPt,info.probeTrackEta,info.eventWeight);
    m_ProbeTrackEtaPhi->Fill(info.probeTrackEta,info.probeTrackPhi,info.eventWeight);
    m_DiMuonMass->Fill(info.diMuonMass,info.eventWeight);
    m_DeflectingAngle->Fill(info.deflectingAngle,info.eventWeight);
