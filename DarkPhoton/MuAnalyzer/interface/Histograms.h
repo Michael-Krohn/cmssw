@@ -39,6 +39,11 @@ class Histograms{
     TH1F* m_failHEEnergy;
     TH1F* m_histogram_TrackerTack_P;
     TH1F* m_CSCMinDR;
+    TH1F* m_CSCMinDepthDr[4];
+    TH1F* m_CSCOtherStationsGood[4];
+    TH2F* m_CSCMissingDepthDr[4];
+    TH2F* m_CSCGoodDepthDr[4];
+    TH2F* m_CSCOtherGoodMissingDepth[4];
     //Tracker track location
     TH2F* m_histogram_TrackerTrack_EtaPhi_negEta;
     TH2F* m_histogram_TrackerTrack_EtaPhi_negEta_pT0to50;

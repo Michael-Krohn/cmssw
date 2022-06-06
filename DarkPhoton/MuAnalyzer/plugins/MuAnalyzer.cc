@@ -279,7 +279,7 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   for(std::vector<const reco::Muon*>::const_iterator muon = myMuons.selectedMuons.begin(); muon!=myMuons.selectedMuons.end();muon++)
   {
      if(paired_){continue;}
-     //if(fabs((*muon)->eta())>2.4||fabs((*muon)->eta())<1.45) continue;
+     if(fabs((*muon)->eta())>2.4||fabs((*muon)->eta())<1.45) continue;
      myTracks.selectedTracks.clear();
      myTracks.selectedEndcapTracks.clear();
      myTracks.trackSelected=false;
@@ -313,14 +313,14 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   info.probeHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
   info.tagHcalIso=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(myTracks.MuonMatchedTrack));
   if(info.tagHcalIso<0||info.probeHcalIso<0){return;}
-  /*if(info.tagHcalIso<info.probeHcalIso)
+  if(info.tagHcalIso<info.probeHcalIso)
   {
      selectedTrack=myTracks.MuonMatchedTrack;
      double temp = info.tagHcalIso;
      info.tagHcalIso=info.probeHcalIso;
      info.probeHcalIso=temp;
-  }*/
-  if(info.probeHcalIso<30) return;
+  }
+  if(info.probeHcalIso>20) return;
   myCSCs.minTotalImpactParameter = 1000;
   myCSCs.minDR = 1000;
   myCSCs.minTotalImpactParameter_Muon = 1000;
@@ -330,11 +330,15 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
   if(myCSCs.minTotalImpactParameter>10){return;}
   info.minDR=myCSCs.minDR;
+  for(int i=0;i<4;i++)
+  {
+     info.minDrByDepth[i] = myCSCs.minDrByDepth[i];
+  }
   info.ProbeEta=selectedTrack->eta();
   info.ProbePhi=selectedTrack->phi();
   cutProgress++;
   myHistograms.PlotTrackDisappearance(myCSCs.TrackP, myCSCs.TrackEta, myCSCs.TrackPhi, myCSCs.minDR, myCSCs.minTotalImpactParameter, myCSCs.TrackP_dR, myCSCs.TrackEta_dR, myCSCs.TrackPhi_dR);
-  if(myCSCs.minDR > 0.1){return;}
+  //if(myCSCs.minDR > 0.1){return;}
 
   myHCAL.CheckHCAL(iEvent, iSetup, HBHERecHit_Label);
   GlobalPoint trackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),525));
@@ -347,22 +351,23 @@ MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   info.heConeEnergy=heConeEnergy.first;
   myHistograms.m_histogram_TrackerTack_P->Fill(myCSCs.TrackP);
 
-  double MatchedMinDr;
-  MatchedMinDr = 10;
+//  double MatchedMinDr;
+//  MatchedMinDr = 10;
   GlobalPoint MatchedGlobalPoint;
   bool TrackHCAL = true;
   if(TrackHCAL)
   {
-     MatchedMinDr = myCSCs.minDR;
+//     MatchedMinDr = myCSCs.minDR;
      MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
   }
   else
   {
-     MatchedMinDr = myCSCs.minDR_Muon;
+//     MatchedMinDr = myCSCs.minDR_Muon;
      MatchedGlobalPoint = myCSCs.MuonGlobalPoint;
   }
    
-  if(MatchedMinDr < 0.1)
+  //if(MatchedMinDr < 0.1)
+  if(true)
   {
     cutProgress++;
     double randphi = MatchedGlobalPoint.phi()+2.0;

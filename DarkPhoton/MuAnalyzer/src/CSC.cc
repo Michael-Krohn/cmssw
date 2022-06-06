@@ -19,6 +19,7 @@ recMinDR=100;
 CSCdEta=-10;
 CSCdPhi=-10;
 minTotalImpactParameter=10000;
+for(int i=0;i<4;i++){minDrByDepth[i]=-1;}
 }
 
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, std::vector<const reco::Track*>::const_iterator& iTrack, GlobalVector one_momentum, std::vector<reco::TransientTrack> tracksToVertex, GlobalPoint VertexPosition){
@@ -142,6 +143,12 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
   iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
   minDR = 10;
   minTotalImpactParameter = 10000;
+  int nStations = 4;
+  for(int i=0;i<nStations;i++)
+  {
+    minDrByDepth[i]=-1;
+  }
+
   if( TheCSCSegments.isValid() ){
     for(CSCSegmentCollection::const_iterator iSegment = TheCSCSegments->begin(); iSegment != TheCSCSegments->end(); iSegment++){
 
@@ -159,10 +166,11 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
        const BoundPlane& TheSurface = TheUnit->surface();
        GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
        TrajectoryStateClosestToPoint  traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+       double thisMinDr=deltaR(traj.position().eta(),traj.position().phi(),TheGlobalPosition.eta(),TheGlobalPosition.phi());
 
-       if(minDR > deltaR(traj.position().eta(),traj.position().phi(),TheGlobalPosition.eta(),TheGlobalPosition.phi()))
+       if(minDR > thisMinDr)
        { 
-         minDR = deltaR(traj.position().eta(),traj.position().phi(),TheGlobalPosition.eta(),TheGlobalPosition.phi());
+         minDR = thisMinDr;
 
          CSCdEta = traj.position().eta()-TheGlobalPosition.eta();
          CSCdPhi = traj.position().phi()-TheGlobalPosition.phi();
@@ -174,6 +182,8 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup&
          CSCTraj = TheUnit->toGlobal(iSegment->localDirection());
          CSCChiSq = iSegment->chi2();     
        }
+       int stationId = iDetId.station()-1; 
+       if(thisMinDr<minDrByDepth[stationId]||minDrByDepth[stationId]<0){minDrByDepth[stationId]=thisMinDr;}
 
        if (minTotalImpactParameter > sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter())){
 	 minTotalImpactParameter = sqrt(traj.perigeeParameters().transverseImpactParameter()*traj.perigeeParameters().transverseImpactParameter() + traj.perigeeParameters().longitudinalImpactParameter()*traj.perigeeParameters().longitudinalImpactParameter());
@@ -234,5 +244,3 @@ void CSC::ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
 }
-
-

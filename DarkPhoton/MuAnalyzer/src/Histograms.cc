@@ -31,7 +31,22 @@ void Histograms::book(TFileDirectory histFolder){
 
   m_failHEEnergy = histFolder.make<TH1F>("failHEEnergy",";HE Energy (GeV);Events",200,0,200);
   m_histogram_TrackerTack_P = histFolder.make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
-  m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 7);
+  m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 3);
+  for(int i=0;i<4;i++)
+  {
+     std::string histName = "CSCMinDR_Depth"+std::to_string(i);
+     m_CSCMinDepthDr[i] = histFolder.make<TH1F>(histName.c_str(),";#DeltaR to Nearest CSC Hit;Total Weight",140,0,3);
+     histName = histName+"missing";
+     m_CSCMissingDepthDr[i] = histFolder.make<TH2F>(histName.c_str(),";Tag Muon #eta; Tag Muon #phi; Total Weight",100,-2.6,2.6,100,-3.15,3.15);
+     m_CSCGoodDepthDr[i] = histFolder.make<TH2F>((histName+"good").c_str(),";Tag Muon #eta; Tag Muon #phi; Total Weight",100,-2.6,2.6,100,-3.15,3.15);
+     histName = "CSCMinDr_Depth"+std::to_string(i)+"_otherDepthsGood";
+     m_CSCOtherStationsGood[i] = histFolder.make<TH1F>(histName.c_str(),";#DeltaR to Nearest CSC Hit;Total Weight",140,0,3);
+     histName = histName+"missing";
+     m_CSCOtherGoodMissingDepth[i] = histFolder.make<TH2F>(histName.c_str(),";Tag Muon #eta; Tag Muon #phi; Total Weight",100,-2.6,2.6,100,-3.15,3.15);
+  }
+  m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 3);
+  m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 3);
+
   m_histogram_TrackerTrack_EtaPhi_negEta = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrack_EtaPhi_negEta_pT0to50 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT0to50", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
   m_histogram_TrackerTrack_EtaPhi_negEta_pT50to100 = histFolder.make<TH2F>("TrackerTrack_EtaPhi_negEta_pT50to100", "", 100, -2.4, -1.63, 100, -3.2, 3.2);
@@ -120,6 +135,35 @@ void Histograms::FillHists(EventInfo info)
    m_eventCount->Fill(0.5,info.eventWeight);
    m_MuonTrackMass->Fill(info.diMuonMass,info.eventWeight);
    m_CSCMinDR->Fill(info.minDR,info.eventWeight);
+   bool depthGood[4];
+   for(int i=0;i<4;i++)
+   {
+      m_CSCMinDepthDr[i]->Fill(info.minDrByDepth[i],info.eventWeight);
+      if(info.minDrByDepth[i]>0.05)
+      {
+        m_CSCMissingDepthDr[i]->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);
+        depthGood[i]=false;
+      }
+      else
+      {
+        m_CSCGoodDepthDr[i]->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);
+        depthGood[i]=true;
+      }
+   }
+   for(int i=0;i<4;i++)
+   {
+      bool goodForChecking = true;
+      for(int j=0;j<4;j++)
+      {
+         if(j==i) continue;
+         if(!depthGood[j]) goodForChecking = false;
+      }
+      if(goodForChecking)
+      {
+         m_CSCOtherStationsGood[i]->Fill(info.minDrByDepth[i],info.eventWeight);
+         if(info.minDrByDepth[i]>0.05){m_CSCOtherGoodMissingDepth[i]->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);}
+      }
+   }
    m_HCALHits_EtaPhi->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);
    m_MinDR_MuonHCAL->Fill(info.minDR_muonHCAL,info.eventWeight);
    m_MinDR_RandomHCAL->Fill(info.minDR_randomHCAL,info.eventWeight);

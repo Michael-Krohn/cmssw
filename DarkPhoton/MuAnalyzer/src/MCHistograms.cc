@@ -19,6 +19,7 @@
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "TH2F.h"
+#include "TTree.h"
 #include <iostream>
 
 MCHistograms::MCHistograms()
@@ -29,6 +30,21 @@ MCHistograms::MCHistograms()
 void MCHistograms::book(TFileDirectory histFolder){
   m_genEventCount = histFolder.make<TH1F>("genEventCount", "; ;Events", 1, 0, 1);
   m_genEventCount_EnBin = histFolder.make<TH1F>("genEventCount_EnBin", "; ;Events", 1, 0, 1);
+  m_sigVariables = histFolder.make<TTree>("sigVariables","Tree containing signal variables for bdt");
+  m_sigVariables->Branch("pt",&pt);
+  m_sigVariables->Branch("eta",&eta);
+  m_sigVariables->Branch("phi",&phi);
+  m_sigVariables->Branch("staDR",&staDR);
+  m_sigVariables->Branch("staPhi",&staPhi);
+  m_sigVariables->Branch("staE",&staE);
+  m_sigVariables->Branch("staChi",&staChi);
+  m_sigVariables->Branch("cscDR",&cscDR);
+  for(int i=0;i<7;i++)
+  {
+     std::string name = "HEDepth_"+std::to_string(i);
+     m_sigVariables->Branch(name.c_str(),&matchedHE[i]);
+  }
+  m_sigVariables->Branch("EventWeight",&weight);
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_eventCount_PUup = histFolder.make<TH1F>("eventCount_PUup", "; ;Events", 1, 0, 1);
   m_eventCount_PUdown = histFolder.make<TH1F>("eventCount_PUdown", "; ;Events", 1, 0, 1);
@@ -195,6 +211,21 @@ void MCHistograms::book(TFileDirectory histFolder){
   m_PUmean = histFolder.make<TH1F>("NPUMean",";MC N Pileup Mean; Events", 100,0,100);
   m_energyBinSFs = histFolder.make<TH1F>("energyBinSF",";SF from Energy Binning; Events", 50,0.5,1.5);
   m_usedEnergyBin = histFolder.make<TH1F>("energyBin",";Energy used for DBrem scaling (GeV); Events",1000,0,1000);
+}
+
+void MCHistograms::FillTree(SigEventInfo info)
+{
+   pt=info.probeTrackPt;
+   eta=info.probeTrackEta;
+   phi=info.probeTrackPhi;
+   staDR=info.staMinDr;
+   staE=info.standaloneE;
+   staChi=info.staChi2;
+   staPhi=info.stadPhi;
+   cscDR=info.cscMinDR;
+   weight=info.eventWeight;
+   for(int i=0;i<7;i++){matchedHE[i]=info.hitEnergies[i];}
+   m_sigVariables->Fill();
 }
 
 void MCHistograms::FillHists(SigEventInfo info)

@@ -15,6 +15,7 @@
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DarkPhoton/MuAnalyzer/interface/SigEventInfo.h"
 
+class TTree;
 class TH1F;
 class TH2F;
 
@@ -23,12 +24,26 @@ class MCHistograms{
     MCHistograms();
 
     void book(TFileDirectory histFolder);
+    void FillTree(SigEventInfo info);
     void FillHists(SigEventInfo info);
     void Normalize();
     void IncCutFlow(double weight);
     void FailLocation(double ieta, double iphi, double weight);
     void ResetCutFlow();
   public:
+    //Signal BDT inputs
+    double pt;
+    double eta;
+    double phi;
+    double staDR;
+    double staPhi;
+    double staE;
+    double staChi;
+    double cscDR;
+    double weight;
+    double matchedHE[7];
+    //Histograms
+    TTree* m_sigVariables;
     TH1F* m_genEventCount;
     TH1F* m_genEventCount_EnBin;
     TH1F* m_eventCount;

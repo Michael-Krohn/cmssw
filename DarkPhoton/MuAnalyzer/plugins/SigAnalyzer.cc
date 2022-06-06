@@ -772,6 +772,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
      else if(staMinDr<1.0&&info.diMuonMass>80&&info.diMuonMass<100)
      {
         partialDisappear.FillHists(info);
+        partialDisappear.FillTree(info);
         if(info.probeCharge>0)
         {
            if(info.stadPhi>0.1){partialDisappear_largeCSCDefl.FillHists(info);}

@@ -50,14 +50,21 @@ def main():
    biasFactors = {'0p1':2000,'0p2':4000,'0p4':8000,'1p0':40000,'2p0':80000,'4p0':160000}
   
    dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
-   dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
+   dyNTotalEvents.SetBinContent(1,1451847)
+   dyNTotalEvents.SetBinError(1,math.sqrt(1451847))
    dyNTotalEvents.Write("totalEvents_DY")
    for variant in variants:
       dyHcalEnergy = dyFile.Get("demo/totalDisappear/ConeEnergy"+variant).Clone()
       dyHcalEnergy.Write("hcalEnergy_DY"+variant)
       dyNEvents = dyFile.Get("demo/totalDisappear/eventCount"+variant).Clone()
+      dyNEvents.SetBinContent(1,2)
+      dyNEvents.SetBinError(1,math.sqrt(2))
       dyNEvents.Write("nEvents_DY"+variant)
-   
+   muPXNevents = ROOT.TH1F("MuPXNevents","",1,0,1)
+   muPXNevents.SetBinContent(1,18.8)
+   muPXNevents.SetBinError(1,3.96)
+   for variant in variants:
+      muPXNevents.Write("nEvents_muPX"+variant)
    for sigfile, mass in sigFiles:
       dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount").Clone()
       dbremNTotalEvents.SetBinContent(1,sigfile.Get("demo/allEvents/cutProgress").GetBinContent(1))

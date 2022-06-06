@@ -30,6 +30,7 @@ class EventInfo{
     double heConeEnergy;
     double probeHcalIso;
     double tagHcalIso;
+    double minDrByDepth[4];
     int probeiEta;
     int centerInCone;
     int centerOutOfCone;

@@ -43,6 +43,7 @@ class CSC{
     double MuonP_dR;
     double minDR;
     double CSCdEta;
+    double minDrByDepth[4];
     double CSCdPhi;
     double recMinDR;
     double minDR_Muon;

@@ -100,8 +100,6 @@
 #include "DataFormats/JetReco/interface/CaloJet.h" 
 
 //Event Weights
-#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
-
 #include "DarkPhoton/MuAnalyzer/interface/MCHistograms.h"
 #include "DarkPhoton/MuAnalyzer/interface/CSC.h"
 #include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
