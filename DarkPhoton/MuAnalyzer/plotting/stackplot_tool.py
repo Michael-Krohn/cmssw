@@ -18,7 +18,7 @@ class stackInfo:
    def plotAll(self,basedir,tag,outDir):
       #Histogram name, X-axis label, Log Scale, Title, Rebin
       #self.stack(basedir+"/cutProgress","CutProgress",True,tag,outDir,False)
-      #self.stack(basedir+"/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag,outDir,True)
+      self.stack(basedir+"/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag,outDir,True)
       #self.stack(basedir+"/TaggingMuonEta","Tagging Muon #eta",True,tag,outDir)
       #self.stack(basedir+"/TaggingMuonPt","Tagging Muon Pt",False,tag,outDir,True)
       #self.stack(basedir+"/TaggingMuonPhi","Tagging Muon #phi",False,tag,outDir)
@@ -53,7 +53,7 @@ class stackInfo:
       #self.stack("caloJets/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", Calo Jet Nearby Probe",outDir)
       #self.stack("caloJets/StandaloneMuondEoverE","Standalone muon #Delta E over E",True,tag+", No Muon nearby probe",outDir,False,showUnderflow=True)
       #self.cutFlowText(basedir+"/cutProgress",outDir)
-      self.stack("noMuonProbeCR/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", No standalone muon near probe",outDir)
+      self.stack("noMuonProbeCR/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+" ",outDir)
       self.stack("allEvents/ProbeEcalIsolation","ECAL Energy in 0.4 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
       self.stack("allEvents/ProbeEcalIsolation0p2","ECAL Energy in 0.2 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
       self.stack("allEvents/ProbeEcalIsolation0p1","ECAL Energy in 0.1 Cone (GeV)",True,tag+", Off Peak CR",outDir,xmax=10,ymin=4)
@@ -61,7 +61,6 @@ class stackInfo:
 
       self.stack("passSig/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", No Standalone muon near probe",outDir)
       self.stack("partialDisappear/MuonsTrackMass","Invariant Mass of Tag/Probe Pair (GeV)",True,tag+", Standalone muon near probe",outDir)
-      self.stack("passSigNearCSC/MuonsTrackMass","Inv Mass of Tag/Probe Pair (GeV)",True,tag+", no standalone muon, CSC hit nearby",outDir)
       self.stack("noCaloJets/StandaloneMuondEoverE","Standalone muon vs. probe #Delta E over E",True,tag+", No Calo Jet near probe",outDir)
       self.stack("partialDisappear/StandaloneMuondEoverE","Standalone muon vs. probe #Delta E over E",True,tag+", Standalone muon near probe",outDir)
 
@@ -165,7 +164,7 @@ class stackInfo:
       if log and minimum<=0:
          minimum=0.5     
 
-      stackplot.SetMaximum(maximum*1.2)
+      stackplot.SetMaximum(maximum*30.)
       stackplot.SetMinimum(minimum*0.2)
       if(ymin>0):
          stackplot.SetMinimum(ymin)

@@ -40,7 +40,7 @@ options.register( 'scaleFactor',
                                   "Reweighting factor for dark brem process")
 				
 options.register( 'binSFsfname',
-                                  "/hdfs/cms/user/revering/dphoton/dbremBinningSFs_map0p2.root",
+                                  "/local/cms/user/revering/datafiles/dbremBinningSFs/dbremBinningSFs_map0p2.root",
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.string,
                                   "Dark Photon Energy binning filename")
@@ -58,9 +58,9 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
 
 if(options.isMC):
-        process.GlobalTag.globaltag = cms.string('102X_upgrade2018_realistic_v17')
+        process.GlobalTag.globaltag = cms.string('106X_upgrade2018_realistic_v15_L1v1')
 else:
-        process.GlobalTag.globaltag = cms.string('94X_dataRun2_ReReco_EOY17_v6')
+        process.GlobalTag.globaltag = cms.string('106X_dataRun2_v32')
 
 process.MessageLogger.cerr.threshold = 'INFO'
 process.MessageLogger.cerr.INFO = cms.untracked.PSet(
@@ -111,6 +111,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     dbremYTag = cms.InputTag("g4SimHits","DBremLocationY"),
     dbremZTag = cms.InputTag("g4SimHits","DBremLocationZ"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
+    cscSimHits = cms.InputTag("g4SimHits","MuonCSCHits"),
     RPCRecHitTag = cms.InputTag("rpcRecHits"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),

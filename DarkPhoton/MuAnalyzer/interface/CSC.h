@@ -18,43 +18,78 @@
 #include "DataFormats/CSCRecHit/interface/CSCRecHit2DCollection.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
+#include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
-class CSC{
-  public:
-    CSC();
+class CSC {
+public:
+  CSC();
 
-    void ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, std::vector<const reco::Track*>::const_iterator& iTrack, GlobalVector one_momentum, std::vector<reco::TransientTrack> tracksToVertex, GlobalPoint VertexPosition);
-    void ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition);
-    void ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition);
-    void ExtrapolateTrackToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken, const reco::Track* iTrack, reco::TransientTrack tracksToVertex, GlobalPoint VertexPosition);
-   void ExtrapolateMuonToCSC(const edm::Event& iEvent, const edm::EventSetup& iSetup, edm::EDGetTokenT<CSCSegmentCollection > CSCSegment_Label, const reco::Muon* iMuon, GlobalVector two_momentum, std::vector<reco::TransientTrack> tracksToVertex);
+  void ExtrapolateTrackToCSC(const edm::Event& iEvent,
+                             const edm::EventSetup& iSetup,
+                             edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                             std::vector<const reco::Track*>::const_iterator& iTrack,
+                             GlobalVector one_momentum,
+                             std::vector<reco::TransientTrack> tracksToVertex,
+                             GlobalPoint VertexPosition);
+  void ExtrapolateTrackToCSC(const edm::Event& iEvent,
+                             const edm::EventSetup& iSetup,
+                             edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                             edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken,
+                             const reco::Track* iTrack,
+                             reco::TransientTrack tracksToVertex,
+                             GlobalPoint VertexPosition);
+  void ExtrapolateTrackToCSC(const edm::Event& iEvent,
+                             const edm::EventSetup& iSetup,
+                             edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                             const reco::Track* iTrack,
+                             reco::TransientTrack tracksToVertex,
+                             GlobalPoint VertexPosition);
+  void ExtrapolateTrackToCSC(const edm::Event& iEvent,
+                             const edm::EventSetup& iSetup,
+                             edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                             edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken,
+                             const reco::Track* iTrack,
+                             reco::TransientTrack tracksToVertex,
+                             GlobalPoint VertexPosition);
+  void ExtrapolateMuonToCSC(const edm::Event& iEvent,
+                            const edm::EventSetup& iSetup,
+                            edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                            const reco::Muon* iMuon,
+                            GlobalVector two_momentum,
+                            std::vector<reco::TransientTrack> tracksToVertex);
+  void ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
+                                const edm::EventSetup& iSetup,
+                                edm::EDGetToken cscSimHitsToken,
+                                const reco::Track* selectedTrack);
 
-    GlobalPoint MuonGlobalPoint;
-    GlobalPoint TrackGlobalPoint;
-    GlobalPoint TrackVertex;
-    GlobalVector CSCTraj;
-    double CSCChiSq;
-    double MuonEta;
-    double MuonPhi;
-    double MuonP;
-    double MuonEta_dR;
-    double MuonPhi_dR;
-    double MuonP_dR;
-    double minDR;
-    double CSCdEta;
-    double minDrByDepth[4];
-    double CSCdPhi;
-    double recMinDR;
-    double minDR_Muon;
-    double minTotalImpactParameter;
-    double minTotalImpactParameter_Muon;
-    double TrackP;
-    double TrackEta;
-    double TrackPhi;
-    double TrackP_dR;
-    double TrackEta_dR;
-    double TrackPhi_dR;
+  GlobalPoint MuonGlobalPoint;
+  GlobalPoint TrackGlobalPoint;
+  GlobalPoint TrackVertex;
+  GlobalVector CSCTraj;
+  double CSCChiSq;
+  double MuonEta;
+  double MuonPhi;
+  double MuonP;
+  double MuonEta_dR;
+  double MuonPhi_dR;
+  double MuonP_dR;
+  double minDR;
+  int nSimCSCHits;
+  double CSCdEta;
+  double minDrByDepth[4];
+  double minSimCSCDr;
+  double CSCdPhi;
+  double recMinDR;
+  double minDR_Muon;
+  double minTotalImpactParameter;
+  double minTotalImpactParameter_Muon;
+  double TrackP;
+  double TrackEta;
+  double TrackPhi;
+  double TrackP_dR;
+  double TrackEta_dR;
+  double TrackPhi_dR;
 };
 
 #endif

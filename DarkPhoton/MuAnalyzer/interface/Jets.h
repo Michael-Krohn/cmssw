@@ -8,19 +8,17 @@
 #include "FWCore/Utilities/interface/EDGetToken.h"
 #include "DataFormats/JetReco/interface/PFJet.h"
 
+class Jets {
+public:
+  Jets();
 
-class Jets{
+  void SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken);
+  void FindNearestJet(const reco::Track* probe);
 
-  public:
-    Jets();
-
-    void SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken);
-    void FindNearestJet(const reco::Track* probe);
-
-    std::vector<const reco::PFJet*> selectedJets;
-    double nearestJetDr;
-    double nearestJetE;
-    double nearJetMaxE;
+  std::vector<const reco::PFJet*> selectedJets;
+  double nearestJetDr;
+  double nearestJetE;
+  double nearJetMaxE;
 };
 
 #endif

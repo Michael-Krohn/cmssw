@@ -25,13 +25,13 @@ process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.SimIdeal_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
-process.g4SimHits.Physics.type = 'SimG4Core/Physics/CustomPhysics'
-process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
-	DBremWatcher = cms.PSet(
-		PDGCodes = cms.untracked.vint32([9994])
-	),
-	type = cms.string('DBremWatcher')
-) )
+#process.g4SimHits.Physics.type = 'SimG4Core/Physics/CustomPhysics'
+#process.g4SimHits.Watchers = cms.VPSet(cms.PSet(
+#	DBremWatcher = cms.PSet(
+#		PDGCodes = cms.untracked.vint32([9994])
+#	),
+#	type = cms.string('DBremWatcher')
+#) )
 
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(6284)

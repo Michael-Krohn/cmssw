@@ -17,9 +17,7 @@
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/Common/interface/Ref.h"
 
-class ParticleListDrawer
-{
-   public:
-      void drawEvent(const edm::Event& iEvent, edm::EDGetToken srcToken_);
-
+class ParticleListDrawer {
+public:
+  void drawEvent(const edm::Event& iEvent, edm::EDGetToken srcToken_);
 };

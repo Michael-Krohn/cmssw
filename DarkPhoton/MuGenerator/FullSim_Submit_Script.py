@@ -15,6 +15,6 @@ if len(sys.argv) < 1:
 #JobNumber = JobNumber+301
 from subprocess import call
 
-call(["/data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_2_6/src/DarkPhoton/MuGenerator/ZTT13TeV_SignalGen.sh", str(JobNumber+200), "ZTT13TeV_pythia8_GEN_cfg.py"])
+call(["/data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_2_6/src/DarkPhoton/MuGenerator/ZMM13TeV_SignalGen.sh", str(JobNumber+200), "ZMM13TeV_pythia8_GEN_cfg.py"])
 
 

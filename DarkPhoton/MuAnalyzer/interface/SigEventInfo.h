@@ -9,118 +9,120 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
-#include "DataFormats/TrackReco/interface/Track.h"  
+#include "DataFormats/TrackReco/interface/Track.h"
 #include "TH1F.h"
 
-class SigEventInfo{
-  public:
-    SigEventInfo();
-    double eventWeight;
-    double dbremWeight;
-    double genEventWeight;
-    bool filledWeights;
-    std::vector<double> PuUpDownWeights;
-    double muRocWeight;
-    std::vector<double> muIdWeights;
-    std::vector<double> muIsoWeights;
-    std::vector<double> muTrigWeights;
-    int sigCat;
-    double dbremZ;
-    double dbremPerp;
-    double bremR;
-    double dbremInitialE;
-    double dbremFinalE;
-    double deflectingAngle;
-    int nTagMuons;
-    int nPairedProbes;
-    double probeTrackIso;
-    double probeEcalIso;
-    double probeEcalIso0p1;
-    double probeEcalIso0p2;
-    double probeEcalIso0p05;
-    bool isLoose;
-    bool isTight;
-    bool isHighPurity;
-    double probeReducedChi;
-    double tagMuonEta;
-    double tagMuonPt;
-    double probeTrackEta;
-    double probeTrackPhi;
-    double probeTrackPt;
-    double pairVtxChi;
-    double diMuonMass;
-    double minSimCSCDr;
-    double minSimCSCELoss;
-    //CSC parameters
-    double minCSCImpactParameter;
-    double cscMinDR;
-    double cscRecHitMinDR;
-    double cscChiSq;
-    double cscHitAngleChange;
-    //Transient Track Studies
-    double closestApproach;
-    double staMinDr;
-    double standaloneDEoverE;
-    double dxy;
-    double dsz;
-    double dca;
-    double dcal;
-    //HCAL
-    int nCellsFound;
-    int nNeighborCellsFound;
-    int iEta;
-    double cellCenterDEta;
-    double cellCenterDPhi;
-    double coneEnergy;
-    int coneHits;
-    double hitEnergies[7];
-    double neighborHitEnergies[7];
-    int hitsOverThresh;
-    double vtxZ;
-    double vtxPerp;
-    int bremDepth;
-    //Pf Jets
-    double nearestJetDr;
-    double nearJetMaxE;
-    double nearestJetE;
-    //Calo Jets
-    double minCaloJetDr;
-    double caloJetHcalE;
-    double caloJetEcalE;
-    double caloJetTotalE;
-    double caloConeE;
-    int caloConeHits;
-    //Gen Matching
-    double minGenMuDr;
-    double minGenDE;
-    double genProbeMatchdE;
-    double genProbeMatchdR;
-    double probeMuondE;
-    double probeMuondR;
-    double standaloneE;
-    double globalMuonE;
-    int particlePDG;
-    double minMuDr;
-    int nEle;
-    int nExtraEle;
-    int nExtraMuon;
-    int probeCharge;
-    double CSCdEta;
-    double CSCdPhi;
-    double stadEta;
-    double stadPhi;
-    double staChi2;
-    int staNHits;
-    double staTransDCA;
-    double staLongDCA;
-    double finalMuE;
-    double disStaE;
-    double disStaDEoverE;
-    //pileup
-    double pileupWeight;
-    int nPUmean;
-    //Energy bin SFs
-    int usedBin;
-    double energyBinSF;
+class SigEventInfo {
+public:
+  SigEventInfo();
+  double eventWeight;
+  double dbremWeight;
+  double genEventWeight;
+  bool filledWeights;
+  std::vector<double> PuUpDownWeights;
+  double muRocWeight;
+  std::vector<double> muIdWeights;
+  std::vector<double> muIsoWeights;
+  std::vector<double> muTrigWeights;
+  int sigCat;
+  double dbremZ;
+  double dbremPerp;
+  double bremR;
+  double dbremInitialE;
+  double dbremFinalE;
+  double deflectingAngle;
+  int nTagMuons;
+  int nPairedProbes;
+  double probeTrackIso;
+  double probeEcalIso;
+  double probeEcalIso0p1;
+  double probeEcalIso0p2;
+  double probeEcalIso0p05;
+  bool isLoose;
+  bool isTight;
+  bool isHighPurity;
+  double probeReducedChi;
+  double tagMuonEta;
+  double tagMuonPt;
+  double probeTrackEta;
+  double probeTrackPhi;
+  double probeTrackPt;
+  double pairVtxChi;
+  double diMuonMass;
+  double minSimCSCDr;
+  double minSimCSCELoss;
+  //CSC parameters
+  double minCSCImpactParameter;
+  double cscMinDR;
+  int nSimCSCHits;
+  double minDrByStation[4];
+  double cscRecHitMinDR;
+  double cscChiSq;
+  double cscHitAngleChange;
+  //Transient Track Studies
+  double closestApproach;
+  double staMinDr;
+  double standaloneDEoverE;
+  double dxy;
+  double dsz;
+  double dca;
+  double dcal;
+  //HCAL
+  int nCellsFound;
+  int nNeighborCellsFound;
+  int iEta;
+  double cellCenterDEta;
+  double cellCenterDPhi;
+  double coneEnergy;
+  int coneHits;
+  double hitEnergies[7];
+  double neighborHitEnergies[7];
+  int hitsOverThresh;
+  double vtxZ;
+  double vtxPerp;
+  int bremDepth;
+  //Pf Jets
+  double nearestJetDr;
+  double nearJetMaxE;
+  double nearestJetE;
+  //Calo Jets
+  double minCaloJetDr;
+  double caloJetHcalE;
+  double caloJetEcalE;
+  double caloJetTotalE;
+  double caloConeE;
+  int caloConeHits;
+  //Gen Matching
+  double minGenMuDr;
+  double minGenDE;
+  double genProbeMatchdE;
+  double genProbeMatchdR;
+  double probeMuondE;
+  double probeMuondR;
+  double standaloneE;
+  double globalMuonE;
+  int particlePDG;
+  double minMuDr;
+  int nEle;
+  int nExtraEle;
+  int nExtraMuon;
+  int probeCharge;
+  double CSCdEta;
+  double CSCdPhi;
+  double stadEta;
+  double stadPhi;
+  double staChi2;
+  int staNHits;
+  double staTransDCA;
+  double staLongDCA;
+  double finalMuE;
+  double disStaE;
+  double disStaDEoverE;
+  //pileup
+  double pileupWeight;
+  int nPUmean;
+  //Energy bin SFs
+  int usedBin;
+  double energyBinSF;
 };
 #endif
