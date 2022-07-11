@@ -2,7 +2,9 @@
 import argparse
 import os
 import ROOT
+import pickle
 import math
+import pandas
 import numpy as np
 
 def calcScaleFactor(name,skimFile,resultFile):
@@ -43,15 +45,16 @@ def main():
    total = writeFile.mkdir("completeDisappearance")
    partial = writeFile.mkdir("partialDisappearance")
    partialStaDphi = writeFile.mkdir("partialDisappearanceLargeStaDPhi")
+   partialBDT = writeFile.mkdir("partialDisappearanceBDT")
 
    total.cd()
-   variants = ['','_PUup','_PUdown','_IDup','_IDdown','_Trigup','_Trigdown']
-   sigvariants = ['','_PUup','_PUdown','_IDup','_IDdown','_Trigup','_Trigdown','_EnBin']
+   variants = ['','_PUup','_PUdown','_IDup','_IDdown','_ISOup','_ISOdown','_Trigup','_Trigdown']
+   sigvariants = ['','_PUup','_PUdown','_IDup','_IDdown','_Trigup','_Trigdown','_ISOup','_ISOdown','_EnBin']
    biasFactors = {'0p1':2000,'0p2':4000,'0p4':8000,'1p0':40000,'2p0':80000,'4p0':160000}
   
    dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
-   dyNTotalEvents.SetBinContent(1,1451847)
-   dyNTotalEvents.SetBinError(1,math.sqrt(1451847))
+   dyNTotalEvents.SetBinContent(1,1451847./0.0669)
+   dyNTotalEvents.SetBinError(1,math.sqrt(1451847)/0.0669)
    dyNTotalEvents.Write("totalEvents_DY")
    for variant in variants:
       dyHcalEnergy = dyFile.Get("demo/totalDisappear/ConeEnergy"+variant).Clone()
@@ -136,9 +139,9 @@ def main():
 
    resultsDir = "../MuFilter/results"
    muPxFiles = []
-   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu",88.29))
-   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic",365.34))
-   muPxFiles.append((ROOT.TFile(resultsDir+"/WJets/hists/WJets_Signal_monitor.root","READ"),ROOT.TFile(resultsDir+"/WJets/hists/WJets_SignalRegion_analyzedsplit.root","READ"),"WJets",61527.6))
+#   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu",88.29))
+#   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic",365.34))
+#   muPxFiles.append((ROOT.TFile(resultsDir+"/WJets/hists/WJets_Signal_monitor.root","READ"),ROOT.TFile(resultsDir+"/WJets/hists/WJets_SignalRegion_analyzedsplit.root","READ"),"WJets",61527.6))
 
    for monitorFile, resultFile, name, cx in muPxFiles:
       for variant in variants:
@@ -172,6 +175,88 @@ def main():
          hcalEnergy = dyFile.Get("demo/partialDisappear_largeCSCDefl/ConeEnergy"+variant).Clone()
          hcalEnergy.Write("hcalEnergy_"+name+variant)
 
+   #Fill partial region bdt fitting region
+   partialBDT.cd()
+   dictList = pickle.load(open('jupyterstuff/bdtPredictions.pkl','rb'))
+   dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
+   dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
+   dyNTotalEvents.Write("totalEvents_DY")
+   for sigfile, mass in sigFiles:
+      dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount").Clone()
+      dbremNTotalEvents.SetBinContent(1,sigfile.Get("demo/allEvents/cutProgress").GetBinContent(1))
+      dbremNTotalEvents.Write("totalEvents_DBrem_"+mass)
+      dbremNTotalEvents = sigfile.Get("demo/allEvents/genEventCount_EnBin").Clone()
+      dbremNTotalEvents.Write("totalEvents_DBrem_"+mass+"_EnBin")
+
+      for prediction in dictList:
+         if 'name' not in prediction.keys():
+            continue
+         if prediction['name']==mass:
+            for variant in variants:
+               sigBDTScore = ROOT.TH1F("bdtScore"+mass+variant,";BDT Score;Event Weight",100,0,1)
+               dyBDTScore = ROOT.TH1F("dyBDTScore"+mass+variant,";BDT Score;Event Weight",100,0,1)
+               if variant=='':
+                  weights = prediction['EventWeight']
+                  dyWeights = dictList[-1]['EventWeight']
+               elif 'Trigup' in variant:
+                  weights = prediction['TrigUpWeight']
+                  dyWeights = dictList[-1]['TrigUpWeight']
+               elif 'Trigdown' in variant:
+                  weights = prediction['TrigDownWeight']
+                  dyWeights = dictList[-1]['TrigDownWeight']
+               else:
+                  weights = prediction[variant.split("_")[-1]+"Weight"]
+                  dyWeights = dictList[-1][variant.split("_")[-1]+"Weight"]
+               for idx,predValue in enumerate(prediction['sigPreds']):
+                  sigBDTScore.Fill(predValue,weights[idx])
+               for idx,dyPredValue in enumerate(prediction['mcPreds']):
+                  dyBDTScore.Fill(dyPredValue,dyWeights[idx])
+               sigBDTScore.Write("bdtScore_DBrem_"+mass+variant)
+               dyBDTScore.Write("bdtScore_DY_"+mass+variant)
+               dyNEvents = dyFile.Get("demo/partialDisappear/eventCount"+variant).Clone()
+               sigNEvents = sigfile.Get("demo/partialDisappear/eventCount"+variant).Clone()
+               dyNEvents.Scale(prediction['dyEff'])
+               sigNEvents.Scale(prediction['sigEff'])
+               dyNEvents.Write("nEvents_DY_"+mass+variant)
+               sigNEvents.Write("nEvents_DBrem_"+mass+variant)
+            
+   resultsDir = "../MuFilter/results"
+   muPxFiles = []
+#   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu",88.29))
+##   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic",365.34))
+##   muPxFiles.append((ROOT.TFile(resultsDir+"/WJets/hists/WJets_Signal_monitor.root","READ"),ROOT.TFile(resultsDir+"/WJets/hists/WJets_SignalRegion_analyzedsplit.root","READ"),"WJets",61527.6))
+
+   for monitorFile, resultFile, name, cx in muPxFiles:
+      for variant in variants:
+         total.cd()
+         eff = calcScaleFactor("passSig/eventCount"+variant,monitorFile,resultFile)
+         ExpectedNevents = cx*1000*float(59.8)*eff
+         NEvents = resultFile.Get("demo/passSig/eventCount"+variant).Clone()
+         if(NEvents.Integral()<0):
+            print("Broken file! Name is: "+name+".\n")
+         if(NEvents.Integral()>0):
+            NEvents.Scale(ExpectedNevents/NEvents.Integral())
+         NEvents.Write("nEvents_"+name+variant)
+         partial.cd()
+         eff = calcScaleFactor("partialDisappear/StandaloneMuondEoverE"+variant,monitorFile,resultFile)
+         ExpectedNevents = cx*1000*float(59.8)*eff
+         NEvents = resultFile.Get("demo/partialDisappear/eventCount"+variant).Clone()
+         if(NEvents.Integral()>0):
+            NEvents.Scale(ExpectedNevents/NEvents.Integral())
+         NEvents.Write("nEvents_"+name+variant)
+         StaDEoverE = resultFile.Get("demo/partialDisappear/StandaloneMuondEoverE"+variant).Clone()    
+         StaDEoverE.Write("staDEoverE_"+name+variant)
+         partialStaDphi.cd()
+         eff = calcScaleFactor("partialDisappearLargeStaDphi/StandaloneMuondEoverE"+variant,monitorFile,resultFile)
+         ExpectedNevents = cx*1000*float(59.8)*eff
+         NEvents = resultFile.Get("demo/partialDisappearLargeStaDphi/eventCount"+variant).Clone()
+         if(NEvents.Integral()>0):
+            NEvents.Scale(ExpectedNevents/NEvents.Integral())
+         NEvents.Write("nEvents_"+name+variant)
+         StaDEoverE = resultFile.Get("demo/partialDisappearLargeStaDphi/StandaloneMuondEoverE"+variant).Clone()    
+         StaDEoverE.Write("staDEoverE_"+name+variant)
+         hcalEnergy = dyFile.Get("demo/partialDisappear_largeCSCDefl/ConeEnergy"+variant).Clone()
+         hcalEnergy.Write("hcalEnergy_"+name+variant)
 
    writeFile.Close()
    dyFile.Close()
