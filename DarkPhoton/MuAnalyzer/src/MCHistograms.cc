@@ -39,6 +39,8 @@ void MCHistograms::book(TFileDirectory histFolder) {
   m_sigVariables->Branch("cscDR", &cscDR);
   m_sigVariables->Branch("probeCharge", &probeCharge);
   m_sigVariables->Branch("ecalIso", &ecalIso);
+  m_sigVariables->Branch("cellEdgeDeta", &minCellDeta);
+  m_sigVariables->Branch("cellEdgeDphi", &minCellDphi);
   m_sigVariables->Branch("PUupWeight", &PUupWeight);
   m_sigVariables->Branch("PUdownWeight", &PUdownWeight);
   m_sigVariables->Branch("IDupWeight", &IDupWeight);
@@ -342,6 +344,8 @@ void MCHistograms::FillTree(SigEventInfo info) {
   for (int i = 0; i < 7; i++) {
     matchedHE[i] = info.hitEnergies[i];
   }
+  minCellDeta=info.cellCenterDEta;
+  minCellDphi=info.cellCenterDPhi;
   PUupWeight = info.eventWeight * info.PuUpDownWeights[0] / info.pileupWeight;
   PUdownWeight = info.eventWeight * info.PuUpDownWeights[1] / info.pileupWeight;
   IDupWeight = info.eventWeight * info.muIdWeights[1] / info.muIdWeights[0];

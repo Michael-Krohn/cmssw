@@ -582,6 +582,36 @@ bool HCAL::FindMuonHits(
   GetAdjacentCells(theHBHETopology, AdjacentCells, ClosestCell, Ndepths, TrackiEta, Tdeta, Tdphi, CellsPerDepth);
   //  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
   CellsFound = GetTransientProjectedCells(HEGeom, CenterCells, track);
+  int lastDepth = -1;
+  int depthOffset=0;
+  for(int cell=0;cell<CellsFound;cell++){
+    if(cell>=Ndepths){break;}
+    GlobalPoint cellGlobalPoint = caloGeom->getGeometry(CenterCells[cell])->getPosition();
+    int thisDepth = CenterCells[cell].depth()-1;
+    if(thisDepth<7){foundDepths[thisDepth]=true;}
+    if(thisDepth==lastDepth)
+    {
+       m_crossDepths=true;
+       depthOffset++;
+       continue;
+    }
+    lastDepth=thisDepth;
+    double etaSize = caloGeom->getGeometry(CenterCells[cell])->etaSpan();
+    double phiSize = caloGeom->getGeometry(CenterCells[cell])->phiSpan();
+    TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(cellGlobalPoint);
+    cellDetaByDepth[cell-depthOffset]=traj.position().eta()-cellGlobalPoint.eta();
+    cellDphiByDepth[cell-depthOffset]=traj.position().phi()-cellGlobalPoint.phi(); 
+    double etaEdge=etaSize/2.-fabs(cellDetaByDepth[cell-depthOffset]);
+    double phiEdge=phiSize/2.-fabs(cellDphiByDepth[cell-depthOffset]);
+    if(etaEdgeMin<0||etaEdge<etaEdgeMin){etaEdgeMin=etaEdge;}
+    if(phiEdgeMin<0||phiEdge<phiEdgeMin){phiEdgeMin=phiEdge;}
+    if(cellDetaByDepth[cell-depthOffset]>0){cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]-etaSize/2.;}
+    else{cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]+etaSize/2.;}
+    if(cellDphiByDepth[cell-depthOffset]>0){cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]-phiSize/2.;}
+    else{cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]+phiSize/2.;}
+  }
+  if(fabs(etaEdgeMin)<0.016||fabs(phiEdgeMin)<0.004){onEdge=true;}
+
   Tdphi = TrackGlobalPoint.phi() - caloGeom->getGeometry(ClosestCell)->phiPos();
   Tdeta = TrackGlobalPoint.eta() - caloGeom->getGeometry(ClosestCell)->etaPos();
   bool etaPlus = Tdeta > 0;

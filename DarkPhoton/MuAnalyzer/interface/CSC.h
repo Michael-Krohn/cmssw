@@ -20,10 +20,11 @@
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "TH2F.h"
 
 class CSC {
 public:
-  CSC();
+  CSC(bool loadSFs=false);
 
   void ExtrapolateTrackToCSC(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,
@@ -62,11 +63,15 @@ public:
                                 const edm::EventSetup& iSetup,
                                 edm::EDGetToken cscSimHitsToken,
                                 const reco::Track* selectedTrack);
+ 
+  double GetMissingHitWeight(int station, double eta, double phi);
 
   GlobalPoint MuonGlobalPoint;
   GlobalPoint TrackGlobalPoint;
   GlobalPoint TrackVertex;
   GlobalVector CSCTraj;
+  TH2F* missingCSCScaleFactors[4];
+  bool loadSFs;
   double CSCChiSq;
   double MuonEta;
   double MuonPhi;

@@ -16,7 +16,7 @@ def main():
    
    parser = argparse.ArgumentParser(description="Fit the background fraction as a function of isolation")
    parser.add_argument("--o", "--outputdir"  , dest="outDir"    , help="output directory"          , default=os.getcwd()+"/histograms/")
-   parser.add_argument("--i", dest="inDir", help="Directory containing analyzer results", default=os.getcwd()+"/histograms/")
+   parser.add_argument("--i", dest="inDir", help="Directory containing analyzer results", default="/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/")
    arg = parser.parse_args()
    outDir = arg.outDir
    #Check for trailing slash on ouput dir and delete
@@ -137,7 +137,6 @@ def main():
          dbremStaDEoverE = sigfile.Get("demo/partialDisappear_largeCSCDefl/StandaloneMuondEoverE"+variant).Clone()    
          dbremStaDEoverE.Write("staDEoverE_DBrem_"+mass+variant)
 
-   resultsDir = "../MuFilter/results"
    muPxFiles = []
 #   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu",88.29))
 #   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic",365.34))
@@ -177,7 +176,7 @@ def main():
 
    #Fill partial region bdt fitting region
    partialBDT.cd()
-   dictList = pickle.load(open('jupyterstuff/bdtPredictions.pkl','rb'))
+   dictList = pickle.load(open('/loca/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/jupyterstuff/bdtPredictions.pkl','rb'))
    dyNTotalEvents = dyFile.Get("demo/allEvents/genEventCount").Clone()
    dyNTotalEvents.SetBinContent(1,dyFile.Get("demo/allEvents/cutProgress").GetBinContent(1))
    dyNTotalEvents.Write("totalEvents_DY")
@@ -220,7 +219,7 @@ def main():
                dyNEvents.Write("nEvents_DY_"+mass+variant)
                sigNEvents.Write("nEvents_DBrem_"+mass+variant)
             
-   resultsDir = "../MuFilter/results"
+   resultsDir = "/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuFilter/results"
    muPxFiles = []
 #   muPxFiles.append((ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTTo2L2Nu/hists/TTTo2L2Nu_SignalRegion_analyzedsplit.root","READ"), "TTBar2L2Nu",88.29))
 ##   muPxFiles.append((ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_Signal_monitor.root","READ"), ROOT.TFile(resultsDir+"/TTToSemiLeptonic/hists/TTToSemiLeptonic_SignalRegion_analyzedsplit.root","READ"), "TTBarSemiLeptonic",365.34))

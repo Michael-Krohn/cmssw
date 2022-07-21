@@ -12,7 +12,7 @@
 #include "DarkPhoton/MuAnalyzer/interface/Histograms.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 
-CSC::CSC() {
+CSC::CSC(bool loadSFs) {
   minDR = 10;
   recMinDR = 100;
   minSimCSCDr = -1;
@@ -22,6 +22,21 @@ CSC::CSC() {
   minTotalImpactParameter = 10000;
   for (int i = 0; i < 4; i++) {
     minDrByDepth[i] = -1;
+  }
+  if(loadSFs)
+  {
+      printf("Trying to open the CSC scale factors.\n");
+      std::string sfName = "/data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/missingCSCscaleFactors.root";
+    TFile* lFile_SF = TFile::Open(sfName.c_str(),"READ");
+    printf("Opened the file.\n");
+    for (int station=0;station<4;station++)
+    {
+      std::string name="missingCSCSf_station"+std::to_string(station+1);
+      missingCSCScaleFactors[station] = (TH2F*)lFile_SF->Get(name.c_str());
+      missingCSCScaleFactors[station]->SetDirectory(0);
+      printf("Filled a station thingy.\n");
+    }
+    lFile_SF->Close();
   }
 }
 
@@ -307,21 +322,22 @@ void CSC::ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
     goodDepths[depth] = false;
   }
   if (cscSimHits.isValid()) {
-    for (unsigned int simHitCounter = 0; simHitCounter < cscSimHits->size(); simHitCounter++) {
+    for (unsigned int simHitCounter = 0; simHitCounter < cscSimHits->size(); simHitCounter++)
+    {
       const PSimHit& simHit = (*cscSimHits)[simHitCounter];
-      if (abs(simHit.particleType()) == 13) {
-        const CSCLayer* csclayer = cscGeom->layer((CSCDetId)simHit.detUnitId());
-        int stationId = csclayer->id().station() - 1;
-        const auto& thisPoint = csclayer->toGlobal(simHit.localPosition());
-        double SimCSCDr = deltaR(thisPoint.eta(), thisPoint.phi(), selectedTrack->eta(), selectedTrack->phi());
-        if (SimCSCDr < 0.05) {
-          goodDepths[stationId] = true;
-        }
-        if (SimCSCDr < minSimCSCDr || minSimCSCDr < 0) {
-          minSimCSCDr = SimCSCDr;
-        }
+      //if (abs(simHit.particleType()) == 13) {
+      const CSCLayer* csclayer = cscGeom->layer((CSCDetId)simHit.detUnitId());
+      int stationId = csclayer->id().station() - 1;
+      const auto& thisPoint = csclayer->toGlobal(simHit.localPosition());
+      double SimCSCDr = deltaR(thisPoint.eta(), thisPoint.phi(), selectedTrack->eta(), selectedTrack->phi());
+      if (SimCSCDr < 0.05) {
+        goodDepths[stationId] = true;
+      }
+      if (SimCSCDr < minSimCSCDr || minSimCSCDr < 0) {
+        minSimCSCDr = SimCSCDr;
       }
     }
+    //}
   }
   for (int station = 0; station < 4; station++) {
     if (goodDepths[station]) {
@@ -329,3 +345,14 @@ void CSC::ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
     }
   }
 }
+
+double CSC::GetMissingHitWeight(int station, double eta, double phi)
+{
+  printf("Getting a weight.\n");
+  if(missingCSCScaleFactors[station]->GetBinError(missingCSCScaleFactors[station]->FindBin(eta,phi))==0) return 1;
+  double scaleFactor=missingCSCScaleFactors[station]->GetBinContent(missingCSCScaleFactors[station]->FindBin(eta,phi));
+  if(scaleFactor>1){scaleFactor=1;}
+  printf("Got a weight, scale factor is %f.\n",scaleFactor);
+  return scaleFactor;
+}
+

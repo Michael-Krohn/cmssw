@@ -47,6 +47,8 @@ public:
   double probeCharge;
   double ecalIso;
   double matchedHE[7];
+  double minCellDeta;
+  double minCellDphi;
   double PUupWeight;
   double PUdownWeight;
   double IDupWeight;

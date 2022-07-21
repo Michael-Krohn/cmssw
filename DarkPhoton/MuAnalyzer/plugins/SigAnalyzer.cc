@@ -143,7 +143,6 @@ private:
                           SigEventInfo info);
   double MatchTrackToGenMuon(const edm::Event& iEvent,
                              const reco::Track* selTrack,
-                             const reco::Muon* selectedMuon,
                              edm::EDGetToken m_genParticleToken);
   bool MatchTrackToMuon(const edm::Event& iEvent,
                         math::XYZTLorentzVectorD mother,
@@ -199,6 +198,9 @@ private:
   bool m_isMC;
   bool m_isSig;
   bool m_hasDpho;
+  bool m_sameSign;
+  bool m_ttbarCR;
+  bool m_missingCSCFilter;
   double m_scaleFactor;
   std::string m_binSFsfname;
   bool m_runRandomTrackEfficiency;
@@ -266,6 +268,9 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       m_isMC(iConfig.getUntrackedParameter<bool>("isMC", true)),
       m_isSig(iConfig.getUntrackedParameter<bool>("isSig", false)),
       m_hasDpho(iConfig.getUntrackedParameter<bool>("hasDpho", false)),
+      m_sameSign(iConfig.getUntrackedParameter<bool>("sameSign",false)),
+      m_ttbarCR(iConfig.getUntrackedParameter<bool>("ttbarCR",false)),
+      m_missingCSCFilter(iConfig.getUntrackedParameter<bool>("missingCSC",false)),
       m_scaleFactor(iConfig.getUntrackedParameter<double>("scaleFactor", 2000)),
       m_binSFsfname(iConfig.getUntrackedParameter<std::string>("binSFsfname", "")),
       m_runRandomTrackEfficiency(iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency", false)) {
@@ -362,7 +367,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   Jets myJets;
   EventInfo myEventInfo;
   Tracks myTracks;
-  CSC myCSCs;
+  CSC myCSCs(m_missingCSCFilter);
   HCAL myHCAL;
   ECAL myECAL;
   SigEventInfo info;
@@ -519,8 +524,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
   }
+  if(m_isMC){
   info.eventWeight =
       info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
+  }
   if (maxTrackProgress == 13) {
     SiblingMatched = true;
     if (m_isMC) {
@@ -568,8 +575,16 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
          ++iTrack) {
       if (deltaR((*iTrack)->eta(), (*iTrack)->phi(), selectedTrack->eta(), selectedTrack->phi()) < 0.3)
         continue;
-      if (selectedMuon->charge() == (*iTrack)->charge())
-        continue;
+      if(!m_sameSign)
+      {
+        if (selectedMuon->charge() == (*iTrack)->charge())
+          continue;
+      }
+      else
+      {
+         if(selectedMuon->charge()!=(*iTrack)->charge())
+           continue;
+      }
       //if(fabs((*iTrack)->dxy())>0.05) continue;
       if (myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder)) {
         double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, *iTrack);
@@ -645,7 +660,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.dcal = probeLIP;
     info.dsz = selectedTrack->dsz();
     info.diMuonMass = diMuonMass;
-    // this wraps tracks with additional methods that are used in vertex-calculation
     GlobalPoint FillerPoint;
     myCSCs.ExtrapolateTrackToCSC(iEvent,
                                  iSetup,
@@ -657,8 +671,24 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.cscRecHitMinDR = myCSCs.recMinDR;
     info.CSCdEta = myCSCs.CSCdEta;
     info.CSCdPhi = myCSCs.CSCdPhi;
+    //Find number of good depths for 1 depth -> 0 depths MC correction
+    int nGoodDepths = 0;
+    int goodDepth=0;
     for (int i = 0; i < 4; i++) {
       info.minDrByStation[i] = myCSCs.minDrByDepth[i];
+      if(myCSCs.minDrByDepth[i]>0.05)
+      {
+         nGoodDepths++;
+         goodDepth=i;
+      }
+    }
+    if(m_missingCSCFilter)
+    {
+      if(nGoodDepths==1)
+      {
+         double scalefactor = myCSCs.GetMissingHitWeight(goodDepth,selectedTrack->eta(),selectedTrack->phi());
+         info.eventWeight=info.eventWeight*(1-scalefactor);
+      }
     }
     GlobalPoint TrackGlobalPoint =
         GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(), selectedTrack->phi(), info.bremR));
@@ -680,10 +710,12 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       double dotpro = unitmother.x() * unitcsc.x() + unitmother.y() * unitcsc.y() + unitmother.z() * unitcsc.z();
       info.cscHitAngleChange = std::acos(dotpro);
     }
-
+    if(m_isMC){
+    info.minGenMuDr = MatchTrackToGenMuon(iEvent,selectedTrack, m_genParticleToken);
     myCSCs.ExtrapolateTrackToSimCSC(iEvent, iSetup, m_cscSimHits, selectedTrack);
     info.nSimCSCHits = myCSCs.nSimCSCHits;
     info.minSimCSCDr = myCSCs.minSimCSCDr;
+    }
     double stadEoverE = 10.;
     double staE = -10;
     double closestapproach = 100.;
@@ -770,8 +802,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.nCellsFound = myHCAL.CellsFound;
     info.nNeighborCellsFound = myHCAL.NeighborCellsFound;
     info.iEta = myHCAL.TrackiEta;
-    info.cellCenterDEta = myHCAL.Tdeta;
-    info.cellCenterDPhi = myHCAL.Tdphi;
+    info.cellCenterDEta = myHCAL.etaEdgeMin;
+    info.cellCenterDPhi = myHCAL.phiEdgeMin;
     if (info.nCellsFound < 4) {
       return;
     }
@@ -853,13 +885,14 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       info.nExtraMuon++;
     }
     //Signal cut flow
-
+    bool passMassCut = (info.diMuonMass>80 && info.diMuonMass<100);
+    if(m_ttbarCR){passMassCut = (info.diMuonMass<76 || info.diMuonMass>106);} 
     if (myHCAL.m_coneEnergy < 10) {
       allEvents.IncCutFlow(info.eventWeight);
       if (genAccept) {
         genAccepted.IncCutFlow(info.eventWeight);
       }
-      if(info.diMuonMass > 80 && info.diMuonMass < 100)
+      if(passMassCut)
       {
         allEvents.IncCutFlow(info.eventWeight);
         if(genAccept){
@@ -881,20 +914,22 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     }
     bool passPreSelection = true;
     if (staMinDr > 1.0) {
-      if(myCSCs.minDR > 0.05){
-        if (myHCAL.m_coneEnergy < 10 && info.diMuonMass > 80 && info.diMuonMass < 100) {
-          info.sigCat = 3;
-          passSigCuts = true;
-          totalDisappear.FillHists(info);
+      if(myCSCs.minDR > 0.05 ||(m_missingCSCFilter&&nGoodDepths==1)){
+        if (myHCAL.m_coneEnergy < 10){
+          if(passMassCut) {
+            info.sigCat = 3;
+            passSigCuts = true;
+            totalDisappear.FillHists(info);
+          }
         }
       }
       else
       {
-        if(info.diMuonMass>80&&info.diMuonMass<100){
+        if(passMassCut){
           passSigNearbyCSC.FillHists(info);
         }
       }
-    } else if (staMinDr < 1.0 && info.diMuonMass > 80 && info.diMuonMass < 100) {
+    } else if (staMinDr < 1.0 && passMassCut) {
       partialDisappear.FillHists(info);
       partialDisappear.FillTree(info);
       if (info.probeCharge > 0) {
@@ -984,8 +1019,15 @@ int SigAnalyzer::PairTagAndProbe(
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin();
        iTrack != myTracks.selectedEndcapTracks.end();
        ++iTrack) {
-    if (Tag->charge() == (*iTrack)->charge())
-      continue;
+    if(!m_sameSign)
+    {
+       if (Tag->charge() == (*iTrack)->charge())
+         continue;
+    }
+    else
+    {
+       if (Tag->charge() == (*iTrack)->charge()) continue;
+    }
     if (cutpro < 1) {
       cutpro = 1;
     }
@@ -1045,7 +1087,6 @@ int SigAnalyzer::PairTagAndProbe(
 
 double SigAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent,
                                       const reco::Track* selTrack,
-                                      const reco::Muon* selectedMuon,
                                       edm::EDGetToken m_genParticleToken)
 {
    double minDR=-1;

@@ -9,6 +9,24 @@ options.register( 'isMC',
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
 
+options.register( 'sameSign',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if same sign control region")
+
+options.register( 'ttbarCR',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if ttbar control region")
+
+options.register( 'missingCSC',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if missing CSC filtered events")
+
 options.register( 'runRandomTrack',
                                   False,
                                   VarParsing.multiplicity.singleton,
@@ -75,7 +93,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/DYJetsToMM_dbrem_0p2.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/missingCSCFilter.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/testfiles.txt')
            #mylist = FileUtils.loadListFromFile ('filetest.txt')
@@ -126,6 +144,9 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     isMC = cms.untracked.bool(options.isMC),
     isSig = cms.untracked.bool(options.isSig),
     hasDpho = cms.untracked.bool(options.hasDpho),
+    sameSign = cms.untracked.bool(options.sameSign),
+    ttbarCR = cms.untracked.bool(options.ttbarCR),
+    missingCSC = cms.untracked.bool(options.missingCSC),
     scaleFactor = cms.untracked.double(options.scaleFactor),
     binSFsfname = cms.untracked.string(options.binSFsfname),
     runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
