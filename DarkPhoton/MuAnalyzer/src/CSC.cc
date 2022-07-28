@@ -348,11 +348,9 @@ void CSC::ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
 
 double CSC::GetMissingHitWeight(int station, double eta, double phi)
 {
-  printf("Getting a weight.\n");
   if(missingCSCScaleFactors[station]->GetBinError(missingCSCScaleFactors[station]->FindBin(eta,phi))==0) return 1;
   double scaleFactor=missingCSCScaleFactors[station]->GetBinContent(missingCSCScaleFactors[station]->FindBin(eta,phi));
   if(scaleFactor>1){scaleFactor=1;}
-  printf("Got a weight, scale factor is %f.\n",scaleFactor);
   return scaleFactor;
 }
 

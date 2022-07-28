@@ -23,7 +23,7 @@ class MCHistograms {
 public:
   MCHistograms();
 
-  void book(TFileDirectory histFolder);
+  void book(TFileDirectory histFolder,bool MC);
   void FillTree(SigEventInfo info);
   void FillHists(SigEventInfo info);
   void Normalize();
@@ -32,6 +32,7 @@ public:
   void ResetCutFlow();
 
 public:
+  bool isMC;
   //Signal BDT inputs
   double pt;
   double eta;
@@ -162,6 +163,10 @@ public:
   TH1F* m_HEHitByDepth;
   TH1F* m_DrtoStandalone;
   TH1F* m_VtxZ;
+  TH1F* m_NJets;
+  TH1F* m_nLooseBTagJets;
+  TH1F* m_nMedBTagJets;
+  TH1F* m_nTightBTagJets;
   TH1F* m_ProbePFJetE;
   TH1F* m_ProbePFJetDr;
   TH1F* m_ProbePFJetMaxE;

@@ -35,6 +35,7 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/StreamID.h"
+#include "FWCore/Utilities/interface/transform.h"
 
 #include "DataFormats/Math/interface/Vector3D.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
@@ -82,6 +83,7 @@
 #include "DataFormats/HcalRecHit/interface/HBHEChannelInfo.h"
 #include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
 #include "DataFormats/Common/interface/SortedCollection.h"
+#include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/Records/interface/CaloGeometryRecord.h"
 #include "Geometry/CaloEventSetup/interface/CaloTopologyRecord.h"
@@ -190,6 +192,7 @@ private:
   edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label;
   edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
   edm::EDGetToken m_caloJet_label;
+  std::vector<edm::EDGetTokenT<reco::JetTagCollection> > m_jetTagTokens;
   edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
   edm::EDGetToken m_PUInfoToken;
   edm::EDGetToken m_theSTAMuonLabel;
@@ -308,44 +311,47 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
     m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
     m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   }
-  TFile* puFile = TFile::Open(
-      "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root");
-  fPUDataHist_ = (TH1F*)puFile->Get("pileup");
-  fPUDataHist_->SetDirectory(0);
-  puFile->Close();
-  TFile* puUpFile = TFile::Open(
-      "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-72400ub-99bins.root");
-  fPUDataUpHist_ = (TH1F*)puUpFile->Get("pileup");
-  fPUDataUpHist_->SetDirectory(0);
-  puUpFile->Close();
-  TFile* puDownFile = TFile::Open(
-      "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-66000ub-99bins.root");
-  fPUDataDownHist_ = (TH1F*)puDownFile->Get("pileup");
-  fPUDataDownHist_->SetDirectory(0);
-  puDownFile->Close();
+  m_jetTagTokens = edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag> >("btagAlgos"),[this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag); });
 
-  TFile* MCPuFile = TFile::Open("/local/cms/user/revering/datafiles/PileupHists/DYJets_Private_MCWeights.root");
-  fPUMCHist_ = (TH1F*)MCPuFile->Get("MCWeights/TrueNumInteractions");
-  fPUDataHist_->Scale(1. / fPUDataHist_->Integral());
-  fPUDataUpHist_->Scale(1. / fPUDataUpHist_->Integral());
-  fPUDataDownHist_->Scale(1. / fPUDataDownHist_->Integral());
-  fPUMCHist_->Scale(1. / fPUMCHist_->Integral());
-  fPUDataHist_->Divide(fPUMCHist_);
-  fPUDataUpHist_->Divide(fPUMCHist_);
-  fPUDataDownHist_->Divide(fPUMCHist_);
-  puWeightHist_ = (TH1F*)fPUDataHist_->Clone();
-  puWeightUpHist_ = (TH1F*)fPUDataUpHist_->Clone();
-  puWeightDownHist_ = (TH1F*)fPUDataDownHist_->Clone();
+  if(m_isMC){
+    TFile* puFile = TFile::Open(
+        "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root");
+    fPUDataHist_ = (TH1F*)puFile->Get("pileup");
+    fPUDataHist_->SetDirectory(0);
+    puFile->Close();
+    TFile* puUpFile = TFile::Open(
+        "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-72400ub-99bins.root");
+    fPUDataUpHist_ = (TH1F*)puUpFile->Get("pileup");
+    fPUDataUpHist_->SetDirectory(0);
+    puUpFile->Close();
+    TFile* puDownFile = TFile::Open(
+        "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-66000ub-99bins.root");
+    fPUDataDownHist_ = (TH1F*)puDownFile->Get("pileup");
+    fPUDataDownHist_->SetDirectory(0);
+    puDownFile->Close();
 
-  allEvents.book(fs->mkdir("allEvents"));
-  genAccepted.book(fs->mkdir("genAccepted"));
-  preSelectedEvents.book(fs->mkdir("preSelected"));
-  failSig.book(fs->mkdir("failSig"));
-  lowHits.book(fs->mkdir("lowHits"));
-  totalDisappear.book(fs->mkdir("totalDisappear"));
-  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"));
-  partialDisappear.book(fs->mkdir("partialDisappear"));
-  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"));
+    TFile* MCPuFile = TFile::Open("/local/cms/user/revering/datafiles/PileupHists/DYJets_Private_MCWeights.root");
+    fPUMCHist_ = (TH1F*)MCPuFile->Get("MCWeights/TrueNumInteractions");
+    fPUDataHist_->Scale(1. / fPUDataHist_->Integral());
+    fPUDataUpHist_->Scale(1. / fPUDataUpHist_->Integral());
+    fPUDataDownHist_->Scale(1. / fPUDataDownHist_->Integral());
+    fPUMCHist_->Scale(1. / fPUMCHist_->Integral());
+    fPUDataHist_->Divide(fPUMCHist_);
+    fPUDataUpHist_->Divide(fPUMCHist_);
+    fPUDataDownHist_->Divide(fPUMCHist_);
+    puWeightHist_ = (TH1F*)fPUDataHist_->Clone();
+    puWeightUpHist_ = (TH1F*)fPUDataUpHist_->Clone();
+    puWeightDownHist_ = (TH1F*)fPUDataDownHist_->Clone();
+  }
+  allEvents.book(fs->mkdir("allEvents"),m_isMC);
+  genAccepted.book(fs->mkdir("genAccepted"),m_isMC);
+  preSelectedEvents.book(fs->mkdir("preSelected"),m_isMC);
+  failSig.book(fs->mkdir("failSig"),m_isMC);
+  lowHits.book(fs->mkdir("lowHits"),m_isMC);
+  totalDisappear.book(fs->mkdir("totalDisappear"),m_isMC);
+  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"),m_isMC);
+  partialDisappear.book(fs->mkdir("partialDisappear"),m_isMC);
+  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"),m_isMC);
 }
 
 SigAnalyzer::~SigAnalyzer() {
@@ -371,77 +377,85 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   HCAL myHCAL;
   ECAL myECAL;
   SigEventInfo info;
+  if(!m_isMC){
+     if(!info.passTriggers(iEvent,m_trigResultsToken,m_muonPathsToPass)) return;
+  }
   allEvents.ResetCutFlow();
   genAccepted.ResetCutFlow();
-  edm::Handle<SimTrackContainer> simtracks;
   edm::Handle<float> dbremweight, dbremInitialE, dbremFinalE, dbremAngle, dbremX, dbremY, dbremZ;
   bool genAccept = false;
-  if (m_hasDpho) {
-    iEvent.getByToken(m_dbremweighttoken, dbremweight);
-    edm::Handle<GenEventInfoProduct> eventInfo;
-    iEvent.getByToken(m_genInfoToken, eventInfo);
-    weight_ = eventInfo->weight();
-    allEvents.IncCutFlow(weight_);
-    if (*dbremweight > 0) {
-      iEvent.getByToken(m_dbremFinalEToken, dbremFinalE);
-      iEvent.getByToken(m_dbremInitialEToken, dbremInitialE);
-      iEvent.getByToken(m_dbremAngleToken, dbremAngle);
-      iEvent.getByToken(m_dbremXToken, dbremX);
-      iEvent.getByToken(m_dbremYToken, dbremY);
-      iEvent.getByToken(m_dbremZToken, dbremZ);
-      weight_ = *dbremweight * weight_;
-      info.dbremWeight = *dbremweight * m_scaleFactor;
-      if (*dbremweight > 0.01) {
-        return;
-      }
-      if (*dbremInitialE < 20) {
-        return;
-      }
-      for (auto const& iter : binningSFs) {
-        //Use the first bin with energy > initial energy.
-        if (iter.first > *dbremInitialE) {
-          info.usedBin = iter.first;
-          info.energyBinSF = iter.second->GetBinContent(iter.second->FindBin(*dbremFinalE / *dbremInitialE));
-          break;
+  if(m_isMC){
+    if (m_hasDpho) {
+      iEvent.getByToken(m_dbremweighttoken, dbremweight);
+      edm::Handle<GenEventInfoProduct> eventInfo;
+      iEvent.getByToken(m_genInfoToken, eventInfo);
+      weight_ = eventInfo->weight();
+      allEvents.IncCutFlow(weight_);
+      if (*dbremweight > 0) {
+        iEvent.getByToken(m_dbremFinalEToken, dbremFinalE);
+        iEvent.getByToken(m_dbremInitialEToken, dbremInitialE);
+        iEvent.getByToken(m_dbremAngleToken, dbremAngle);
+        iEvent.getByToken(m_dbremXToken, dbremX);
+        iEvent.getByToken(m_dbremYToken, dbremY);
+        iEvent.getByToken(m_dbremZToken, dbremZ);
+        weight_ = *dbremweight * weight_;
+        info.dbremWeight = *dbremweight * m_scaleFactor;
+        if (*dbremweight > 0.01) {
+          return;
         }
-      }
-      edm::Handle<reco::GenParticleCollection> genParticles;
-      iEvent.getByToken(m_genParticleToken, genParticles);
-      bool maybeTag = false;
-      bool maybeProbe = false;
-      for (const auto& particle : *(genParticles.product())) {
-        if (std::abs(particle.pdgId()) != 13) {
-          continue;
+        if (*dbremInitialE < 20) {
+          return;
         }
-        if (particle.mother()->pdgId() != 23) {
-          continue;
-        }
-        if (fabs(particle.eta()) > 2.4) {
-          continue;
-        }
-        if (particle.pt() < 20) {
-          continue;
-        }
-        if (maybeProbe && particle.pt() > 26) {
-          genAccept = true;
-          break;
-        }
-        if (fabs(particle.eta() > 1.6)) {
-          maybeProbe = true;
-          if (maybeTag) {
-            genAccept = true;
+        for (auto const& iter : binningSFs) {
+          //Use the first bin with energy > initial energy.
+          if (iter.first > *dbremInitialE) {
+            info.usedBin = iter.first;
+            info.energyBinSF = iter.second->GetBinContent(iter.second->FindBin(*dbremFinalE / *dbremInitialE));
             break;
           }
         }
-        if (particle.pt() > 26) {
-          maybeTag = true;
+        edm::Handle<reco::GenParticleCollection> genParticles;
+        iEvent.getByToken(m_genParticleToken, genParticles);
+        bool maybeTag = false;
+        bool maybeProbe = false;
+        for (const auto& particle : *(genParticles.product())) {
+          if (std::abs(particle.pdgId()) != 13) {
+            continue;
+          }
+          if (particle.mother()->pdgId() != 23) {
+            continue;
+          }
+          if (fabs(particle.eta()) > 2.4) {
+            continue;
+          }
+          if (particle.pt() < 20) {
+            continue;
+          }
+          if (maybeProbe && particle.pt() > 26) {
+            genAccept = true;
+            break;
+          }
+          if (fabs(particle.eta() > 1.6)) {
+            maybeProbe = true;
+            if (maybeTag) {
+              genAccept = true;
+              break;
+            }
+          }
+          if (particle.pt() > 26) {
+            maybeTag = true;
+          }
         }
-      }
 
+      } else {
+        return;
+      }
     } else {
-      return;
+    weight_ = 1.;
+    allEvents.IncCutFlow(weight_);
     }
-  } else {
+  }
+  else{
     weight_ = 1.;
     allEvents.IncCutFlow(weight_);
   }
@@ -511,6 +525,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                                                       reducedEndcapRecHitCollection_Label,
                                                       reducedBarrelRecHitCollection_Label);
     }
+    printf("Paired tag and probe\n.");
     if (trackProgress > maxTrackProgress) {
       maxTrackProgress = trackProgress;
       if (m_isMC) {
@@ -524,6 +539,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
   }
+  printf("Paired tag and probe.\n");
   if(m_isMC){
   info.eventWeight =
       info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
@@ -575,16 +591,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
          ++iTrack) {
       if (deltaR((*iTrack)->eta(), (*iTrack)->phi(), selectedTrack->eta(), selectedTrack->phi()) < 0.3)
         continue;
-      if(!m_sameSign)
-      {
-        if (selectedMuon->charge() == (*iTrack)->charge())
-          continue;
-      }
-      else
-      {
-         if(selectedMuon->charge()!=(*iTrack)->charge())
-           continue;
-      }
+      if (selectedMuon->charge() == (*iTrack)->charge())
+        continue;
       //if(fabs((*iTrack)->dxy())>0.05) continue;
       if (myTracks.PairTracks(iTrack, selectedMuon->globalTrack(), transientTrackBuilder)) {
         double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, *iTrack);
@@ -676,7 +684,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     int goodDepth=0;
     for (int i = 0; i < 4; i++) {
       info.minDrByStation[i] = myCSCs.minDrByDepth[i];
-      if(myCSCs.minDrByDepth[i]>0.05)
+      if(myCSCs.minDrByDepth[i]<0.05&&myCSCs.minDrByDepth[i]>0)
       {
          nGoodDepths++;
          goodDepth=i;
@@ -711,10 +719,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       info.cscHitAngleChange = std::acos(dotpro);
     }
     if(m_isMC){
-    info.minGenMuDr = MatchTrackToGenMuon(iEvent,selectedTrack, m_genParticleToken);
-    myCSCs.ExtrapolateTrackToSimCSC(iEvent, iSetup, m_cscSimHits, selectedTrack);
-    info.nSimCSCHits = myCSCs.nSimCSCHits;
-    info.minSimCSCDr = myCSCs.minSimCSCDr;
+       info.minGenMuDr = MatchTrackToGenMuon(iEvent,selectedTrack, m_genParticleToken);
+       myCSCs.ExtrapolateTrackToSimCSC(iEvent, iSetup, m_cscSimHits, selectedTrack);
+       info.nSimCSCHits = myCSCs.nSimCSCHits;
+       info.minSimCSCDr = myCSCs.minSimCSCDr;
     }
     double stadEoverE = 10.;
     double staE = -10;
@@ -851,6 +859,11 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     //PF Jets stuff
     myJets.SelectJets(iEvent, m_pfJetCollection_label);
     myJets.FindNearestJet(selectedTrack);
+    myJets.SelectBTagJets(iEvent, m_jetTagTokens);
+    info.nJets = myJets.nJets;
+    info.nLooseBTagJets = myJets.looseBTagJets;
+    info.nMedBTagJets = myJets.medBTagJets;
+    info.nTightBTagJets = myJets.tightBTagJets;
     info.nearestJetDr = myJets.nearestJetDr;
     info.nearestJetE = myJets.nearestJetE;
     info.nearJetMaxE = myJets.nearJetMaxE;
@@ -1015,10 +1028,12 @@ int SigAnalyzer::PairTagAndProbe(
     edm::Handle<reco::VertexCollection> vtxHandle,
     edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label,
     edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label) {
+  printf("Pairing tag and probe in function.\n");
   int cutpro = 0;
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin();
        iTrack != myTracks.selectedEndcapTracks.end();
        ++iTrack) {
+    printf("Starting loop\n");
     if(!m_sameSign)
     {
        if (Tag->charge() == (*iTrack)->charge())
@@ -1026,25 +1041,31 @@ int SigAnalyzer::PairTagAndProbe(
     }
     else
     {
-       if (Tag->charge() == (*iTrack)->charge()) continue;
+       if (Tag->charge() != (*iTrack)->charge()) continue;
     }
+    printf("Checked charge.\n");
     if (cutpro < 1) {
       cutpro = 1;
     }
     int pairingResult = myTracks.PairTracks(iTrack, Tag->globalTrack(), transientTrackBuilder);
+    printf("Paired tracks.\n");
     if (pairingResult > (cutpro - 1)) {
       cutpro = pairingResult + 1;
     }
     if (pairingResult == 3) {
+      printf("Getting track iso.\n");
       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, *iTrack);
+      printf("Got track iso, getting ecal iso.\n");
       double probeEcalIso = myECAL.GetIsolation(iEvent,
                                                 iSetup,
                                                 reducedEndcapRecHitCollection_Label,
                                                 reducedBarrelRecHitCollection_Label,
                                                 transientTrackBuilder->build(*iTrack));
+      printf("Got ecal iso, getting HCAL iso.\n");
       double probeHcalIso =
           myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
       double minProbeDr = 5;
+      printf("Got isolation.\n");
       for (auto CaloJet = caloJets->begin(); CaloJet != caloJets->end(); ++CaloJet) {
         double probeDr = deltaR((*iTrack)->eta(), (*iTrack)->phi(), CaloJet->eta(), CaloJet->phi());
         double hadE = CaloJet->hadEnergyInHE() + CaloJet->hadEnergyInHB();
@@ -1072,6 +1093,7 @@ int SigAnalyzer::PairTagAndProbe(
       if (cutpro < 7) {
         cutpro = 7;
       }
+      printf("Paired tracks, setting stuff.\n");
       selectedTrack = (*iTrack);
       selectedMuon = Tag;
       diMuonMass = myTracks.MuonTrackMass;
@@ -1080,6 +1102,7 @@ int SigAnalyzer::PairTagAndProbe(
       TrajectoryStateClosestToPoint traj = tk.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
       probeTIP = traj.perigeeParameters().transverseImpactParameter();
       probeLIP = traj.perigeeParameters().longitudinalImpactParameter();
+      printf("Set stuff.\n");
     }
   }
   return cutpro;

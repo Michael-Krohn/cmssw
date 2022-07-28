@@ -276,14 +276,14 @@ EndcapMuAnalyzer::EndcapMuAnalyzer(const edm::ParameterSet& iConfig)
     m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
     m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   }
-  allEvents.book(fs->mkdir("allEvents"));
-  genAccepted.book(fs->mkdir("genAccepted"));
-  preSelectedEvents.book(fs->mkdir("preSelected"));
-  failSig.book(fs->mkdir("failSig"));
-  lowHits.book(fs->mkdir("lowHits"));
-  totalDisappear.book(fs->mkdir("totalDisappear"));
-  partialDisappear.book(fs->mkdir("partialDisappear"));
-  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"));
+  allEvents.book(fs->mkdir("allEvents"),m_isMC);
+  genAccepted.book(fs->mkdir("genAccepted"),m_isMC);
+  preSelectedEvents.book(fs->mkdir("preSelected"),m_isMC);
+  failSig.book(fs->mkdir("failSig"),m_isMC);
+  lowHits.book(fs->mkdir("lowHits"),m_isMC);
+  totalDisappear.book(fs->mkdir("totalDisappear"),m_isMC);
+  partialDisappear.book(fs->mkdir("partialDisappear"),m_isMC);
+  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"),m_isMC);
 }
 
 EndcapMuAnalyzer::~EndcapMuAnalyzer() {
@@ -327,14 +327,13 @@ void EndcapMuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
   iSetup.get<IdealMagneticFieldRecord>().get(theMGField);
   edm::ESHandle<GlobalTrackingGeometry> theTrackingGeometry;
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
-  int maxTrackProgress = -1;
   iEvent.getByToken(m_caloJet_label, caloJets);
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
   myTracks.selectedTracks.clear();
   myTracks.selectedEndcapTracks.clear();
-  int muProgress = myMuons.SelectMuons(iEvent, m_recoMuonToken);
-  int trackProgress = myTracks.SelectUnpairedTracks(iEvent, trackCollection_label, vtxHandle);
+  myMuons.SelectMuons(iEvent, m_recoMuonToken);
+  myTracks.SelectUnpairedTracks(iEvent, trackCollection_label, vtxHandle);
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin();
        iTrack != myTracks.selectedEndcapTracks.end();
        ++iTrack) {

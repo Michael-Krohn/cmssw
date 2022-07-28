@@ -34,6 +34,7 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Utilities/interface/StreamID.h"
+#include "FWCore/Utilities/interface/transform.h"
 
 #include "DataFormats/Math/interface/Vector3D.h"
 #include "DataFormats/Math/interface/LorentzVector.h"
@@ -204,6 +205,7 @@ private:
   edm::EDGetToken m_pfJetCollection_label;
   edm::EDGetToken m_caloTower_label;
   edm::EDGetToken m_caloJet_label;
+  std::vector<edm::EDGetTokenT<reco::JetTagCollection> > m_jetTagTokens;
   edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
   edm::EDGetToken m_PUInfoToken;
   edm::EDGetTokenT<reco::CandidateView> candToken_;
@@ -294,6 +296,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig)
     m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
     m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   }
+  m_jetTagTokens = edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag> >("btagAlgos"),[this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag);});
   usesResource("TFileService");
   edm::Service<TFileService> fs;
   std::string puFilename, puUpFilename, puDownFilename, MCPuFilename;
@@ -477,6 +480,10 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   }
   Paired = true;
   myJets.SelectJets(iEvent, m_pfJetCollection_label);
+  myJets.SelectBTagJets(iEvent, m_jetTagTokens);
+  info.nLooseBTagJets = myJets.looseBTagJets;
+  info.nMedBTagJets = myJets.medBTagJets;
+  info.nTightBTagJets = myJets.tightBTagJets;
   myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(), weight_);
 
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin();
@@ -1146,8 +1153,8 @@ int MuPXAnalyzer::PairTagAndProbe(const edm::Event& iEvent,
                                                 reducedEndcapRecHitCollection_Label,
                                                 reducedBarrelRecHitCollection_Label,
                                                 transientTrackBuilder->build(*iTrack));
-      double probeHcalIso =
-          myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
+      //double probeHcalIso =
+      //   myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
 
       if (!m_signalRegion) {
         if ((probeTrackIso / (*iTrack)->pt()) < 0.1 && probeEcalIso < 30.)

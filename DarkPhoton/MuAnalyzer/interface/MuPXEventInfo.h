@@ -53,6 +53,9 @@ public:
   double probeDCA;
   double probeLongDCA;
   int nJets;
+  int nLooseBTagJets;
+  int nMedBTagJets;
+  int nTightBTagJets;
   double nearestJetE;
   double nearestJetDr;
   double nearJetMaxE;

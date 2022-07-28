@@ -6,12 +6,20 @@
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include <TMath.h>
 
 Jets::Jets() {
   nearestJetDr = 1000;
   nearestJetE = -1;
   nearJetMaxE = -1;
+  wpLoose=0.1208;
+  wpMed=0.4168;
+  wpTight=0.7665;
+  nJets=0;
+  looseBTagJets=0;
+  medBTagJets=0;
+  tightBTagJets=0;
 }
 
 void Jets::SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken) {
@@ -42,9 +50,10 @@ void Jets::SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken) {
     } else {
       JetId = (NEMF < 0.90 && NHF > 0.2 && NumNeutralParticles > 10);
     }
-
+   
     if (JetId) {
       selectedJets.push_back(&(*it));
+      if(it->pt()>30){nJets++;}
     }
   }
 }
@@ -60,4 +69,45 @@ void Jets::FindNearestJet(const reco::Track* probe) {
       nearestJetE = (*it)->energy();
     }
   }
+}
+
+void Jets::SelectBTagJets(const edm::Event& iEvent, std::vector<edm::EDGetTokenT<edm::AssociationVector<edm::RefToBaseProd<reco::Jet>, std::vector<float> > > > jetTagTokens)
+{
+  JetTagMap allJetBTagVals;
+  for(const auto& JetTagToken : jetTagTokens)
+  {
+    edm::Handle<reco::JetTagCollection> bjetHandle;
+    iEvent.getByToken(JetTagToken,bjetHandle);
+    if (not bjetHandle.isValid()){
+      edm::LogWarning("MyJets") << "B-Jet handle not valid, will skip event \n";
+      return;
+    }
+    const reco::JetTagCollection& bTags = *(bjetHandle.product());
+    for (const auto& i_jetTag : bTags){
+      const auto& jetRef = i_jetTag.first;
+      const auto btagVal = i_jetTag.second;
+      if (not std::isfinite(btagVal)){
+        continue;
+      }
+      if (allJetBTagVals.find(jetRef)!=allJetBTagVals.end()){
+        allJetBTagVals.at(jetRef)+=btagVal;
+      }
+      else{
+        allJetBTagVals.insert(JetTagMap::value_type(jetRef, btagVal));
+      }
+    }
+  }
+
+  if(allJetBTagVals.size()>0){
+    for(auto jetBTagVal = allJetBTagVals.begin(); jetBTagVal!=allJetBTagVals.end(); jetBTagVal++)
+    {
+      auto jet = *dynamic_cast<const reco::Jet*>(jetBTagVal->first.get());
+      auto btag = jetBTagVal->second;
+      if(jet.pt()<30){continue;}
+      if(btag>wpLoose){looseBTagJets++;}
+      if(btag>wpMed){medBTagJets++;}
+      if(btag>wpTight){tightBTagJets++;}
+    }
+  }
+  return;
 }

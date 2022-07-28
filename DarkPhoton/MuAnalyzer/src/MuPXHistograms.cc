@@ -151,7 +151,10 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso) {
   m_TagHcalIso = histFolder.make<TH1F>("TagHcalIsolation", "; Hcal Energy in matched hits (GeV); Events", 200, 0, 100);
   m_TagEcalIso = histFolder.make<TH1F>("TagEcalIsolation", "; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   //Jet Histograms
-  m_NJets = histFolder.make<TH1F>("Njets", "; Number of Jets in Event; Events", 200, 0, 200);
+  m_NJets = histFolder.make<TH1F>("Njets", "; Number of Jets in Event; Events", 10, -0.5, 9.5);
+  m_nLooseBTagJets = histFolder.make<TH1F>("nLooseBTagJets","; Loose B Tagged Jets; Events", 10,-0.5,9.5);
+  m_nMedBTagJets = histFolder.make<TH1F>("nMedBTagJets","; Medium B Tagged Jets; Events", 10,-0.5,9.5); 
+  m_nTightBTagJets = histFolder.make<TH1F>("nTightBTagjets","; Tight B Tagged Jets; Events", 10,-0.5,9.5);
   m_CaloSumJetE = histFolder.make<TH2F>(
       "CaloSumJetE", ";ECAL+HCAL Energy Sum (GeV); Energy of Nearest Jet (GeV); Events", 100, 0, 200, 100, 0, 200);
   m_HCALIsoJetDr =
@@ -442,6 +445,9 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
     m_CaloSumJetE->Fill(info.probeHcalIso + info.probeEcalIso, info.nearestJetE, info.eventWeight);
   }
   m_NJets->Fill(info.nJets, info.eventWeight);
+  m_nLooseBTagJets->Fill(info.nLooseBTagJets, info.eventWeight);
+  m_nMedBTagJets->Fill(info.nMedBTagJets, info.eventWeight);
+  m_nTightBTagJets->Fill(info.nTightBTagJets, info.eventWeight);
   m_HCALIsoJetDr->Fill(info.probeHcalIso, info.nearestJetDr, info.eventWeight);
   m_ECALIsoJetDr->Fill(info.probeEcalIso, info.nearestJetDr, info.eventWeight);
   m_ProbeJetDr->Fill(info.nearestJetDr, info.eventWeight);

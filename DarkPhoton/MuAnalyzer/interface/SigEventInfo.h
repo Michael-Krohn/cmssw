@@ -8,6 +8,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "TH1F.h"
@@ -15,6 +16,9 @@
 class SigEventInfo {
 public:
   SigEventInfo();
+  bool passTriggers(const edm::Event& iEvent,
+		    edm::EDGetToken m_trigResultsToken,
+		    std::vector<std::string> m_muonPathsToPass);
   double eventWeight;
   double dbremWeight;
   double genEventWeight;
@@ -85,6 +89,10 @@ public:
   double nearestJetDr;
   double nearJetMaxE;
   double nearestJetE;
+  int nJets;
+  int nLooseBTagJets;
+  int nMedBTagJets;
+  int nTightBTagJets;
   //Calo Jets
   double minCaloJetDr;
   double caloJetHcalE;

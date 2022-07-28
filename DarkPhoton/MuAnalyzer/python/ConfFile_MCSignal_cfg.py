@@ -4,7 +4,7 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 options = VarParsing ('analysis')
 
 options.register( 'isMC',
-                                  True,
+                                  False,
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.bool,
 				  "True if is MC dataset")
@@ -136,6 +136,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     HBHERecHits = cms.InputTag("hbhereco"),
     PFJets = cms.InputTag("ak4PFJetsCHS"),
     CaloJetSource = cms.InputTag("ak4CaloJets"),
+    btagAlgos = cms.VInputTag(cms.InputTag("pfDeepCSVJetTags:probb"), cms.InputTag("pfDeepCSVJetTags:probbb")),
     DisplacedStandaloneTracks = cms.InputTag("displacedStandAloneMuons"),
     StandAloneTracks = cms.InputTag("standAloneMuons"),
     EERecHits = cms.InputTag("reducedEcalRecHitsEE"),

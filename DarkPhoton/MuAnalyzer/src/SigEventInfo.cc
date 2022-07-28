@@ -1,4 +1,6 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
+#include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Common/interface/TriggerNames.h"
 
 #include "DarkPhoton/MuAnalyzer/interface/SigEventInfo.h"
 #include <iostream>
@@ -92,3 +94,24 @@ SigEventInfo::SigEventInfo() {
   usedBin = -1;
   energyBinSF = 1;
 }
+
+bool SigEventInfo::passTriggers(const edm::Event& iEvent, 
+		                edm::EDGetToken m_trigResultsToken,
+				std::vector<std::string> m_muonPathsToPass) { 
+   bool passTriggers;
+   edm::Handle<edm::TriggerResults> triggerResults;
+   iEvent.getByToken(m_trigResultsToken, triggerResults);
+   const edm::TriggerNames& trigNames = iEvent.triggerNames(*triggerResults);
+   for (size_t i = 0; i < trigNames.size(); ++i) {
+      const std::string& name = trigNames.triggerName(i);
+      for (auto& pathName : m_muonPathsToPass) {
+         if ((name.find(pathName) != std::string::npos)) {
+            if (triggerResults->accept(i)) { 
+               passTriggers = true;
+            }
+         }
+      }
+   }
+
+   return passTriggers;
+}   
