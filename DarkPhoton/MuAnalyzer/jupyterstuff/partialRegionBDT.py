@@ -23,7 +23,21 @@ def getRocRate(rootFile):
          totalNum=totalNum+value
       binnum=binnum+1
    return totalNum/passNum
-  
+ 
+def testOffPeak(bdt,features):
+   sameSignFile=uproot.open("/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/CRReReco_SameSign.root")
+   sameSignEvents=sameSignFile["demo"]["partialDisappear"]["sigVariables"]
+   sameSignInputs=sameSignEvents.arrays(features, library="pd")
+   label=[]
+   for entry in range(sameSignInputs.shape[0]):
+      label.append(0)
+   sameSignInputs['label']=label
+   staEfilter = (sameSignInputs['standaloneDEoverE']<-0.6)&(sameSignInputs['cellEdgeDeta']>0.004)&(sameSignInputs['cellEdgeDphi']>0.016)
+   filteredSameSign = sameSignInputs[staEfilter] 
+   matrixSameSign = xgb.DMatrix(filteredSameSign.drop(['EventWeight','label','cellEdgeDeta','cellEdgeDphi'],axis=1))
+   pred = bdt.predict(matrixSameSign)
+   return pred
+
 def binLogNet(x,y):
    train_input, test_input, train_lbl, test_lbl = train_test_split(x, y, test_size=1/7., random_state=0)
    dtrain = xgb.DMatrix(train_input,label=train_lbl)
