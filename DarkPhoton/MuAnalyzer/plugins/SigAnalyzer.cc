@@ -900,6 +900,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     //Signal cut flow
     bool passMassCut = (info.diMuonMass>80 && info.diMuonMass<100);
     if(m_ttbarCR){passMassCut = (info.diMuonMass<76 || info.diMuonMass>106);} 
+    if(m_sameSign){passMassCut = (info.diMuonMass>50 && info.diMuonMass<150);}
     if (myHCAL.m_coneEnergy < 10) {
       allEvents.IncCutFlow(info.eventWeight);
       if (genAccept) {

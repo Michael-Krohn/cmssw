@@ -597,7 +597,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if (!JetId) {
           continue;
         }
-        if(fabs(it->eta())<2.4){continue;}
+        if(fabs(it->eta())>2.6){continue;}
         if(it->pt()<30){continue;}
         njets++;
         double jetDr = deltaR(selectedTrack->eta(), selectedTrack->phi(), it->eta(), it->phi());

@@ -117,6 +117,7 @@ public:
   TH1F* m_HitsOverThresh;
   TH1F* m_RandomHitsOverThresh;
   TH1F* m_Layer_Spectra[7];
+  TH1F* m_Layer_PlusNeighbor_Spectra[7];
   TH1F* m_RLayer_Spectra[7];
   TH1F* m_MissingHits;
   TH2F* m_DepthPairSpectra[6];

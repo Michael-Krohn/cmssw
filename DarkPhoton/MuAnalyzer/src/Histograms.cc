@@ -145,12 +145,14 @@ void Histograms::book(TFileDirectory histFolder) {
 
   for (int i = 0; i < 7; i++) {
     std::string name = "Layer" + std::to_string(i + 1) + "Spectra";
+    std::string plusname = name+"PlusNeighbor";
     std::string rname = "R" + name;
     std::string pairname = "DepthPairSpectra_" + std::to_string(i + 1) + std::to_string(i + 2);
     std::string rpairname = "R" + pairname;
     std::string pairaxis = "; Depth " + std::to_string(i + 1) + " Hit Energy (GeV); Depth " + std::to_string(i + 2) +
                            " Hit Energy (GeV); Events";
     m_Layer_Spectra[i] = histFolder.make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 400, 0, 10);
+    m_Layer_PlusNeighbor_Spectra[i] = histFolder.make<TH1F>(plusname.c_str(),"; Energy (GeV); Events", 200, 0, 10);
     m_RLayer_Spectra[i] = histFolder.make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 400, 0, 10);
     if (i < 6) {
       m_DepthPairSpectra[i] = histFolder.make<TH2F>(pairname.c_str(), pairaxis.c_str(), 100, 0, 10, 100, 0, 10);
@@ -256,6 +258,7 @@ void Histograms::FillHists(EventInfo info) {
       continue;
     }
     m_Layer_Spectra[i]->Fill(info.hitEnergies[i], info.eventWeight);
+    m_Layer_PlusNeighbor_Spectra[i]->Fill(info.hitEnergies[i]+info.neighborHitEnergies[i]+info.neighborHitEnergiesPhi[i], info.eventWeight);
     m_RLayer_Spectra[i]->Fill(info.randHitEnergies[i], info.eventWeight);
     m_Layer_Eta[i]->Fill(info.hitEnergies[i], info.ProbeEta, info.eventWeight);
     //      m_RLayer_Eta[i]->Fill(info.randHitEnergies[i],info.ProbeEta,info.eventWeight);

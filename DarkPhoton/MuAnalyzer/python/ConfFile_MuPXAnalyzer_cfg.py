@@ -95,7 +95,7 @@ process.source = cms.Source("PoolSource",
 if(options.isMC):
    process.source.duplicateCheckMode = cms.untracked.string("noDuplicateCheck")
 else:
-   process.source.lumisToProcess = LumiList.LumiList(filename = "/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt").getVLuminosityBlockRange()
+   process.source.lumisToProcess = LumiList.LumiList(filename = "Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt").getVLuminosityBlockRange()
 
 process.demo = cms.EDAnalyzer('MuPXAnalyzer',
     recoMuons = cms.InputTag("muons"),

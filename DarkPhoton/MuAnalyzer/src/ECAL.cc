@@ -38,25 +38,20 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
                           edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label,
                           const reco::TransientTrack track,
                           double dR) {
-  printf("Getting ECAL Isolation, checking bad cells.\n");
   TrajectoryStateClosestToPoint t0 = track.impactPointTSCP();
   for (uint8_t i = 0; i < badCellPositions.size(); i++) {
     if (deltaR(badCellPositions[i].first, badCellPositions[i].second, t0.momentum().eta(), t0.momentum().phi()) < 0.1) {
       return -1.;
     }
   }
-  printf("Checked bad cells.\n");
   edm::Handle<EcalRecHitCollection> rechitsEE;
   iEvent.getByToken(reducedEndcapRecHitCollection_Label, rechitsEE);
-  printf("Got the EE rec hits.\n");
   edm::Handle<EcalRecHitCollection> rechitsEB;
   iEvent.getByToken(reducedBarrelRecHitCollection_Label, rechitsEB);
-  printf("Got the EB rec hits.\n");
   edm::ESHandle<CaloGeometry> TheCALOGeometry;
   iSetup.get<CaloGeometryRecord>().get(TheCALOGeometry);
 
   const CaloGeometry* caloGeom = TheCALOGeometry.product();
-  printf("Got geometry and rechits.\n");
   double eDR = 0;
   for (EcalRecHitCollection::const_iterator hit = rechitsEE->begin(); hit != rechitsEE->end(); hit++) {
     const DetId id = (*hit).detid();
@@ -72,7 +67,6 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
       eDR += (*hit).energy();
     }
   }
-  printf("Checked EE hits, checking EB hits.\n");
   for (EcalRecHitCollection::const_iterator hit = rechitsEB->begin(); hit != rechitsEB->end(); hit++) {
     const DetId id = (*hit).detid();
     const GlobalPoint hitPos = caloGeom->getSubdetectorGeometry(id)->getGeometry(id)->getPosition();
@@ -87,6 +81,5 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
       eDR += (*hit).energy();
     }
   }
-  printf("Done with function.\n");
   return eDR;
 }
