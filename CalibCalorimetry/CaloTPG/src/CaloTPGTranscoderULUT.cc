@@ -70,6 +70,8 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
     unsigned int threshold = meta->getOutputLutThreshold();
 
     int ieta = id.ieta();
+    int iphi = id.iphi();
+    int depth = id.depth();
     int version = id.version();
     bool isHBHE = (abs(ieta) < theTrigTowerGeometry.firstHFTower(version));
 
@@ -87,6 +89,14 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
           if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
             outputLUT_[index][i] = TPGMAX - 1;
           }
+	  if (ieta >8 && ieta < 13 && iphi==51){
+	    std::cout << "Zeroing outputLUT" << std::endl;
+	    outputLUT_[index][i] = 0;
+	  }
+	  if (ieta == -2 && iphi==44){
+	    std::cout << "Zeroing outputLUT" << std::endl;
+	    outputLUT_[index][i] = 0;
+	  }
         } else {
           outputLUT_[index][i] = analyticalLUT[i];
         }
@@ -112,6 +122,13 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
             if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
               hcaluncomp_[index][tpg] = (TPGMAX - 1) / 2.;
             }
+	    //Zeroing channels where eta={9,12}, phi=51
+	    if (ieta >8 && ieta < 13 && iphi==51){
+	      hcaluncomp_[index][tpg] = 0;
+	    }
+	    if (ieta == -2 && iphi==44){
+	      hcaluncomp_[index][tpg] = 0;
+	    }
           }
         }
       } else {
