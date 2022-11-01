@@ -90,11 +90,11 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
             outputLUT_[index][i] = TPGMAX - 1;
           }
 	  if (ieta >8 && ieta < 13 && iphi==51){
-	    std::cout << "Zeroing outputLUT" << std::endl;
+	    //std::cout << "Zeroing outputLUT" << std::endl;
 	    outputLUT_[index][i] = 0;
 	  }
 	  if (ieta == -2 && iphi==44){
-	    std::cout << "Zeroing outputLUT" << std::endl;
+	    //std::cout << "Zeroing outputLUT" << std::endl;
 	    outputLUT_[index][i] = 0;
 	  }
         } else {
