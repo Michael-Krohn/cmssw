@@ -178,5 +178,8 @@ public:
   TH1F* m_standaloneDE_Trigdown;
   TH1F* m_matchGenTau;
   TH1F* m_matchGenEle;
+  TH1F* m_totalMET;
+  TH1F* m_muMetMT;
+  TH1F* m_muAndProbeMetMT;
 };
 #endif

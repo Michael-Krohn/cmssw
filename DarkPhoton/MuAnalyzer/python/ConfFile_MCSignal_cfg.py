@@ -21,11 +21,23 @@ options.register( 'ttbarCR',
                                   VarParsing.varType.bool,
                                   "True if ttbar control region")
 
+options.register( 'metFailName',
+                                  "",
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.string,
+                                  "Name of met filter results file")
+
 options.register( 'missingCSC',
                                   False,
                                   VarParsing.multiplicity.singleton,
                                   VarParsing.varType.bool,
                                   "True if missing CSC filtered events")
+
+options.register( 'highHcalCr',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "True if high HCAL iso CR")
 
 options.register( 'runRandomTrack',
                                   False,
@@ -93,7 +105,7 @@ if(options.runLocally):
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/missingCSCFilter.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/ZmmSim_EndcapMuFilter_part12.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/testfiles.txt')
            #mylist = FileUtils.loadListFromFile ('filetest.txt')
@@ -117,6 +129,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     recoMuons = cms.InputTag("muons"),
     tracks = cms.InputTag("generalTracks"),
     electrons = cms.InputTag("gedGsfElectrons"),
+    met = cms.InputTag("pfMet"),
     primaryVertices = cms.InputTag("offlinePrimaryVertices"),
     genParticles = cms.InputTag("genParticles"),
     edmPileupInfo = cms.InputTag("mixData"),
@@ -148,8 +161,10 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     sameSign = cms.untracked.bool(options.sameSign),
     ttbarCR = cms.untracked.bool(options.ttbarCR),
     missingCSC = cms.untracked.bool(options.missingCSC),
+    highHcalCr = cms.untracked.bool(options.highHcalCr),
     scaleFactor = cms.untracked.double(options.scaleFactor),
     binSFsfname = cms.untracked.string(options.binSFsfname),
+    metFailName = cms.untracked.string(options.metFailName),
     runrandomTrackEfficiency = cms.untracked.bool(options.runRandomTrack)
 )
 

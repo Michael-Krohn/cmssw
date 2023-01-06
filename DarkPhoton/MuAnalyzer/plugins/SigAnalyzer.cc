@@ -47,10 +47,13 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Math/interface/deltaR.h"
+#include "DataFormats/Math/interface/deltaPhi.h"
 #include "SimDataFormats/Track/interface/SimTrackContainer.h"
 #include "SimDataFormats/Vertex/interface/SimVertexContainer.h"
 #include "SimDataFormats/TrackingHit/interface/PSimHitContainer.h"
 #include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/METReco/interface/PFMET.h"
+#include "DataFormats/METReco/interface/PFMETCollection.h"
 
 //for Standalone Muon Tracking
 #include "Geometry/Records/interface/GlobalTrackingGeometryRecord.h"
@@ -167,6 +170,7 @@ private:
       edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
   std::vector<double> GetPuWeight(edm::Handle<std::vector<PileupSummaryInfo>> hPileupInfoProduct);
 
+  bool passesMetFilters(const edm::Event& iEvent);
   edm::EDGetToken m_recoMuonToken;
   edm::EDGetToken m_simTracksToken;
   edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
@@ -184,16 +188,19 @@ private:
   edm::EDGetToken m_dbremYToken;
   edm::EDGetToken m_dbremZToken;
   edm::EDGetToken m_trigResultsToken;
+  edm::EDGetToken m_trigEventToken;
   edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
   std::vector<std::string> m_muonPathsToPass;
   const reco::Track* selectedTrack;
   const reco::Muon* selectedMuon;
+  double hcalIso;
   edm::EDGetTokenT<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>> HBHERecHit_Label;
   edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label;
   edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
   edm::EDGetToken m_caloJet_label;
   std::vector<edm::EDGetTokenT<reco::JetTagCollection> > m_jetTagTokens;
   edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
+  edm::EDGetToken m_PFMetToken;
   edm::EDGetToken m_PUInfoToken;
   edm::EDGetToken m_theSTAMuonLabel;
   edm::EDGetToken m_displacedSTAMuonLabel;
@@ -204,6 +211,7 @@ private:
   bool m_sameSign;
   bool m_ttbarCR;
   bool m_missingCSCFilter;
+  bool m_highHcalCR;
   double m_scaleFactor;
   std::string m_binSFsfname;
   bool m_runRandomTrackEfficiency;
@@ -214,6 +222,7 @@ private:
   double diMuonMass;
   double probeTIP;
   double probeLIP;
+  std::map<int,std::vector<int>> metFailingEvents;
   //DBrem binning scale factors
   std::map<int, TH1F*> binningSFs;
   //pileup reweighting
@@ -224,16 +233,20 @@ private:
   TH1F* puWeightHist_;
   TH1F* puWeightUpHist_;
   TH1F* puWeightDownHist_;
+  //Met filter checking
 
   edm::Handle<reco::CaloJetCollection> caloJets;
   MCHistograms allEvents;
+  MCHistograms gen;
   MCHistograms genAccepted;
   MCHistograms preSelectedEvents;
   MCHistograms lowHits;
   MCHistograms failSig;
   MCHistograms totalDisappear;
+  MCHistograms totalDisappearLowEcal;
   MCHistograms passSigNearbyCSC;
   MCHistograms partialDisappear;
+  MCHistograms partialDisappearLowEcal;
   MCHistograms partialDisappear_largeCSCDefl;
 };
 
@@ -264,6 +277,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
           consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
       m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
       m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
+      m_PFMetToken(consumes<std::vector<reco::PFMET>> (iConfig.getParameter<edm::InputTag>("met"))),
       m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
       m_displacedSTAMuonLabel(
           consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("DisplacedStandaloneTracks"))),
@@ -274,6 +288,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       m_sameSign(iConfig.getUntrackedParameter<bool>("sameSign",false)),
       m_ttbarCR(iConfig.getUntrackedParameter<bool>("ttbarCR",false)),
       m_missingCSCFilter(iConfig.getUntrackedParameter<bool>("missingCSC",false)),
+      m_highHcalCR(iConfig.getUntrackedParameter<bool>("highHcalCr", false)),
       m_scaleFactor(iConfig.getUntrackedParameter<double>("scaleFactor", 2000)),
       m_binSFsfname(iConfig.getUntrackedParameter<std::string>("binSFsfname", "")),
       m_runRandomTrackEfficiency(iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency", false)) {
@@ -307,10 +322,10 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       }
       dbremBinSFs->Close();
     }
-  } else {
-    m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
-    m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
-  }
+  } 
+  m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
+  m_trigEventToken = consumes<trigger::TriggerEvent>(edm::InputTag("hltTriggerSummaryAOD"));
+  m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   m_jetTagTokens = edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag> >("btagAlgos"),[this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag); });
 
   if(m_isMC){
@@ -343,14 +358,35 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
     puWeightUpHist_ = (TH1F*)fPUDataUpHist_->Clone();
     puWeightDownHist_ = (TH1F*)fPUDataDownHist_->Clone();
   }
+ 
+  std::string metFname = iConfig.getUntrackedParameter<std::string>("metFailName","");
+  if(metFname!="")
+  {
+     TFile* metFailingFile = TFile::Open(iConfig.getUntrackedParameter<std::string>("metFailName","").c_str());
+     TTree* metFailingTree = (TTree*)metFailingFile->Get("myMetFilter/failingEvents/failingEventInfo");
+     int metFailLumi, metFailEvent; 
+     metFailingTree->SetBranchAddress("lumi",&metFailLumi);
+     metFailingTree->SetBranchAddress("event",&metFailEvent);
+     for(int eventNum=0; eventNum<metFailingTree->GetEntries();eventNum++)
+     {
+        metFailingTree->GetEntry(eventNum);
+        if(metFailingEvents.count(metFailLumi)==0){metFailingEvents[metFailLumi];}
+        metFailingEvents[metFailLumi].push_back(metFailEvent);
+     }
+     metFailingFile->Close();
+  }
+
   allEvents.book(fs->mkdir("allEvents"),m_isMC);
   genAccepted.book(fs->mkdir("genAccepted"),m_isMC);
+  gen.book(fs->mkdir("genInfo"),m_isMC);
   preSelectedEvents.book(fs->mkdir("preSelected"),m_isMC);
   failSig.book(fs->mkdir("failSig"),m_isMC);
   lowHits.book(fs->mkdir("lowHits"),m_isMC);
   totalDisappear.book(fs->mkdir("totalDisappear"),m_isMC);
+  totalDisappearLowEcal.book(fs->mkdir("totalDisappearLowEcal"),m_isMC);
   passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"),m_isMC);
   partialDisappear.book(fs->mkdir("partialDisappear"),m_isMC);
+  partialDisappearLowEcal.book(fs->mkdir("oartialDisappearLowEcal"),m_isMC);
   partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"),m_isMC);
 }
 
@@ -377,9 +413,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   HCAL myHCAL;
   ECAL myECAL;
   SigEventInfo info;
-  if(!m_isMC){
-     if(!info.passTriggers(iEvent,m_trigResultsToken,m_muonPathsToPass)) return;
-  }
+  //if(!m_isMC){
+  if(!info.passTriggers(iEvent,m_trigResultsToken,m_trigEventToken,m_muonPathsToPass)) return;
+  //}
   allEvents.ResetCutFlow();
   genAccepted.ResetCutFlow();
   edm::Handle<float> dbremweight, dbremInitialE, dbremFinalE, dbremAngle, dbremX, dbremY, dbremZ;
@@ -400,6 +436,13 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         iEvent.getByToken(m_dbremZToken, dbremZ);
         weight_ = *dbremweight * weight_;
         info.dbremWeight = *dbremweight * m_scaleFactor;
+	double hyp = sqrt(*dbremX*(*dbremX)+*dbremY*(*dbremY)+*dbremZ*(*dbremZ));
+	double dt = sqrt(*dbremX*(*dbremX)+*dbremY*(*dbremY));
+	double sinTheta = dt/hyp;
+	double et = *dbremInitialE*sinTheta;
+	info.dbremInitialEt=et;
+        info.dbremFinalE = *dbremFinalE;
+	info.dbremInitialE = *dbremInitialE;
         if (*dbremweight > 0.01) {
           return;
         }
@@ -413,6 +456,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             info.energyBinSF = iter.second->GetBinContent(iter.second->FindBin(*dbremFinalE / *dbremInitialE));
             break;
           }
+	gen.FillHists(info);
         }
         edm::Handle<reco::GenParticleCollection> genParticles;
         iEvent.getByToken(m_genParticleToken, genParticles);
@@ -459,6 +503,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     weight_ = 1.;
     allEvents.IncCutFlow(weight_);
   }
+  
+  if(!passesMetFilters(iEvent)){return;}
+  allEvents.IncCutFlow(weight_); //Passes met filters
+
   if (m_isMC) {
     edm::Handle<std::vector<PileupSummaryInfo>> hPileupInfoProduct;
     iEvent.getByToken(m_PUInfoToken, hPileupInfoProduct);
@@ -525,7 +573,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                                                       reducedEndcapRecHitCollection_Label,
                                                       reducedBarrelRecHitCollection_Label);
     }
-    printf("Paired tag and probe\n.");
     if (trackProgress > maxTrackProgress) {
       maxTrackProgress = trackProgress;
       if (m_isMC) {
@@ -539,7 +586,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
   }
-  printf("Paired tag and probe.\n");
   if(m_isMC){
   info.eventWeight =
       info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
@@ -563,6 +609,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   if (maxTrackProgress < 13) {
     return;
   }
+  //Make sure the tag muon passed the trigger
+  if(!info.matchTagAndTrigger(selectedMuon)){return;}
+  allEvents.IncCutFlow(info.eventWeight);
+
   math::XYZTLorentzVectorD mother;
   //find dark brem vertex
   if (m_isMC && m_hasDpho) {
@@ -573,9 +623,6 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.vtxPerp = vtx.perp();
     info.dbremInitialE = *dbremInitialE;
     //   }
-  }
-  if (info.bremR == 0) {
-    info.bremR = 525;
   }
   //Find deflected muon or the initial muon if there was no deflection
   double FmuE = 0;
@@ -661,6 +708,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.tagMuonPt = selectedMuon->pt();
     info.probeTrackEta = selectedTrack->eta();
     info.probeCharge = selectedTrack->charge();
+    info.probeTrackP = selectedTrack->p();
     info.probeTrackPt = selectedTrack->pt();
     info.probeTrackPhi = selectedTrack->phi();
     info.dxy = selectedTrack->dxy();
@@ -815,6 +863,27 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (info.nCellsFound < 4) {
       return;
     }
+    //Check MET
+    edm::Handle<std::vector<reco::PFMET >> pfMETCollection;
+    bool ValidPFMET = iEvent.getByToken(m_PFMetToken, pfMETCollection);
+    if (!ValidPFMET)
+    {
+	    printf("Invalid PF Met!\n");
+	    return;
+    }
+    info.pfMet_pt=(*pfMETCollection)[0].et();
+    double met=(*pfMETCollection)[0].et();
+    double phi=(*pfMETCollection)[0].phi();
+    TLorentzVector vmet,vlep;
+    vlep.SetPxPyPzE(selectedMuon->px(),selectedMuon->py(),selectedMuon->pz(),selectedMuon->pfP4().E());
+    double metx = met * std::cos(phi);
+    double mety = met * std::sin(phi);
+    vmet.SetPxPyPzE(metx, mety, 0.0, met);
+    TLorentzVector vw = vlep + vmet;
+    info.muMetMT=std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
+    vlep.SetPxPyPzE(selectedMuon->px()+selectedTrack->px(),selectedMuon->py()+selectedTrack->py(),selectedMuon->pz()+selectedTrack->pz(),selectedMuon->pfP4().E()+selectedTrack->p());
+    info.muAndProbeMetMT=std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
+
     //Signal categories
     bool passSigCuts = false;
     //if(myHCAL.m_HitsOverThresh<2){return;}
@@ -854,7 +923,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.caloJetHcalE = nearProbeCaloJetHadE;
     info.caloJetEcalE = nearProbeCaloJetEmE;
     info.caloJetTotalE = nearProbeCaloJetHadE + nearProbeCaloJetEmE;
-    info.caloConeE = coneHits.first;
+    //info.caloConeE = coneHits.first;
+    info.caloConeE = hcalIso;
     info.caloConeHits = coneHits.second;
     //PF Jets stuff
     myJets.SelectJets(iEvent, m_pfJetCollection_label);
@@ -934,6 +1004,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             info.sigCat = 3;
             passSigCuts = true;
             totalDisappear.FillHists(info);
+            if(info.probeEcalIso<5){totalDisappearLowEcal.FillHists(info);} 
           }
         }
       }
@@ -946,6 +1017,11 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     } else if (staMinDr < 1.0 && passMassCut) {
       partialDisappear.FillHists(info);
       partialDisappear.FillTree(info);
+      if(info.probeEcalIso<5)
+      {
+         partialDisappearLowEcal.FillHists(info);
+         partialDisappearLowEcal.FillTree(info);
+      }
       if (info.probeCharge > 0) {
         if (info.stadPhi > 0.1) {
           partialDisappear_largeCSCDefl.FillHists(info);
@@ -1029,12 +1105,10 @@ int SigAnalyzer::PairTagAndProbe(
     edm::Handle<reco::VertexCollection> vtxHandle,
     edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label,
     edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label) {
-  printf("Pairing tag and probe in function.\n");
   int cutpro = 0;
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin();
        iTrack != myTracks.selectedEndcapTracks.end();
        ++iTrack) {
-    printf("Starting loop\n");
     if(!m_sameSign)
     {
        if (Tag->charge() == (*iTrack)->charge())
@@ -1044,29 +1118,23 @@ int SigAnalyzer::PairTagAndProbe(
     {
        if (Tag->charge() != (*iTrack)->charge()) continue;
     }
-    printf("Checked charge.\n");
     if (cutpro < 1) {
       cutpro = 1;
     }
     int pairingResult = myTracks.PairTracks(iTrack, Tag->globalTrack(), transientTrackBuilder);
-    printf("Paired tracks.\n");
     if (pairingResult > (cutpro - 1)) {
       cutpro = pairingResult + 1;
     }
     if (pairingResult == 3) {
-      printf("Getting track iso.\n");
       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, *iTrack);
-      printf("Got track iso, getting ecal iso.\n");
       double probeEcalIso = myECAL.GetIsolation(iEvent,
                                                 iSetup,
                                                 reducedEndcapRecHitCollection_Label,
                                                 reducedBarrelRecHitCollection_Label,
                                                 transientTrackBuilder->build(*iTrack));
-      printf("Got ecal iso, getting HCAL iso.\n");
       double probeHcalIso =
           myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
       double minProbeDr = 5;
-      printf("Got isolation.\n");
       for (auto CaloJet = caloJets->begin(); CaloJet != caloJets->end(); ++CaloJet) {
         double probeDr = deltaR((*iTrack)->eta(), (*iTrack)->phi(), CaloJet->eta(), CaloJet->phi());
         double hadE = CaloJet->hadEnergyInHE() + CaloJet->hadEnergyInHB();
@@ -1083,27 +1151,29 @@ int SigAnalyzer::PairTagAndProbe(
       if (cutpro < 5) {
         cutpro = 5;
       }
-      if (probeEcalIso > 5. || probeEcalIso < 0.)
+      if (probeEcalIso > 10. || probeEcalIso < 0.)
         continue;
       if (cutpro < 6) {
         cutpro = 6;
       }
       //if(minProbeDr<0.4) continue;
-      if (probeHcalIso > 20.)
-        continue;
+      if(!m_highHcalCR){
+         if (probeHcalIso > 20.)
+           continue;
+      }
+      else if(probeHcalIso<30.){continue;}
       if (cutpro < 7) {
         cutpro = 7;
       }
-      printf("Paired tracks, setting stuff.\n");
       selectedTrack = (*iTrack);
       selectedMuon = Tag;
+      hcalIso = probeHcalIso;
       diMuonMass = myTracks.MuonTrackMass;
       pairVtxChi = myTracks.pairvertexchi;
       reco::TransientTrack tk = transientTrackBuilder->build(*iTrack);
       TrajectoryStateClosestToPoint traj = tk.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
       probeTIP = traj.perigeeParameters().transverseImpactParameter();
       probeLIP = traj.perigeeParameters().longitudinalImpactParameter();
-      printf("Set stuff.\n");
     }
   }
   return cutpro;
@@ -1203,6 +1273,20 @@ std::vector<double> SigAnalyzer::GetPuWeight(edm::Handle<std::vector<PileupSumma
   puWeights.push_back(puUpWeight);
   puWeights.push_back(puDownWeight);
   return puWeights;
+}
+
+bool SigAnalyzer::passesMetFilters(const edm::Event& iEvent)
+{
+  int thisLumi=iEvent.id().luminosityBlock();
+  int thisEvent=iEvent.id().event();
+  if(metFailingEvents.count(thisLumi)>0)
+  {
+    for(uint16_t event=0; event<metFailingEvents[thisLumi].size();event++)
+    {
+      if(thisEvent==metFailingEvents[thisLumi].at(event)){return false;}   
+    }
+  }
+  return true;
 }
 
 // ------------ method called once each job just before starting event loop  ------------

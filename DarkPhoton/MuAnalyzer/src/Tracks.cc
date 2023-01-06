@@ -306,7 +306,7 @@ int Tracks::PairTracks(std::vector<const reco::Track*>::const_iterator& Track,
   // some poor fits will simply fail to find a common vertex
   if (fittedVertex.isValid() && fittedVertex.totalChiSquared() >= 0. && fittedVertex.degreesOfFreedom() > 0) {
     // others we can exclude by their poor fit
-    if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
+    if ((fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom()) < 3.) {
       // important! evaluate momentum vectors AT THE VERTEX
       TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
       TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());

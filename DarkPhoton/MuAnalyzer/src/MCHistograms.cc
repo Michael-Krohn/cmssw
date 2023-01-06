@@ -88,6 +88,7 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 40, -.5, 39.5);
   std::vector<std::string> cutLabels = {"AllGenEvents",
                                         "Has A'(If needed)",
+					"Passes MET Filters",
                                         "Tight ID Muon",
                                         "Tight ISO Muon",
                                         "Muon Pt/Eta Req.",
@@ -105,6 +106,7 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
                                         "Probe Tracker Iso",
                                         "Probe Ecal Iso",
                                         "Probe HCAL Iso",
+                                        "Tag Passed Trigger",
                                         "No Other Probes Pair",
                                         "HCAL Location Ok",
                                         "Found >3 HE Cells",
@@ -151,12 +153,15 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
       histFolder.make<TH1F>("NMatchNHitConeEnergy", "; Energy in Matched Hits (GeV); Events", 200, 0, 20);
   m_NMatchNHitLocation = histFolder.make<TH2F>("NMatchNHitLocation", ";Z;#rho;Events", 150, 0, 600, 150, 0, 600);
   m_ProbeTrackPt = histFolder.make<TH1F>("ProbeTrackPt", ";#Pt (GeV); Events", 200, 0, 100);
+  m_ProbeTrackP = histFolder.make<TH1F>("ProbeTrackP",";Momentum (GeV); Events", 200,0,400);
   m_ProbeTrackEta = histFolder.make<TH1F>("ProbeTrackEta", ";#eta; Events", 200, -4, 4);
   m_ProbeTrackPtEta = histFolder.make<TH2F>("ProbeTrackPtEta", ";#Pt (GeV);#eta; Events", 50, 20, 70, 80, -4, 4);
   m_ProbeTrackEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi", ";#eta;#phi;Events", 100, -2.6, 2.6, 100, -3.15, 3.15);
   m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation", ";Z;#rho;Events", 150, 0, 600, 150, 0, 600);
   m_DeflectingAngle = histFolder.make<TH1F>("DeflectingAngle", ";Muon Deflection Angle;Events", 100, 0, 3.16);
   m_initialMuE = histFolder.make<TH1F>("MuInitialE", ";Energy (GeV);Events", 800, 0, 200);
+  m_initialMuE_noWeight = histFolder.make<TH1F>("MuInitialE_noWeight", ";Energy (GeV);Events", 400, 0, 400);
+  m_initialMuEt = histFolder.make<TH1F>("MuInitialEt", ";Energy (GeV);Events", 400, 0, 400);
   m_finalMuE = histFolder.make<TH1F>("MuFinalE", ";Energy (GeV);Events", 800, 0, 200);
   m_DBremScalingDistance = histFolder.make<TH1F>("DarkBremScalingDistance", ";Initial E/Sampled E; Events", 100, 0, 4);
   m_ProbeEcalIsolation = histFolder.make<TH1F>("ProbeEcalIsolation", ";Ecal Isolation; Events", 100, 0, 100);
@@ -331,6 +336,10 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_PUmean = histFolder.make<TH1F>("NPUMean", ";MC N Pileup Mean; Events", 100, 0, 100);
   m_energyBinSFs = histFolder.make<TH1F>("energyBinSF", ";SF from Energy Binning; Events", 50, 0.5, 1.5);
   m_usedEnergyBin = histFolder.make<TH1F>("energyBin", ";Energy used for DBrem scaling (GeV); Events", 1000, 0, 1000);
+  m_totalMET = histFolder.make<TH1F>("totalMET",";MET (GeV); Events", 200,0,200);
+  m_muMetMT = histFolder.make<TH1F>("muMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
+  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT",";Tag muon + probe/MET MT (GeV); Events", 200,0,200);
+
 }
 
 void MCHistograms::FillTree(SigEventInfo info) {
@@ -432,6 +441,8 @@ void MCHistograms::FillHists(SigEventInfo info) {
   m_ProbeDCA->Fill(info.dca, info.eventWeight);
   m_ProbeLongDCA->Fill(info.dcal, info.eventWeight);
   m_ProbeDCAphi->Fill(info.dca, info.probeTrackPhi, info.eventWeight);
+  m_totalMET->Fill(info.pfMet_pt,info.eventWeight);
+  m_muMetMT->Fill(info.muMetMT,info.eventWeight);
   if (info.isLoose) {
     m_TrackQuality->Fill(0.1, info.eventWeight);
   }
@@ -450,6 +461,7 @@ void MCHistograms::FillHists(SigEventInfo info) {
   m_ProbeEcalIsolation0p05->Fill(info.probeEcalIso0p05, info.eventWeight);
   m_TagMuonPt->Fill(info.tagMuonPt, info.eventWeight);
   m_ProbeTrackPt->Fill(info.probeTrackPt, info.eventWeight);
+  m_ProbeTrackP->Fill(info.probeTrackP, info.eventWeight);
   m_ProbeTrackEta->Fill(info.probeTrackEta, info.eventWeight);
   m_ProbeTrackPtEta->Fill(info.probeTrackPt, info.probeTrackEta, info.eventWeight);
   m_ProbeTrackEtaPhi->Fill(info.probeTrackEta, info.probeTrackPhi, info.eventWeight);
@@ -459,6 +471,8 @@ void MCHistograms::FillHists(SigEventInfo info) {
   {
     m_FractionalELost->Fill(info.finalMuE / info.dbremInitialE, info.eventWeight);
     m_initialMuE->Fill(info.dbremInitialE, info.eventWeight);
+    m_initialMuE_noWeight->Fill(info.dbremInitialE, info.dbremWeight);
+    m_initialMuEt->Fill(info.dbremInitialEt,info.dbremWeight);
     m_finalMuE->Fill(info.finalMuE, info.eventWeight);
   }
   m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter, info.eventWeight);

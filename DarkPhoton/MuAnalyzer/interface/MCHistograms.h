@@ -90,6 +90,7 @@ public:
   TH1F* m_ProbeTrackPt;
   TH1F* m_ProbeTrackEta;
   TH2F* m_ProbeTrackEtaPhi;
+  TH1F* m_ProbeTrackP;
   TH1F* m_ProbeMuonEta;
   TH1F* m_ProbeMuonPt;
   TH2F* m_ProbeTrackPtEta;
@@ -122,6 +123,8 @@ public:
   TH2F* m_DBremLocation;
   TH1F* m_DeflectingAngle;
   TH1F* m_initialMuE;
+  TH1F* m_initialMuE_noWeight;
+  TH1F* m_initialMuEt;
   TH1F* m_finalMuE;
   TH1F* m_DBremScalingDistance;
   TH1F* m_ProbeTrackIsolation;
@@ -243,5 +246,8 @@ public:
   TH1F* m_PUmean;
   TH1F* m_energyBinSFs;
   TH1F* m_usedEnergyBin;
+  TH1F* m_totalMET;
+  TH1F* m_muMetMT;
+  TH1F* m_muAndProbeMetMT;
 };
 #endif

@@ -43,6 +43,9 @@ MuPXEventInfo::MuPXEventInfo() {
   caloJetPt = -1;
   probeCaloJetE = -1;
   tagCaloJetE = -1;
+  pfMet_pt=0;
+  muMetMT=0;
+  muAndProbeMetMT=0;
   probeCaloJetEcal = -1;
   probeCaloJetHcal = -1;
   staMinDr = 10;

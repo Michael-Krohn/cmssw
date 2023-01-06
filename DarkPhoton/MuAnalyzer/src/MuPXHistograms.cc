@@ -277,6 +277,9 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso) {
   m_TrigSF = histFolder.make<TH1F>("TrigSF", ";Tight muon Trigger scale factor; Events", 100, 0.9, 1.1);
   m_TrigSFup = histFolder.make<TH1F>("TrigSFup", ";Tight muon Trigger scale factor up; Events", 100, 0.9, 1.1);
   m_TrigSFdown = histFolder.make<TH1F>("TrigSFdown", ";Tight muon Trigger scale factor down; Events", 100, 0.9, 1.1);
+  m_totalMET = histFolder.make<TH1F>("totalMET",";MET (GeV); Events", 200,0,200);
+  m_muMetMT = histFolder.make<TH1F>("muMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
+  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
   m_matchGenEle = histFolder.make<TH1F>("MatchGenEle", ";Match Probe to Gen Electron; Events", 2, -0.5, 1.5);
   m_matchGenEle->GetXaxis()->SetBinLabel(1, "Fail Matching");
   m_matchGenEle->GetXaxis()->SetBinLabel(2, "Pass Matching");
@@ -384,6 +387,8 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
   m_HitsOverThresh->Fill(info.hitsOverThresh, info.eventWeight);
   m_ConeEnergy->Fill(info.coneEnergy, info.eventWeight);
   m_HECellsFound->Fill(info.nCellsFound, info.eventWeight);
+  m_totalMET->Fill(info.pfMet_pt,info.eventWeight);
+  m_muMetMT->Fill(info.muMetMT,info.eventWeight);
   if (fabs(info.iEta) > 20) {
     m_BigEtadEtadPhi->Fill(info.cellCenterDEta, info.cellCenterDPhi, info.eventWeight);
   } else {

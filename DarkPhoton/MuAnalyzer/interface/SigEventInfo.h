@@ -9,6 +9,8 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
+#include "DataFormats/HLTReco/interface/TriggerObject.h"
+#include "DataFormats/HLTReco/interface/TriggerEvent.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/TrackReco/interface/Track.h"
 #include "TH1F.h"
@@ -18,7 +20,9 @@ public:
   SigEventInfo();
   bool passTriggers(const edm::Event& iEvent,
 		    edm::EDGetToken m_trigResultsToken,
+		    edm::EDGetToken m_trigEventToken,
 		    std::vector<std::string> m_muonPathsToPass);
+  bool matchTagAndTrigger(const reco::Muon* selectedMuon);
   double eventWeight;
   double dbremWeight;
   double genEventWeight;
@@ -31,6 +35,7 @@ public:
   int sigCat;
   double dbremZ;
   double dbremPerp;
+  double dbremInitialEt;
   double bremR;
   double dbremInitialE;
   double dbremFinalE;
@@ -48,9 +53,13 @@ public:
   double probeReducedChi;
   double tagMuonEta;
   double tagMuonPt;
+  double pfMet_pt;
+  double muMetMT;
+  double muAndProbeMetMT;
   double probeTrackEta;
   double probeTrackPhi;
   double probeTrackPt;
+  double probeTrackP;
   double pairVtxChi;
   double diMuonMass;
   double minSimCSCDr;
@@ -132,5 +141,7 @@ public:
   //Energy bin SFs
   int usedBin;
   double energyBinSF;
+  //Trigger objects
+  std::vector<trigger::TriggerObject> passingMuons;
 };
 #endif
