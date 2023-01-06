@@ -6,8 +6,7 @@
 #include "CommonTools/Utils/interface/TFileDirectory.h"
 #include "TH1F.h"
 #include "TH2F.h"
-
-
+#include "TTree.h"
 
 class eventHistos
 {
@@ -16,8 +15,11 @@ class eventHistos
       void book(TFileDirectory histFolder);
       void IncCutFlow();
       void ResetCutFlow();
+      void FillTree(int runNum, int lumiSection, int eventNum, int sigCat);
       TH1F* m_eventWeight;
       TH1F* m_eventCount;
+      TH1F* m_staMinDr;
+      TH1F* m_staMinDEoverE;
       TH1F* m_cutProgress;
       TH1F* m_MuonTrackMass;
       TH1F* m_ProbeEta;
@@ -33,8 +35,14 @@ class eventHistos
       TH1F* m_TagProbeVtxChi;
       TH1F* m_ProbeTrackIso;
       TH1F* m_ProbeHcalIso;
+      TH1F* m_NJets;
       TH1F* m_ProbeEcalIso;
       TH2F* m_ProbeCombinedIso;     
+      TTree* m_passingEventInfo;
       double cutProgress;
+      int run;
+      int lumi;
+      int event;
+      int category;
 };
 #endif
