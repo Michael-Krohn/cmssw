@@ -122,8 +122,7 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
             if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
               hcaluncomp_[index][tpg] = (TPGMAX - 1) / 2.;
             }
-	    //Zeroing channels where eta={9,12}, phi=51
-	    if (ieta >8 && ieta < 13 && iphi==51){
+ 	    if (ieta > -17 && ieta < -12 && iphi==12){
 	      hcaluncomp_[index][tpg] = 0;
 	    }
 	    if (ieta == -2 && iphi==44){
