@@ -89,7 +89,7 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
           if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
             outputLUT_[index][i] = TPGMAX - 1;
           }
-	  if (ieta >8 && ieta < 13 && iphi==51){
+	  if (ieta > -17 && ieta < -12 && iphi==12){
 	    std::cout << "Zeroing outputLUT" << std::endl;
 	    outputLUT_[index][i] = 0;
 	  }
