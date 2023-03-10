@@ -12,8 +12,25 @@ def calcScaleFactor(name,skimFile,resultFile):
    eff = eff* skimFile.Get("DiMuonFilter/passingEvents/NumberOfMuonsPassingTag").Integral()/resultFile.Get("demo/allEvents/cutProgress").GetBinContent(2)
    return eff
 
+def calcSigContamination():
+    basedir = '/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/'
+    masses = ['map0p2','map0p4','map0p6','map0p8','map1p0']
+    rates = []
+    fitScale = 0.296 
+    offPeakLumi = 14.73
+    offPeakEvents = 16.45 
+    for mass in masses:
+        offPeak = ROOT.TFile(basedir+'ZmmDBrem_offPeakCR_'+mass+'.root')
+        sig = ROOT.TFile(basedir+'ZmmDBrem_'+mass+'_fixBiasing.root')
+        normrate = sig.Get('demo/totalDisappear/eventCount').Integral()/sig.Get('demo/allEvents/cutProgress').GetBinContent(2)
+        offPeakRate = offPeak.Get('demo/totalDisappear/eventCount').Integral()/offPeak.Get('demo/allEvents/cutProgress').GetBinContent(2)
+        rates.append(offPeakRate)
+        print(offPeakRate/normrate)
+    sigContRates = zip(masses,rates)
+
+
 def main():
-   
+   calcSigContamination() 
    parser = argparse.ArgumentParser(description="Fit the background fraction as a function of isolation")
    parser.add_argument("--o", "--outputdir"  , dest="outDir"    , help="output directory"          , default=os.getcwd()+"/histograms/")
    parser.add_argument("--i", dest="inDir", help="Directory containing analyzer results", default="/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/")
@@ -64,8 +81,8 @@ def main():
       dyNEvents.SetBinError(1,math.sqrt(2))
       dyNEvents.Write("nEvents_DY"+variant)
    muPXNevents = ROOT.TH1F("MuPXNevents","",1,0,1)
-   muPXNevents.SetBinContent(1,18.8)
-   muPXNevents.SetBinError(1,3.96)
+   muPXNevents.SetBinContent(1,4.87)
+   muPXNevents.SetBinError(1,0.34)
    for variant in variants:
       muPXNevents.Write("nEvents_muPX"+variant)
    for sigfile, mass in sigFiles:
