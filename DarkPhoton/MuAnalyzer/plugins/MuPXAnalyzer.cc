@@ -148,7 +148,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     bool MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selectedTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo);
     bool LooseMatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selTrack, const reco::Muon* selectedMuon, edm::EDGetToken m_genParticleToken, double *genInfo, std::vector<int> &nearbyIDs, std::vector<int> &highPtIds);
     int PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetup& iSetup, Tracks myTracks, const reco::Muon* Tag, ECAL myECAL, HCAL myHCAL,  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder, edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label, edm::Handle<reco::VertexCollection> vtxHandle, edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label, edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
-
+    double CalculatePUenergy(double trackEta, double eventRho, double coneSize);
     double GetPuWeight(edm::Handle< std::vector<PileupSummaryInfo> > hPileupInfoProduct);
 
     edm::EDGetToken m_recoMuonToken;
@@ -173,6 +173,7 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     edm::EDGetToken m_caloTower_label;
     edm::EDGetToken m_caloJet_label;
     edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
+    edm::EDGetTokenT<double> rhoToken_;
     edm::EDGetToken m_PUInfoToken;
     edm::EDGetTokenT<reco::CandidateView> candToken_;
     bool m_isMC;
@@ -186,17 +187,27 @@ class MuPXAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
     double muTrackMass;
     double probeLIP;
     double probeTIP;
+    bool paired_;
+    GlobalPoint vertexPosition;
     TH1F* fPUDataHist_;
     TH1F* fPUMCHist_;
     TH1F* puWeightHist_;
     MuPXHistograms myHistogramsNoCuts;
     MuPXHistograms myHistograms;
-    MuPXHistograms muProbe;
-    MuPXHistograms nonMuonProbe;
-    MuPXHistograms genMatched;
-    MuPXHistograms looseMatch;
-    MuPXHistograms nonGenMatched;
-    MuPXHistograms passSig;
+    MuPXHistograms standaloneMatched;
+//    MuPXHistograms muProbe;
+//    MuPXHistograms nonMuonProbe;
+//    MuPXHistograms genMatched;
+//    MuPXHistograms looseMatch;
+//    MuPXHistograms nonGenMatched;
+//    MuPXHistograms passSig;
+//    MuPXHistograms passTight;
+//    MuPXHistograms passMedium;
+//    MuPXHistograms passLoose;
+//    MuPXHistograms failSig;
+    MuPXHistograms lowHCALTrajEnergy;
+    MuPXHistograms lowHCAL3x3Energy;
+    MuPXHistograms largeEnergyDiscrepancy;
 };
 //
 // constants, enums and typedefs
@@ -222,6 +233,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
   m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
   m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
   m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
+  rhoToken_(consumes<double>(iConfig.getParameter<edm::InputTag>("srcRho"))),
   m_isMC (iConfig.getUntrackedParameter<bool>("isMC",false)),
   m_signalRegion(iConfig.getUntrackedParameter<bool>("signalRegion",false)),
   m_makeTuples(iConfig.getUntrackedParameter<bool>("makeTuples",false)),
@@ -255,12 +267,20 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig):
 
   myHistogramsNoCuts.book(fs->mkdir("allEventsNoCuts"));
   myHistograms.book(fs->mkdir("allEvents"),false);
-  muProbe.book(fs->mkdir("muProbe"));
-  nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
-  genMatched.book(fs->mkdir("genMatched"));
-  looseMatch.book(fs->mkdir("looseMatched"),false);
-  nonGenMatched.book(fs->mkdir("nonGenMatched"));
-  passSig.book(fs->mkdir("passSig"));
+  standaloneMatched.book(fs->mkdir("standaloneMatched"),false);
+//  muProbe.book(fs->mkdir("muProbe"));
+//  nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
+//  genMatched.book(fs->mkdir("genMatched"));
+//  looseMatch.book(fs->mkdir("looseMatched"),false);
+//  nonGenMatched.book(fs->mkdir("nonGenMatched"));
+//  passSig.book(fs->mkdir("passSig")); 
+//  passTight.book(fs->mkdir("passTight"));
+//  passMedium.book(fs->mkdir("passMedium"));
+//  passLoose.book(fs->mkdir("passLoose"));
+//  failSig.book(fs->mkdir("failSig"));
+  lowHCALTrajEnergy.book(fs->mkdir("lowHCALTrajEnergy"));
+  lowHCAL3x3Energy.book(fs->mkdir("lowHCAL3x3Energy"));
+  largeEnergyDiscrepancy.book(fs->mkdir("largeEnergyDiscrepancy"));
 }
 
 
@@ -277,6 +297,8 @@ MuPXAnalyzer::~MuPXAnalyzer()
 // ------------ method called for each event  ------------
 void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  std::cout << "Starting new event" << std::endl;
+   std::cout << "iEvent.id().event(): " << iEvent.id().event() << std::endl;
   using namespace edm;
   using namespace std;
   using namespace reco;
@@ -289,6 +311,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   HCAL myHCAL;
   ECAL myECAL;
   CSC myCSCs;
+  paired_=false;
 
   myCSCs.minTotalImpactParameter = 1000;
   myCSCs.minDR = 1000;
@@ -348,13 +371,13 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   int muProgress = myMuons.SelectMuons(iEvent, m_recoMuonToken);
   for(int i=0;i<muProgress;i++){myHistograms.IncCutFlow(info.eventWeight);}
   if(muProgress<4){return;}
-  bool Paired = false;
   int maxTrackProgress=0;
   edm::ESHandle<TransientTrackBuilder> transientTrackBuilder;
   iSetup.get<TransientTrackRecord>().get("TransientTrackBuilder", transientTrackBuilder);
   for(std::vector<const reco::Muon*>::const_iterator muon = myMuons.selectedMuons.begin(); muon!=myMuons.selectedMuons.end();muon++)
   {  
      if(maxTrackProgress==11){continue;}
+     if(paired_){continue;}
      myTracks.selectedTracks.clear(); 
      myTracks.selectedEndcapTracks.clear();     
      int trackProgress = myTracks.SelectTracks(iEvent, trackCollection_label, vtxHandle, *muon, transientTrackBuilder);
@@ -364,9 +387,9 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
   }
   for(int i=0;i<maxTrackProgress;i++){myHistograms.IncCutFlow(info.eventWeight);}
   if(maxTrackProgress<11){return;}
-  Paired = true;
   myJets.SelectJets(iEvent, m_pfJetCollection_label);
   myHistograms.m_NPassingTag->Fill(myMuons.selectedMuons.size(),weight_);
+  if(!paired_){return;}
  
   for(std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin(); iTrack != myTracks.selectedTracks.end(); ++iTrack)
   {  
@@ -378,36 +401,95 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 //       double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
 //       double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
        //if((probeTrackIso/(*iTrack)->pt())>0.2||probeEcalIso>30.) continue;
-       Paired=false;
+       paired_=false;
      }
   }
   
+/*  MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
+  VertexPosition = myCSCs.TrackVertex;
+  double randphi = MatchedGlobalPoint.phi()+2.0;
+  GlobalPoint RandGlobalPoint(GlobalPoint::Polar(MatchedGlobalPoint.theta(),randphi,MatchedGlobalPoint.mag()));
+  bool GoodRand=true;
+
+  std::cout << "Going into myHCAL.HitsPlots" << std::endl;
+  info.TrajectoryHcalEnergy = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, selectedTrack->pt(), VertexPosition);
+  std::cout << "selectedTrack->eta(): " << selectedTrack->eta() << std::endl;*/
+
   
   if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   info.nPassingTag=myMuons.selectedMuons.size();
-  info.paired=Paired;
+  info.paired=paired_;
+  //rho info:
+  edm::Handle<double> rho;
+  iEvent.getByToken(rhoToken_, rho);
+  std::cout << "fixedGridRhoAll: " << *rho << std::endl;
+
+  info.rho = *rho;
  
-  if(Paired)
+  std::cout << "paired_: " << paired_ << std::endl;
+  if(paired_)
   {
      myHistograms.IncCutFlow(info.eventWeight);
      info.cutProgress++;
      info.muonTrackMass=muTrackMass;
      info.probeTrack=selectedTrack;
      
-     info.probeDCA=probeTIP;
-     info.probeLongDCA=probeLIP;
 
      info.tagMuon=selectedMuon;
      info.probeTrackIso=myTracks.GetIsolation(iEvent,trackCollection_label,0.3,vtxHandle,selectedTrack);
      info.probeEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*selectedTrack));
-     std::cout << "check #2" << std::endl;
-     HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack));
+     HCALisolationInfo = myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack), 0.2);
+     std::cout << "HCALisolationInfo[0]: " << HCALisolationInfo[0] << std::endl;
      std::cout << "HCALisolationInfo[1]: " << HCALisolationInfo[1] << std::endl;
-     std::cout << "check #3" << std::endl;
      info.probeHcalIso=HCALisolationInfo[0];
      info.nHitsInCone=HCALisolationInfo[1];
+
+//     HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack), 0.1);
+//     info.probeHcalIso_dR0p1=HCALisolationInfo[0];
+//     HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*selectedTrack), 0.15);
+///     info.probeHcalIso_dR0p15=HCALisolationInfo[0];
+
+     std::cout << "info.probeHcalIso: " << info.probeHcalIso << std::endl;
+     info.probeHcalIsoPUCorr = info.probeHcalIso - CalculatePUenergy((selectedTrack)->eta(), (*rho), 0.2);
+//     info.probeHcalIsoPUCorr_dR0p15 = info.probeHcalIso_dR0p15 - CalculatePUenergy((selectedTrack)->eta(), (*rho), 0.15);
+//     info.probeHcalIsoPUCorr_dR0p1 = info.probeHcalIso_dR0p1 - CalculatePUenergy((selectedTrack)->eta(), (*rho), 0.1);
      info.nPUmean=nPUmean_;
      info.tagProbeVtxChi=pairVtxChi;
+
+     std::cout << "Entering myHCAL.FindMuonHits" << std::endl;
+     GlobalPoint TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),525));
+     myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, selectedTrack->charge(), transientTrackBuilder->build(selectedTrack));
+
+     info.nCellsFound=myHCAL.CellsFound;
+     info.nNeighborCellsFound=myHCAL.NeighborCellsFound;
+     info.iEta=myHCAL.TrackiEta;
+     info.cellCenterDEta=myHCAL.Tdeta;
+     info.cellCenterDPhi=myHCAL.Tdphi;
+     info.hitsOverThresh = myHCAL.m_HitsOverThresh;
+     info.hitsAlongTrajectory = myHCAL.m_coneHits;
+     info.TrajectoryHcalEnergy = myHCAL.m_coneEnergy;
+     info.TrajectoryPlusAdjacentHcalEnergy = myHCAL.m_coneEnergyPlusAdjacentHits;
+     info.Trajectory3x3Energy = myHCAL.m_Trajectory3x3Energy;
+     for(int k=0;k<7;k++)
+     {
+        info.hitEnergies[k]=myHCAL.m_hitEnergies[k];
+        info.neighborHitEnergies[k]=myHCAL.m_neighborHitEnergies[k];
+        info.neighborHitEnergiesPhi[k]=myHCAL.m_neighborHitEnergiesPhi[k];
+     }
+     std::cout << "info.TrajectoryHcalEnergy: " << info.TrajectoryHcalEnergy << std::endl;
+     std::cout << "info.hitsAlongTrajectory: " << info.hitsAlongTrajectory << std::endl;
+     std::cout << "info.Trajectory3x3Energy: " << info.Trajectory3x3Energy << std::endl;
+
+     GlobalPoint TrackGlobalPointRandom;
+     if(selectedTrack->eta()<-16 && (selectedTrack->phi() + TMath::Pi()/2.) >52 && (selectedTrack->phi() + TMath::Pi()/2.) <64){
+       TrackGlobalPointRandom = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi() + 3*TMath::Pi()/4.,525));
+     }else{
+       TrackGlobalPointRandom = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi() + TMath::Pi()/2.,525));
+     }
+     myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPointRandom, selectedTrack->charge(), transientTrackBuilder->build(selectedTrack));
+     info.TrajectoryRandom3x3Energy = myHCAL.m_Trajectory3x3Energy;
+     info.TrajectoryRandomHcalEnergy = myHCAL.m_coneEnergy;
+
      //Study multiple paired tracks
      double largestDR = 0;
      double drSum = 0;
@@ -436,7 +518,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
      info.probeVtx=myTracks.probeVtx;
      info.tagEcalIso=myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
      std::vector<double> HCALisolationInfo2;
-     HCALisolationInfo2=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()));
+     HCALisolationInfo2=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build((*selectedMuon).globalTrack()), 0.2);
      info.tagHcalIso=HCALisolationInfo2[0];
 
     //Jet analysis
@@ -524,11 +606,11 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        info.probeCaloJetHcal = nearProbeCaloJetHadE;
        //if(info.probeCaloJetE>80){info.paired=false;}
     }
-    if(selectedTrack->eta()>-2.35&&nearProbeCaloJetHadE<0)
+/*    if(selectedTrack->eta()>-2.35&&nearProbeCaloJetHadE<0)
     {
        info.sigCat=1;
     }
-    else{info.sigCat=0;}
+    else{info.sigCat=0;}*/
     //Nearby Photons
     edm::Handle<reco::PhotonCollection> phoHandle;
     iEvent.getByToken(m_recoPhotonToken, phoHandle);
@@ -561,6 +643,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        double total_pz = tagMomentum.z() + probeMomentum.z();
        info.adjMuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
     }
+
     //Check nearby leptons
     for (const auto& it: iEvent.get(m_electronsToken))
     {
@@ -581,31 +664,157 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
        info.nExtraMuon++;
     }
   }
-  if(Paired)
+  if(paired_)
   {
+    math::XYZTLorentzVectorD mother;
+    mother.SetPxPyPzE(selectedTrack->momentum().x(),selectedTrack->momentum().y(),selectedTrack->momentum().z(),selectedTrack->p());
+
     //Standalone Muons
     edm::Handle<reco::TrackCollection> staTracks;
     iEvent.getByToken(m_theSTAMuonLabel, staTracks);
     double staMinDr = 7.;
-    double staE = - 0;
+    double staTagMuonMinDr = 7.;
+    double stadEoverE = 10.;
+    double staE = 0;
+    double staTagMuonE = 0;
+    double staChi2 = 0;
+    int nStandAlone = 0;
     if(staTracks->size()>0)
     {
        for(reco::TrackCollection::const_iterator staTrack = staTracks->begin(); staTrack != staTracks->end(); ++staTrack)
        {
           reco::TransientTrack track = transientTrackBuilder->build(*staTrack);
+          if(track.ndof()<1){continue;}
+          if(track.chi2()/track.ndof()>10){continue;}
           double dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),selectedTrack->eta(),selectedTrack->phi());
-          if(dR<staMinDr){staMinDr=dR;}
-          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE)){staE=std::sqrt(track.impactPointTSCP().momentum().mag2());}
+          if(dR<staMinDr){
+	    staMinDr=dR;
+	    staE=std::sqrt(track.impactPointTSCP().momentum().mag2());
+	    staChi2 = track.chi2()/track.ndof();
+	  }
+	  if(dR<1.0){
+	    nStandAlone = nStandAlone + 1;
+            stadEoverE=(std::sqrt(track.impactPointTSCP().momentum().mag2())-mother.P())/mother.P();
+	  }
+//          if(dR<0.5&&std::sqrt(track.impactPointTSCP().momentum().mag2()>staE)){staE=std::sqrt(track.impactPointTSCP().momentum().mag2());}
+	 double tagMuon_dR = deltaR(track.impactPointTSCP().momentum().eta(),track.impactPointTSCP().momentum().phi(),info.tagMuon->eta(),info.tagMuon->phi());
+          if(dR<staTagMuonMinDr){
+	    staTagMuonMinDr=tagMuon_dR;
+	    staTagMuonE=std::sqrt(track.impactPointTSCP().momentum().mag2());
+	  }
        }
     }
-    if(staMinDr<0.5)
+    info.nStandAloneMuons = nStandAlone;
+    
+    info.staMinDr = staMinDr;
+    info.staChi2  = staChi2;
+    GlobalPoint TrackGlobalPoint = GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(),selectedTrack->phi(),525));
+    if(!myHCAL.FindMuonHits(iEvent, iSetup, HBHERecHit_Label, TrackGlobalPoint, selectedTrack->charge(), transientTrackBuilder->build(selectedTrack))){return;}
+
+/*    myCSCs.ExtrapolateTrackToCSC(iEvent, iSetup, CSCSegment_Label, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
+    if(myCSCs.minTotalImpactParameter>10){return;}
+    info.minDR=myCSCs.minDR;    
+    if(myCSCs.minDR > 0.1){return;}*/
+
+    std::cout << "Filling events" << std::endl;
+    if(staMinDr<1.0)
     {
+       standaloneMatched.FillHists(info);
        info.standaloneE = staE;
        info.standaloneMuonEplusCaloJetHadEplusEcalE = info.standaloneE + info.probeHcalIso + info.probeEcalIso;
+       myHistograms.m_StandaloneMuonEplusHadEplusEcalE2D->Fill(info.standaloneMuonEplusCaloJetHadEplusEcalE,info.probeTrack->p(), info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEvsDetectorE3x32D->Fill(info.Trajectory3x3Energy + info.probeEcalIso,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEvsDetectorE2D->Fill(info.TrajectoryHcalEnergy + info.probeEcalIso,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusHadEdR0p12D->Fill(info.probeHcalIso_dR0p1,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusHadEdR0p152D->Fill(info.probeHcalIso_dR0p15,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusHadPUE2D->Fill(info.probeHcalIsoPUCorr,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusHadPUEdR0p12D->Fill(info.probeHcalIsoPUCorr_dR0p1,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusHadPUEdR0p152D->Fill(info.probeHcalIsoPUCorr_dR0p15,info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_StandaloneMuonEplusEcalE2D->Fill(info.standaloneE + info.probeEcalIso,info.probeTrack->p(), info.eventWeight);
+       myHistograms.m_StandaloneMuonE2D->Fill(info.standaloneE,info.probeTrack->p(), info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonE->Fill(info.probeTrack->p() - info.standaloneE, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadE->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIso, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadEdR0p1->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIso_dR0p1, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadEdR0p15->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIso_dR0p15, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadPUE->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIsoPUCorr, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadPUEdR0p1->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIsoPUCorr_dR0p1, info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadPUEdR0p15->Fill(info.probeTrack->p() - info.standaloneE - info.probeHcalIsoPUCorr_dR0p15, info.eventWeight);
+       myHistograms.m_nStandAloneMuon->Fill(info.nStandAloneMuons,info.eventWeight);
+       myHistograms.m_staMinDr->Fill(info.staMinDr,info.eventWeight);
+       myHistograms.m_staChi2->Fill(info.staChi2,info.eventWeight);
+       myHistograms.m_TagMinusStandaloneMuonE->Fill(info.tagMuon->p() - staTagMuonE,info.eventWeight); 
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTraj->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy,info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       if(info.probeTrack->p() - info.standaloneE < 20){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff20->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 40){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff40->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 60){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff60->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 80){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff80->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 100){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff100->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }else{
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajPlusEcalE_diff100Above->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryHcalEnergy - info.probeEcalIso,info.eventWeight);
+       }
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajRandomPlusEcalE->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryRandomHcalEnergy - info.probeEcalIso,info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrackTrajRandom->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryRandomHcalEnergy,info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy,info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       if(info.probeTrack->p() - info.standaloneE < 20){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff20->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 40){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff40->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 60){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff60->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 80){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff80->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       }else if(info.probeTrack->p() - info.standaloneE < 100){
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff100->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       }else{
+         myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3PlusEcalE_diff100Above->Fill(info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso,info.eventWeight);
+       } 
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3Random->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryRandom3x3Energy,info.eventWeight);
+       myHistograms.m_ProbeMinusStandaloneMuonEplusHadETrack3x3RandomPlusEcalE->Fill(info.probeTrack->p() - info.standaloneE - info.TrajectoryRandom3x3Energy - info.probeEcalIso,info.eventWeight);
+       myHistograms.m_ProbeHcalIsoVsTrajectoryEnergy->Fill(info.probeHcalIso, info.TrajectoryHcalEnergy, info.eventWeight);
+       myHistograms.m_ProbeVsStandaloneMuonEplusHadEPlusEcalE2D->Fill(info.probeTrack->p(),info.standaloneE + info.Trajectory3x3Energy + info.probeEcalIso, info.eventWeight);
+       myHistograms.m_ProbeVsStandaloneMuonEplusHadE2D->Fill(info.probeTrack->p(),info.standaloneE + info.Trajectory3x3Energy, info.eventWeight);
+       if(info.TrajectoryHcalEnergy < 20)lowHCALTrajEnergy.FillHists(info);
+       if(info.Trajectory3x3Energy < 20)lowHCAL3x3Energy.FillHists(info);
+       if((info.probeTrack->p() - info.standaloneE - info.Trajectory3x3Energy - info.probeEcalIso) > 40){
+	largeEnergyDiscrepancy.FillHists(info);
+        largeEnergyDiscrepancy.m_staChi2->Fill(info.staChi2,info.eventWeight);
+        largeEnergyDiscrepancy.m_staMinDr->Fill(info.staMinDr,info.eventWeight);
+        largeEnergyDiscrepancy.m_nStandAloneMuon->Fill(info.nStandAloneMuons,info.eventWeight);
+       }
     }
-    if(staMinDr<1.0){info.sigCat=0;}
-    info.staMinDr=staMinDr;
-  
+    if(staMinDr > 1.0 && myCSCs.minDR > 0.05)
+    {
+      info.sigCat = 3;
+//      passTight.FillHists(info);
+    }
+    else if(staMinDr < 1.0)
+    {
+      if(stadEoverE<-0.8)
+      {
+        info.sigCat = 2;
+//        passMedium.FillHists(info);
+      }
+      else if(stadEoverE<-0.6)
+      {
+        info.sigCat = 1;
+//        passLoose.FillHists(info);
+      }
+      else{info.sigCat=0;}
+      {
+//	failSig.FillHists(info);
+      }
+    }
+    else{info.sigCat = 0;}
+    std::cout << "Filling allEvents" << std::endl;
+    myHistograms.FillHists(info);
+
     bool matched=MatchTrackToMuon(iEvent, selectedTrack, myMuons,m_recoMuonToken,info);
     if(m_isMC)
     {
@@ -615,7 +824,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       info.farMuDr = genInfo[1];
       info.farMuEta = genInfo[2];
       info.genTagMuDr = genInfo[3];
-      if(genmatched){genMatched.FillHists(info, m_makeSplits);}
+//      if(genmatched){genMatched.FillHists(info, m_makeSplits);}
       //else if(info.adjMuonTrackMass>80&&info.adjMuonTrackMass<100)
       double genInfoTwo[8];
       std::vector<int> nearbyIDs, highPtIds;
@@ -630,38 +839,49 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       info.nearbyNonMuPdgIds = nearbyIDs;
       info.highPtNonMuPdgIds = highPtIds;
       info.passLooseMatch=loosegenmatched;
-      if(loosegenmatched){looseMatch.FillHists(info,m_makeSplits, m_makeTuples);}
+//      if(loosegenmatched){looseMatch.FillHists(info,m_makeSplits, m_makeTuples);}
       if(!genmatched)
       {
-         nonGenMatched.FillHists(info,m_makeSplits);   
+//         nonGenMatched.FillHists(info,m_makeSplits);   
          if(info.sigCat==1)
          {
    //         ParticleListDrawer myDrawer;
    //        myDrawer.drawEvent(iEvent,candToken_);
-            passSig.FillHists(info,m_makeSplits);
+//            passSig.FillHists(info,m_makeSplits);
          }
       }
     } 
     if(matched)
     {
       info.globalMuonEplusCaloJetHadEplusEcalE = info.matchedProbeGlobalMuonE + info.probeHcalIso + info.probeEcalIso;
-      muProbe.FillHists(info);
+//      muProbe.FillHists(info);
     }
-    else{nonMuonProbe.FillHists(info);} 
+//    else{nonMuonProbe.FillHists(info);} 
 
-    MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
+/*    MatchedGlobalPoint = myCSCs.TrackGlobalPoint;
     VertexPosition = myCSCs.TrackVertex;
     double randphi = MatchedGlobalPoint.phi()+2.0;
     GlobalPoint RandGlobalPoint(GlobalPoint::Polar(MatchedGlobalPoint.theta(),randphi,MatchedGlobalPoint.mag()));
     bool GoodRand=true;
 
     std::cout << "Going into myHCAL.HitsPlots" << std::endl;
-    info.ProbeConeEnergy = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, selectedTrack->pt(), VertexPosition);
-    std::cout << "selectedTrack->eta(): " << selectedTrack->eta() << std::endl;
+    info.TrajectoryHcalEnergy = myHCAL.HitsPlots(iEvent, iSetup, HBHERecHit_Label, MatchedGlobalPoint, RandGlobalPoint, GoodRand, selectedTrack->pt(), VertexPosition);
+    std::cout << "selectedTrack->eta(): " << selectedTrack->eta() << std::endl;*/
 
   }
-  std::cout << "Filling allEvents" << std::endl;
-  myHistograms.FillHists(info);
+//  myHistograms.FillHists(info);
+}
+
+double MuPXAnalyzer::CalculatePUenergy(double trackEta, double eventRho, double coneSize)
+{
+  std::cout << "Inside CalculatePUenergy" << std::endl;
+  std::cout << "eventRho: " << eventRho << ", coneSize: " << coneSize << std::endl;
+  double rhoSize = 0.6*0.618;
+  double momenta = eventRho*TMath::CosH(trackEta);
+  double puEnergy = momenta*rhoSize*coneSize*2*TMath::Pi();
+  std::cout << "puEnergy: " << puEnergy << std::endl;  
+
+  return puEnergy;
 }
 
 bool MuPXAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,const reco::Track* selTrack, Muons myMuons, edm::EDGetToken m_recoMuonToken, MuPXEventInfo& info)
@@ -833,15 +1053,20 @@ int MuPXAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetu
      {
        double probeTrackIso = myTracks.GetIsolation(iEvent, trackCollection_label,0.3,vtxHandle,*iTrack);
        double probeEcalIso = myECAL.GetIsolation(iEvent,iSetup, reducedEndcapRecHitCollection_Label, reducedBarrelRecHitCollection_Label, transientTrackBuilder->build(*iTrack));
-       std::vector<double> HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
+       std::vector<double> HCALisolationInfo=myHCAL.GetIsolation(iEvent,iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack), 0.2);
        if(!m_signalRegion)
        {
           if((probeTrackIso/(*iTrack)->pt())<0.1&&probeEcalIso<30.) continue;
        }
        else
        {
+	  std::cout << "probeTrackIso/(*iTrack)->pt(): " << probeTrackIso/(*iTrack)->pt() << std::endl;
+	  std::cout << "probeEcalIso: " << probeEcalIso << std::endl;
+	  std::cout << "HCALisolationInfo[0]: " << HCALisolationInfo[0] << std::endl;
           if((probeTrackIso/(*iTrack)->pt())>0.05) continue;
-          if(probeEcalIso>10.) continue;
+          //if(probeEcalIso>10.) continue;
+          if(probeEcalIso>5.) continue;
+	  if(probeEcalIso<0) continue;
           if(HCALisolationInfo[0] < 30) continue;
        }
        if(cutpro<5){cutpro=5;}
@@ -853,6 +1078,8 @@ int MuPXAnalyzer::PairTagAndProbe(const edm::Event& iEvent, const edm::EventSetu
        TrajectoryStateClosestToPoint  traj = tk.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
        probeTIP = traj.perigeeParameters().transverseImpactParameter();
        probeLIP = traj.perigeeParameters().longitudinalImpactParameter();
+       vertexPosition = myTracks.fittedVertex.position();
+       paired_=true;
      }
   }
   return cutpro;
