@@ -1,0 +1,57 @@
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+  
+#include "DarkPhoton/MuFilter/interface/MuPXEventInfo.h"
+#include <iostream>
+
+MuPXEventInfo::MuPXEventInfo()
+{
+    eventWeight=1;
+    cutProgress=0;
+    paired=false;
+    muonTrackMass=-1;
+    sigCat=-1;
+    probeTrack=NULL;
+    tagMuon=NULL;
+    nPassingProbe=0;
+    nPassingTag=0;
+    tagProbeVtxChi=-1;
+    probeTrackIso=-1;
+    probeHcalIso=-1;
+    probeEcalIso=-1;
+    probeDCA=-1;
+    probeLongDCA=-1;
+    smallestCone=-1;
+    averageDr=-1;
+    tagTrackIso=-1;
+    tagHcalIso=-1;
+    tagEcalIso=-1;
+    nJets=0;
+    nearestJetE=-1;
+    minProbeCaloJetDr=-1;
+    nearestJetDr=-1;
+    nearJetMaxE=-1;
+    probeCaloJetE=-1;
+    tagCaloJetE=-1;
+    probeCaloJetEcal=-1;
+    probeCaloJetHcal=-1;
+    staMinDr=10;
+    standaloneE=-1;
+    farMuE=0;
+    farMuDr=0;
+    farMuEta=0;
+    genTagMuDr=0;
+    genPdgId=0;
+    tagPdgId=0;
+    passLooseMatch=false;
+    nLooseMuons=0;
+    nHitsInCone = -1;
+    ProbeConeEnergy = -1;
+
+    nEle=0;
+    nExtraEle=0;
+    nExtraMuon=0;
+
+    globalMuonEplusCaloJetHadEplusEcalE = 0;
+    standaloneMuonEplusCaloJetHadEplusEcalE = 0;
+}
+
