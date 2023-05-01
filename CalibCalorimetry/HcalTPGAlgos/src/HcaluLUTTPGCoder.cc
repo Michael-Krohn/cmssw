@@ -552,6 +552,12 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
               topo_->triggerMode() >= HcalTopologyMode::TriggerMode_2021) {
             lut[adc] = 0;
           }
+          if (cell.ieta() > -17 && cell.ieta() < -12 && cell.iphi() == 12){
+            lut[adc] = 0;
+          }
+          if (cell.ieta() == -2 && cell.iphi() == 44){
+            lut[adc] = 0;
+          }            
         }
       }
     } else if (subdet == HcalForward) {
