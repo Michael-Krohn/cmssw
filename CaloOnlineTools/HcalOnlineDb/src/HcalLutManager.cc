@@ -721,8 +721,11 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getMasks(int masktype, st
     } else {
       auto parameters = conditions->getHcalTPParameters();
       masks[crot][finel] = masktype == 1 ? parameters->getADCThresholdHF() : parameters->getTDCMaskHF();
+      if(masktype == 1)std::cout << "parameters->getADCThresholdHF(): " << parameters->getADCThresholdHF() << std::endl;
+      else std::cout << "parameters->getTDCMaskHF(): " << parameters->getTDCMaskHF() << std::endl;
     }
   }
+
 
   std::map<int, std::shared_ptr<LutXml>> _xml;  // index - crate number
   RooGKCounter _counter;
@@ -1643,15 +1646,15 @@ void HcalLutManager::test_emap(void) {
 int HcalLutManager::test_direct_xml_parsing(std::string _filename) {
   /*
   XMLDOMBlock _xml(_filename);
-  //DOMElement * data_set_elem = (DOMElement *)(document -> getElementsByTagName( XMLProcessor::_toXMLCh( "DATA_SET" ) ) -> item(0));  
-  DOMNodeList * brick_list = _xml . getDocument() ->  getElementsByTagName( XMLProcessor::_toXMLCh( "CFGBrick" ));  
+  //DOMElement * data_set_elem = (DOMElement *)(document -> getElementsByTagName( XMLProcessor::_toXMLCh( "DATA_SET" ) ) -> item(0));
+  DOMNodeList * brick_list = _xml . getDocument() ->  getElementsByTagName( XMLProcessor::_toXMLCh( "CFGBrick" ));
 
   double n_bricks = brick_list->getLength();
   std::cout << "amount of LUT bricks: " << n_bricks << std::endl;
 
   for (int iter=0; iter!=n_bricks; iter++){
     DOMElement * _brick = (DOMElement *)(brick_list->item(iter));
-    
+
     DOMElement * _param = 0;
     // loop over brick parameters
     int par_iter = 0;
@@ -1703,6 +1706,8 @@ int HcalLutManager::createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC(std::string 
     addLutMap(xml, masks);
   }
   //
+  const auto _zdc_lut_xml = getZdcLutXml(_tag, split_by_crate);
+  addLutMap(xml, _zdc_lut_xml);
 
   writeLutXmlFiles(xml, _tag, split_by_crate);
 
@@ -1757,6 +1762,7 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(std::string 
       _cfg.formatrevision = "1";  //???
       _cfg.generalizedindex = 0;
 
+      std::cout << "_cfg.crate,_cfg.slot,_cfg.fiber,_cfg.fiberchan:" << _cfg.crate << "," << _cfg.slot << "," << _cfg.fiber << "," << _cfg.fiberchan << std::endl;
       //HcalZDCDetId _detid(row->zdc_section, (row->zdc_zside>0), row->zdc_channel);
 
       std::vector<int> coder_lut = zdc.get_lut(row->zdc_section, row->zdc_zside, row->zdc_channel);
@@ -1764,12 +1770,14 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(std::string 
       if (!coder_lut.empty()) {
         for (std::vector<int>::const_iterator _i = coder_lut.begin(); _i != coder_lut.end(); _i++) {
           unsigned int _temp = (unsigned int)(*_i);
+	  std::cout << "_temp: " << _temp << std::endl;
           //if (_temp!=0) std::cout << "DEBUG non-zero LUT!!!!!!!!!!!!!!!" << (*_i) << "     " << _temp << std::endl;
           //unsigned int _temp = 0;
           _cfg.lut.push_back(_temp);
         }
         //_cfg.lut = _set.lut[lut_index];
 
+	std::cout << "split_by_crate: " << split_by_crate << std::endl;
         if (split_by_crate) {
           _xml[row->crate]->addLut(_cfg, lut_checksums_xml);
           _counter.count();
@@ -1780,6 +1788,35 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(std::string 
       }  //size of lut
     }
   }
+  //MICHAEL: ZEROING CHANNELS THAT ARE NOT USED
+  for(int i=0; i<24; i++){
+    LutXml::Config _cfg;
+    if(i>1 && i<9)continue;
+    else if(i>13 && i<21)continue;
+    else if(i>23)continue;
+    else{
+      _cfg.ieta = 500;
+      _cfg.depth = 1;
+      _cfg.crate = 38;
+      _cfg.slot = 11;
+      _cfg.fiber = i;
+      _cfg.fiberchan = 0;
+      _cfg.lut_type = 1;
+      _cfg.creationtag = _tag;
+      _cfg.creationstamp = get_time_stamp(time(nullptr));
+      _cfg.targetfirmware = "1.0.0";
+      _cfg.formatrevision = "1";  
+      _cfg.generalizedindex = 0;
+      for(int i =0;i<128;i++){
+         unsigned int _temp = 0;
+         _cfg.lut.push_back(_temp);
+      }
+    }
+    _xml[38]->addLut(_cfg, lut_checksums_xml);
+    _counter.count();
+  }
+
+
   edm::LogInfo("HcalLutManager") << "LUTs generated: " << _counter.getCount() << std::endl
                                  << "Generating ZDC LUTs...DONE" << std::endl;
 
