@@ -49,10 +49,10 @@ ZdcLut::ZdcLut()
   auto zdc_lut_calib = [&fC_TDR, &lsb](float calib, float scale) {
     std::vector<int> ret(256);
     for ( int i = 0; i < 256; i++ ) {
-	ret[i] = int(fC_TDR[i]);
+	//ret[i] = int(fC_TDR[i]);
 //MICHAEL: Uncomment this line for true behavior. Otherwise keep above uncommented, which gives a
 // 1-to-1 LUT for testing purposes.
-        //ret[i] = int(fC_TDR[i] * calib /scale /lsb + 0.5);
+        ret[i] = int(fC_TDR[i] * calib /scale /lsb + 0.5);
     }
     return ret;
   };
