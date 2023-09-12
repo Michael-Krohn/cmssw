@@ -4,6 +4,7 @@
 #include "CalibFormats/CaloObjects/interface/IntegerCaloSamples.h"
 #include "DataFormats/HcalDigi/interface/CastorDataFrame.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
+#include "DataFormats/HcalDetId/interface/HcalZDCDetId.h"
 
 // forward declaration of EventSetup is all that is needed here
 namespace edm {
@@ -35,6 +36,7 @@ public:
       Default implementation just uses adc2Linear to get all values
   */
   virtual std::vector<unsigned short> getLinearizationLUT(HcalDetId id) const;
+  virtual std::vector<unsigned short> getLinearizationLUT(HcalZDCDetId id, bool ootpu_lut) const;
 };
 
 #endif

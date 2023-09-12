@@ -41,6 +41,8 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
   std::array<unsigned int, OUTPUT_LUT_SIZE> linearRctLUT;
   std::array<unsigned int, OUTPUT_LUT_SIZE> linearNctLUT;
 
+  std::cout << "Inside CaloTPGTranscoderULUT::CaloTPGTranscoderULUT" << std::endl;
+
   // Compute compression LUT
   for (unsigned int i = 0; i < OUTPUT_LUT_SIZE; i++) {
     analyticalLUT[i] = min(static_cast<unsigned int>(sqrt(14.94 * log(1. + i / 14.94) * i) + 0.5), TPGMAX - 1);
@@ -53,23 +55,30 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
   std::vector<DetId> allChannels = lutMetadata.getAllChannels();
 
   for (std::vector<DetId>::iterator i = allChannels.begin(); i != allChannels.end(); ++i) {
+    HcalGenericDetId debug(*i);
+    std::cout << "debug.rawId(): " << debug.rawId() << std::endl;
     if (not HcalGenericDetId(*i).isHcalTrigTowerDetId()) {
       if ((not HcalGenericDetId(*i).isHcalDetId()) and (not HcalGenericDetId(*i).isHcalZDCDetId()) and
           (not HcalGenericDetId(*i).isHcalCastorDetId()))
         edm::LogWarning("CaloTPGTranscoderULUT") << "Encountered invalid HcalDetId " << HcalGenericDetId(*i);
+      std::cout << "SKIPPING a channel" <<std::endl;
       continue;
     }
 
     HcalTrigTowerDetId id(*i);
+    std::cout << "id.ieta(): " << id.ieta() << ", id.iphi(): " << id.iphi() << ", id.depth(): " << id.depth() << std::endl;
     if (!theTopology->validHT(id))
       continue;
 
     unsigned int index = getOutputLUTId(id);
+    std::cout << "creating output lut with index: " << index << std::endl;
 
     const HcalLutMetadatum* meta = lutMetadata.getValues(id);
     unsigned int threshold = meta->getOutputLutThreshold();
 
     int ieta = id.ieta();
+    int iphi = id.iphi();
+    int depth = id.depth();
     int version = id.version();
     bool isHBHE = (abs(ieta) < theTrigTowerGeometry.firstHFTower(version));
 
@@ -87,6 +96,12 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
           if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
             outputLUT_[index][i] = TPGMAX - 1;
           }
+	  if (ieta > -17 && ieta < -12 && iphi==12){
+	    outputLUT_[index][i] = 0;
+	  }
+	  if (ieta == -2 && iphi==44){
+	    outputLUT_[index][i] = 0;
+	  }
         } else {
           outputLUT_[index][i] = analyticalLUT[i];
         }
@@ -112,6 +127,12 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
             if (abs(ieta) > 20 && isOnlyQIE11(id) && linearQIE11LUT[i] >= (TPGMAX - 2) / 2.) {
               hcaluncomp_[index][tpg] = (TPGMAX - 1) / 2.;
             }
+ 	    if (ieta > -17 && ieta < -12 && iphi==12){
+	      hcaluncomp_[index][tpg] = 0;
+	    }
+	    if (ieta == -2 && iphi==44){
+	      hcaluncomp_[index][tpg] = 0;
+	    }
           }
         }
       } else {
@@ -289,6 +310,7 @@ bool CaloTPGTranscoderULUT::isOnlyQIE11(const HcalTrigTowerDetId& id) const {
 
 const std::vector<unsigned int> CaloTPGTranscoderULUT::getCompressionLUT(const HcalTrigTowerDetId& id) const {
   int itower = getOutputLUTId(id);
+  std::cout << "itower: " << itower << std::endl;
   auto lut = outputLUT_[itower];
   std::vector<unsigned int> result(lut.begin(), lut.end());
   return result;

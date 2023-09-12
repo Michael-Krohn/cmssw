@@ -7,6 +7,7 @@
 #include "DataFormats/HcalDigi/interface/HcalTriggerPrimitiveDigi.h"
 #include "DataFormats/HcalDigi/interface/QIE10DataFrame.h"
 #include "DataFormats/HcalDigi/interface/QIE11DataFrame.h"
+#include "DataFormats/HcalDetId/interface/HcalZDCDetId.h"
 
 // forward declaration of EventSetup is all that is needed here
 namespace edm {
@@ -43,6 +44,7 @@ public:
       Default implementation just uses adc2Linear to get all values
   */
   virtual std::vector<unsigned short> getLinearizationLUT(HcalDetId id) const;
+  virtual std::vector<unsigned short> getLinearizationLUT(HcalZDCDetId id, bool ootput_lut) const;
 };
 
 #endif

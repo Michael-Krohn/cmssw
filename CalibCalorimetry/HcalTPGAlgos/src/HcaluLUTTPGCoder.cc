@@ -29,6 +29,7 @@
 #include "CalibCalorimetry/HcalTPGAlgos/interface/LutXml.h"
 
 const float HcaluLUTTPGCoder::lsb_ = 1. / 16;
+const float HcaluLUTTPGCoder::zdc_lsb_ = 50.;
 
 const int HcaluLUTTPGCoder::QIE8_LUT_BITMASK;
 const int HcaluLUTTPGCoder::QIE10_LUT_BITMASK;
@@ -57,6 +58,7 @@ HcaluLUTTPGCoder::HcaluLUTTPGCoder()
       nHFEta_{},
       maxDepthHF_{},
       sizeHF_{},
+      sizeZDC_{},
       cosh_ieta_28_HE_low_depths_{},
       cosh_ieta_28_HE_high_depths_{},
       cosh_ieta_29_HE_{},
@@ -99,7 +101,9 @@ void HcaluLUTTPGCoder::init(const HcalTopology* top, const HcalTimeSlew* delay) 
   nHFEta_ = (lastHFEta_ - firstHFEta_ + 1);
   maxDepthHF_ = topo_->maxDepth(HcalForward);
   sizeHF_ = 2 * nHFEta_ * nFi_ * maxDepthHF_;
-  size_t nluts = (size_t)(sizeHB_ + sizeHE_ + sizeHF_ + 1);
+  sizeZDC_ = 2 * 9;
+  size_t nluts = (size_t)(sizeHB_ + sizeHE_ + sizeHF_ + sizeZDC_*2 + 1);
+  std::cout << "nluts: " << nluts << std::endl;
   inputLUT_ = std::vector<HcaluLUTTPGCoder::Lut>(nluts);
   gain_ = std::vector<float>(nluts, 0.);
   ped_ = std::vector<float>(nluts, 0.);
@@ -117,12 +121,14 @@ HcaluLUTTPGCoder::~HcaluLUTTPGCoder() {}
 int HcaluLUTTPGCoder::getLUTId(HcalSubdetector id, int ieta, int iphi, int depth) const {
   int retval(0);
   if (id == HcalBarrel) {
+    std::cout << "HcalBarrel" << std::endl;
     retval = (depth - 1) + maxDepthHB_ * (iphi - 1);
     if (ieta > 0)
       retval += maxDepthHB_ * nFi_ * (ieta - firstHBEta_);
     else
       retval += maxDepthHB_ * nFi_ * (ieta + lastHBEta_ + nHBEta_);
   } else if (id == HcalEndcap) {
+    std::cout << "HcalEndcap" << std::endl;
     retval = sizeHB_;
     retval += (depth - 1) + maxDepthHE_ * (iphi - 1);
     if (ieta > 0)
@@ -130,12 +136,29 @@ int HcaluLUTTPGCoder::getLUTId(HcalSubdetector id, int ieta, int iphi, int depth
     else
       retval += maxDepthHE_ * nFi_ * (ieta + lastHEEta_ + nHEEta_);
   } else if (id == HcalForward) {
+    std::cout << "HcalForward" << std::endl;
     retval = sizeHB_ + sizeHE_;
     retval += (depth - 1) + maxDepthHF_ * (iphi - 1);
     if (ieta > 0)
       retval += maxDepthHF_ * nFi_ * (ieta - firstHFEta_);
     else
       retval += maxDepthHF_ * nFi_ * (ieta + lastHFEta_ + nHFEta_);
+  } else if (id == HcalOther) {
+    std::cout << "HcalOther" << std::endl;
+    retval = sizeHB_ + sizeHE_ + sizeHF_;
+    if (ieta > 0){
+      if (iphi == 1){
+        retval += depth;
+      }else{
+        retval += depth + 5;
+      }
+    }else{
+      if (iphi == 1){
+        retval += depth + 9;
+      }else{
+        retval += depth + 5 + 9;
+      }
+    }
   }
   return retval;
 }
@@ -146,7 +169,28 @@ int HcaluLUTTPGCoder::getLUTId(uint32_t rawid) const {
 }
 
 int HcaluLUTTPGCoder::getLUTId(const HcalDetId& detid) const {
+  std::cout << "Inside HcaluLUTTPGCoder::getLUTId" << std::endl;
   return getLUTId(detid.subdet(), detid.ieta(), detid.iphi(), detid.depth());
+}
+
+int HcaluLUTTPGCoder::getLUTId(const HcalZDCDetId& detid) const {
+  std::cout << "detid.channel(): " << detid.channel() << std::endl;
+  std::cout << "detid.depth(): " << detid.depth() << std::endl;
+  std::cout << "detid.zside(): " << detid.zside() << std::endl;
+  if (detid.section() == HcalZDCDetId::EM){
+    std::cout<< "ZDC EM" << std::endl;
+    return getLUTId(HcalOther, detid.zside(), 1, detid.channel());
+  }else if (detid.section() == HcalZDCDetId::HAD){
+    std::cout << "ZDC HAD" << std::endl;
+    return getLUTId(HcalOther, detid.zside(), 2, detid.channel());
+  }else if (detid.section() == HcalZDCDetId::LUM){
+    std::cout << "ZDC LUM" << std::endl;
+    return getLUTId(HcalOther, detid.zside(), 3, detid.channel());
+  }else {
+    std::cout << "ZDC RPD" << std::endl;  
+    return getLUTId(HcalOther, detid.zside(), 4, detid.channel());
+  }
+  
 }
 
 void HcaluLUTTPGCoder::update(const char* filename, bool appendMSB) {
@@ -273,9 +317,11 @@ void HcaluLUTTPGCoder::updateXML(const char* filename) {
           std::vector<unsigned int>* lut = _xml->getLutFast(detid);
           if (lut == nullptr)
             throw cms::Exception("PROBLEM: No inputLUT_ in xml file for ") << detid << std::endl;
-          if (lut->size() != INPUT_LUT_SIZE)
+          if (lut->size() != UPGRADE_LUT_SIZE)
             throw cms::Exception("PROBLEM: Wrong inputLUT_ size in xml file for ") << detid << std::endl;
-          for (unsigned int i = 0; i < INPUT_LUT_SIZE; ++i)
+          Lut& lutRaw = inputLUT_[id];
+          lutRaw.resize(UPGRADE_LUT_SIZE, 0);
+          for (unsigned int i = 0; i < UPGRADE_LUT_SIZE; ++i)
             inputLUT_[id][i] = (LutElement)lut->at(i);
         }
       }
@@ -331,6 +377,7 @@ void HcaluLUTTPGCoder::make_cosh_ieta_map(void) {
 }
 
 void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
+  std::cout << "Inside update" << std::endl;
   const HcalLutMetadata* metadata = conditions.getHcalLutMetadata();
   assert(metadata != nullptr);
   float nominalgain_ = metadata->getNominalGain();
@@ -364,7 +411,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       continue;
 
     int aieta = abs(hcalTTDetId.ieta());
-
+    std::cout << "aieta: " << aieta << std::endl;
     // The absence of TT channels in the HcalTPChannelParameters
     // is intepreted as to not use the new filter
     int weight = -1.0;
@@ -383,16 +430,22 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
     }
   }
 
+//  HcalDetId cell;
+//  HcalSubdetector subdet;
   for (const auto& id : metadata->getAllChannels()) {
-    if (not(id.det() == DetId::Hcal and topo_->valid(id)))
-      continue;
+    std::cout << "id.det(): " << id.det() << std::endl;
+    std::cout << "id.rawId: " << id.rawId() << std::endl;
+    if (id.det() == DetId::Hcal and topo_->valid(id)){
 
     HcalDetId cell(id);
     HcalSubdetector subdet = cell.subdet();
 
-    if (subdet != HcalBarrel and subdet != HcalEndcap and subdet != HcalForward)
+    std::cout << "Initial subdet: " << subdet << std::endl;
+    if (subdet != HcalBarrel and subdet != HcalEndcap and subdet != HcalForward and subdet != HcalOther)
       continue;
 
+    std::cout << "subdet: " << subdet << std::endl;
+    std::cout << "Grabbing channel condition values" << std::endl;
     const HcalQIECoder* channelCoder = conditions.getHcalCoder(cell);
     const HcalQIEShape* shape = conditions.getHcalShape(cell);
     HcalCoderDb coder(*channelCoder, *shape);
@@ -414,6 +467,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
     }
 
     int lutId = getLUTId(cell);
+    std::cout << "lutId: " << lutId << std::endl;
     Lut& lut = inputLUT_[lutId];
     float ped = 0;
     float gain = 0;
@@ -510,6 +564,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
               containmentCorrection = containmentCorrection2TSCorrected;
             }
           }
+	  //std::cout << "adc: " << adc << ", adc2fC(adc): " << adc2fC(adc) << std::endl;
           if (allLinear_)
             lut[adc] = (LutElement)std::min(
                 std::max(0,
@@ -543,10 +598,17 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
               topo_->triggerMode() >= HcalTopologyMode::TriggerMode_2021) {
             lut[adc] = 0;
           }
+          if (cell.ieta() > -17 && cell.ieta() < -12 && cell.iphi() == 12){
+            lut[adc] = 0;
+          }
+          if (cell.ieta() == -2 && cell.iphi() == 44){
+            lut[adc] = 0;
+          }            
         }
       }
     } else if (subdet == HcalForward) {
       for (unsigned int adc = 0; adc < SIZE; ++adc) {
+//	std::cout << "HF adc: " << adc << ", adc2fC(adc): " << adc2fC(adc) << std::endl;
         if (isMasked)
           lut[adc] = 0;
         else {
@@ -558,6 +620,91 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
             lut[adc] |= QIE10_LUT_MSB1;
         }
       }
+    }
+    }else if (id.det() == DetId::Calo){
+      std::cout << "Inside DetId::Calo" << std::endl;
+      HcalZDCDetId cell(id.rawId());
+
+      if (cell.section() != HcalZDCDetId::EM && cell.section() != HcalZDCDetId::HAD)
+        continue;
+
+      const HcalQIECoder* channelCoder = conditions.getHcalCoder(cell);
+      const HcalQIEShape* shape = conditions.getHcalShape(cell);
+      HcalCoderDb coder(*channelCoder, *shape);
+      const HcalLutMetadatum* meta = metadata->getValues(cell);
+
+      auto tpParam = conditions.getHcalTPChannelParameter(cell, false);
+      int weight = tpParam->getauxi1();
+
+      int lutId = getLUTId(cell);
+      int lutId_ootpu = lutId + sizeZDC_;
+      std::cout << "ZDC lutId: " << lutId << std::endl;
+      std::cout << "ZDC lutid ootpu: " << lutId_ootpu << std::endl;
+      Lut& lut = inputLUT_[lutId];
+      Lut& lut_ootpu = inputLUT_[lutId_ootpu];
+      float ped = 0;
+      float gain = 0;
+      uint32_t status = 0;
+
+      if (LUTGenerationMode_) {
+        const HcalCalibrations& calibrations = conditions.getHcalCalibrations(cell);
+        for (auto capId : {0, 1, 2, 3}) {
+          ped += calibrations.effpedestal(capId);
+          gain += calibrations.LUTrespcorrgain(capId);
+        }
+        ped /= 4.0;
+        gain /= 4.0;
+
+      const HcalChannelStatus* channelStatus = conditions.getHcalChannelStatus(cell);
+      status = channelStatus->getValue();
+
+      } else {
+        const HcalL1TriggerObject* myL1TObj = conditions.getHcalL1TriggerObject(cell);
+        ped = myL1TObj->getPedestal();
+        gain = myL1TObj->getRespGain();
+        status = myL1TObj->getFlag();
+      }  // LUTGenerationMode_
+
+      ped_[lutId] = ped;
+      gain_[lutId] = gain;
+      bool isMasked = ((status & bitToMask_) > 0);
+      float rcalib = meta->getRCalib();
+
+      auto adc2fC = [channelCoder, shape](unsigned int adc) {
+        float fC = 0;
+        for (auto capId : {0, 1, 2, 3})
+          fC += channelCoder->charge(*shape, adc, capId);
+        return fC / 4;
+      };
+
+      int qieType = conditions.getHcalQIEType(cell)->getValue();
+
+      std::cout << "qieType: " << qieType << std::endl;
+      std::cout << "QIE8: " << QIE8 << std::endl;
+      std::cout << "QIE10: " << QIE10 << std::endl;
+      const size_t SIZE = qieType == QIE8 ? INPUT_LUT_SIZE : UPGRADE_LUT_SIZE;
+      const int MASK = qieType == QIE8 ? QIE8_LUT_BITMASK : qieType == QIE10 ? QIE10_LUT_BITMASK : QIE11_LUT_BITMASK;
+      std::cout << "MASK: " << MASK << std::endl;
+
+      std::cout << "SIZE: " << SIZE << std::endl;
+      lut.resize(SIZE, 0);
+      lut_ootpu.resize(SIZE, 0);
+
+      for (unsigned int adc = 0; adc < SIZE; ++adc) {
+	std::cout << "adc: " << adc << ", adc2fC(adc): " << adc2fC(adc) << ", ped: " << ped << ", gain: " << gain << ", rcalib: " << rcalib << std::endl;
+        if (isMasked){
+          lut[adc] = 0;
+          lut_ootpu[adc] = 0;
+        }else {
+          lut[adc] =
+              std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / zdc_lsb_ )), MASK);
+          lut_ootpu[adc] =
+              std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib * weight / (zdc_lsb_ * 256))), MASK);
+        }
+	std::cout << "lut[adc]: " << lut[adc] << std::endl;
+      }
+    }else{
+      continue;
     }
   }
 }
@@ -624,6 +771,16 @@ float HcaluLUTTPGCoder::getLUTGain(HcalDetId id) const {
 std::vector<unsigned short> HcaluLUTTPGCoder::getLinearizationLUT(HcalDetId id) const {
   int lutId = getLUTId(id);
   return inputLUT_.at(lutId);
+}
+
+std::vector<unsigned short> HcaluLUTTPGCoder::getLinearizationLUT(HcalZDCDetId id, bool ootpu_lut) const {
+  std::cout << "HcaluLUTTPGCoder::getLinearizationLUT(HcalZDCDetId id)" << std::endl;
+  //HcalZDCDetId _id(id);
+  int lutId = getLUTId(id);
+  if (ootpu_lut)
+    return inputLUT_.at(lutId + sizeZDC_);
+  else
+    return inputLUT_.at(lutId);
 }
 
 void HcaluLUTTPGCoder::lookupMSB(const HBHEDataFrame& df, std::vector<bool>& msb) const {

@@ -55,7 +55,7 @@ int HcalZDCDetId::depth() const {
   else if (se == HAD)
     return (channel() + 2);
   else if (se == RPD)
-    return 2;
+    return -99;
   else
     return channel();
 }

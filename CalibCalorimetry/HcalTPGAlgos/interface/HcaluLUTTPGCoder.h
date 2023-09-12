@@ -32,6 +32,7 @@ class HcalDbService;
 class HcaluLUTTPGCoder : public HcalTPGCoder {
 public:
   static const float lsb_;
+  static const float zdc_lsb_;
 
   HcaluLUTTPGCoder();
   HcaluLUTTPGCoder(const HcalTopology* topo, const HcalTimeSlew* delay);
@@ -51,6 +52,7 @@ public:
   float getLUTPedestal(HcalDetId id) const override;
   float getLUTGain(HcalDetId id) const override;
   std::vector<unsigned short> getLinearizationLUT(HcalDetId id) const override;
+  std::vector<unsigned short> getLinearizationLUT(HcalZDCDetId id, bool ootpu_lut) const override;
 
   double cosh_ieta(int ieta, int depth, HcalSubdetector subdet);
   void make_cosh_ieta_map(void);
@@ -84,6 +86,7 @@ public:
   int getLUTId(HcalSubdetector id, int ieta, int iphi, int depth) const;
   int getLUTId(uint32_t rawid) const;
   int getLUTId(const HcalDetId& detid) const;
+  int getLUTId(const HcalZDCDetId& detid) const;
 
   static const int QIE8_LUT_BITMASK = 0x3FF;
   static const int QIE10_LUT_BITMASK = 0x7FF;
@@ -114,6 +117,7 @@ private:
   int firstHBEta_, lastHBEta_, nHBEta_, maxDepthHB_, sizeHB_;
   int firstHEEta_, lastHEEta_, nHEEta_, maxDepthHE_, sizeHE_;
   int firstHFEta_, lastHFEta_, nHFEta_, maxDepthHF_, sizeHF_;
+  int sizeZDC_;
   std::vector<Lut> inputLUT_;
   std::vector<float> gain_;
   std::vector<float> ped_;

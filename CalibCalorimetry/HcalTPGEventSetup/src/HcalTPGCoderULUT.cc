@@ -130,15 +130,19 @@ void HcalTPGCoderULUT::buildCoder(const HcalTopology* topo, const HcalTimeSlew* 
   if (read_Ascii_ || read_XML_) {
     edm::LogInfo("HCAL") << "Using ASCII/XML LUTs" << ifilename_.fullPath() << " for HcalTPGCoderULUT initialization";
     if (read_Ascii_) {
+      std::cout << "Am i reading the Ascii" << std::endl;
       theCoder->update(ifilename_.fullPath().c_str());
     } else if (read_XML_) {
+      std::cout << "Am i reading the XML" << std::endl;
       theCoder->updateXML(ifilename_.fullPath().c_str());
     }
     // Read FG LUT and append to most significant bit 11
     if (read_FGLut_) {
+      std::cout << "Am i reading the FGLut" << std::endl;
       theCoder->update(fgfile_.fullPath().c_str(), true);
     }
   } else {
+    std::cout << "Or am i not reading either" << std::endl;
     theCoder->setAllLinear(linearLUTs_, linearLSB_QIE8_, linearLSB_QIE11_, linearLSB_QIE11Overlap_);
     theCoder->setLUTGenerationMode(LUTGenerationMode_);
     theCoder->setMaskBit(maskBit_);
@@ -164,8 +168,11 @@ HcalTPGCoderULUT::ReturnType HcalTPGCoderULUT::produce(const HcalTPGRecord& iRec
   if (read_Ascii_ || read_XML_) {
     buildCoder(&topo, &delay, host.get());
   } else {
+    std::cout << "Am i in here" << std::endl;
     host->ifRecordChanges<HcalDbRecord>(iRecord, [this, &topo, &delay, h = host.get()](auto const& rec) {
+      std::cout << "read_FGLut_: " << read_FGLut_ << std::endl;
       buildCoder(&topo, &delay, h);
+      std::cout << "entering update" << std::endl;
       h->update(rec.get(serviceToken_));
       // Temporary update for FG Lut
       // Will be moved to DB
