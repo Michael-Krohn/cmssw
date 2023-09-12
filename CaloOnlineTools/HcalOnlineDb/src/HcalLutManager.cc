@@ -721,11 +721,8 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getMasks(int masktype, st
     } else {
       auto parameters = conditions->getHcalTPParameters();
       masks[crot][finel] = masktype == 1 ? parameters->getADCThresholdHF() : parameters->getTDCMaskHF();
-      if(masktype == 1)std::cout << "parameters->getADCThresholdHF(): " << parameters->getADCThresholdHF() << std::endl;
-      else std::cout << "parameters->getTDCMaskHF(): " << parameters->getTDCMaskHF() << std::endl;
     }
   }
-
 
   std::map<int, std::shared_ptr<LutXml>> _xml;  // index - crate number
   RooGKCounter _counter;
@@ -762,8 +759,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getLinearizationLutXmlFro
                                                                                            bool split_by_crate) {
   edm::LogInfo("HcalLutManager") << "Generating linearization (input) LUTs from HcaluLUTTPGCoder...";
   std::map<int, std::shared_ptr<LutXml>> _xml;  // index - crate number
-
-  std::cout << "INSIDE getLinearizationLutXmlFromCoderEmap" << std::endl;
 
   EMap _emap(emap);
   std::vector<EMap::EMapRow>& _map = _emap.get_map();
@@ -820,9 +815,8 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getLinearizationLutXmlFro
         _subdet = HcalOther;
       HcalDetId _detid(_subdet, row->ieta, row->iphi, row->idepth);
 
-      for (const auto i : _coder.getLinearizationLUT(_detid)){
+      for (const auto i : _coder.getLinearizationLUT(_detid))
         _cfg.lut.push_back(i);
-      }
 
       if (split_by_crate) {
         _xml[row->crate]->addLut(_cfg, lut_checksums_xml);
@@ -835,7 +829,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getLinearizationLutXmlFro
   }
   edm::LogInfo("HcalLutManager") << "Generated LUTs: " << _counter.getCount() << std::endl
                                  << "Generating linearization (input) LUTs from HcaluLUTTPGCoder...DONE" << std::endl;
-  std::cout << "Finishing getLinearizationLutXmlFromCoderEmap" << std::endl;
   return _xml;
 }
 
@@ -924,7 +917,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
                                  << "initialized from Event Setup" << std::endl;
   std::map<int, std::shared_ptr<LutXml>> _xml;  // index - crate number
 
-  std::cout << "Inside getCompressionLutXmlFromCoder" << std::endl;
   EMap _emap(emap);
 
   std::map<int, unsigned int> maxsize;
@@ -952,7 +944,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
     if (row->subdet.find("HT") == std::string::npos)
       continue;
 
-    std::cout << "row->rawId: " << row->rawId << std::endl;
     HcalTrigTowerDetId _detid(row->rawId);
 
     if (!cq->topo()->validHT(_detid))
@@ -963,7 +954,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
     } else if (_xml.count(0) == 0 && !split_by_crate) {
       _xml.insert(std::pair<int, std::shared_ptr<LutXml>>(0, std::make_shared<LutXml>()));
     }
-    std::cout << "check 1" <<std::endl;
 
     _cfg.ieta = row->ieta;
     _cfg.iphi = row->iphi;
@@ -986,32 +976,22 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
     _cfg.targetfirmware = "1.0.0";
     _cfg.formatrevision = "1";                                                           //???
     _cfg.generalizedindex = _cfg.iphi * 10000 + (row->ieta > 0) * 100 + abs(row->ieta);  //is this used for anything?
-    std::cout << "check 2" <<std::endl;
 
     _cfg.lut = _coder.getCompressionLUT(_detid);
-    std::cout << "check 3" <<std::endl;
     auto pWeight = conditions->getHcalTPChannelParameter(_detid, false);
     if (pWeight)
       _cfg.weight = pWeight->getauxi1();
-    std::cout << "check 4" <<std::endl;
 
     int crot = 100 * row->crate + row->slot;
-    std::cout << "check 5" <<std::endl;
     unsigned int size = _cfg.lut.size();
-    std::cout << "check 6" <<std::endl;
-    std::cout << "size: " << size << std::endl;
-    std::cout << "maxsize[crot]: " << maxsize[crot] << std::endl;
     if (size < maxsize[crot]) {
-      std::cout << "inside if loop" << std::endl;
       edm::LogWarning("HcalLutManager") << " resizing LUT for " << _detid << ", channel=[" << _cfg.crate << ":"
                                         << _cfg.slot << ":" << _cfg.fiber << ":" << _cfg.fiberchan
                                         << "], using value=" << _cfg.lut[size - 1] << std::endl;
-      std::cout << "size: " << size << std::endl;
-      std::cout << "maxsize[crot]: " << maxsize[crot] << std::endl;
       for (unsigned int i = size; i < maxsize[crot]; ++i)
         _cfg.lut.push_back(_cfg.lut[size - 1]);
     }
-    std::cout << "check 7" <<std::endl;
+
     if (split_by_crate) {
       _xml[row->crate]->addLut(_cfg, lut_checksums_xml);
       _counter.count();
@@ -1019,7 +999,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
       _xml[0]->addLut(_cfg, lut_checksums_xml);
       _counter.count();
     }
-    std::cout << "end of for loop" << std::endl;
   }
   edm::LogInfo("HcalLutManager") << "LUTs generated: " << _counter.getCount() << std::endl
                                  << "Generating compression (output) LUTs from CaloTPGTranscoderULUT...DONE"
@@ -1703,7 +1682,6 @@ int HcalLutManager::createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC(std::string 
     lut_checksums_xml = new XMLDOMBlock("CFGBrick", 1);
   }
 
-  std::cout << "INSIDE createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC" << std::endl;
 
   if (!_lin_file.empty()) {
     const std::map<int, std::shared_ptr<LutXml>> _lin_lut_ascii_xml =
@@ -1712,31 +1690,23 @@ int HcalLutManager::createLutXmlFiles_HBEFFromCoder_HOFromAscii_ZDC(std::string 
   }
   const std::map<int, std::shared_ptr<LutXml>> _lin_lut_xml =
       getLinearizationLutXmlFromCoderEmap(_coder, _tag, split_by_crate);
-  std::cout << "check 1" << std::endl;
   addLutMap(xml, _lin_lut_xml);
-  std::cout << "check 2" << std::endl;
   //
   const std::map<int, std::shared_ptr<LutXml>> _comp_lut_xml =
       getCompressionLutXmlFromCoder(_transcoder, _tag, split_by_crate);
-  std::cout << "check 2.5" << std::endl;
   addLutMap(xml, _comp_lut_xml);
-  std::cout << "check 3" << std::endl;
 
   const std::map<int, std::shared_ptr<LutXml>> _HE_FG_lut_xml = getHEFineGrainLUTs(_tag, split_by_crate);
   addLutMap(xml, _HE_FG_lut_xml);
-  std::cout << "check 4" << std::endl;
 
   for (auto masktype : {0, 1, 2}) {
     const auto masks = getMasks(masktype, _tag, split_by_crate);
     addLutMap(xml, masks);
   }
   //
-  std::cout << "check 5" << std::endl;
   const auto _zdc_lut_xml = getZdcLutXml(_coder, _tag, split_by_crate, false);
-  std::cout << "check 6" << std::endl;
   addLutMap(xml, _zdc_lut_xml);
 
-  std::cout << "check 7" << std::endl;
   const auto _zdc_ootpu_lut_xml = getZdcLutXml(_coder, _tag, split_by_crate, true);
   addLutMap(xml, _zdc_ootpu_lut_xml);
 
@@ -1752,11 +1722,7 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(const HcalTP
   edm::LogInfo("HcalLutManager") << "Generating ZDC LUTs ...may the Force be with us...";
   std::map<int, std::shared_ptr<LutXml>> _xml;  // index - crate number
 
-  std::cout << "Inside HcalLutManager::getZdcLutXml" << std::endl;
   EMap _emap(emap);
-
-  auto zdc = ZdcLut(conditions);
-  //ZdcLut zdc;
 
   std::vector<EMap::EMapRow>& _map = _emap.get_map();
   edm::LogInfo("HcalLutManager") << "EMap contains " << _map.size() << " channels";
@@ -1766,10 +1732,8 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(const HcalTP
   for (std::vector<EMap::EMapRow>::const_iterator row = _map.begin(); row != _map.end(); row++) {
     LutXml::Config _cfg;
 
-    std::cout << "row.rawId: " << row->rawId << ", row.zdc_channel: " << row->zdc_channel << ", row.zdc_section: " << row->zdc_section << ", row->crate: " << row->crate << ", row->slot: " << row->slot << ", row.subdet: " << row->subdet << " , row.ieta: " << row->ieta << ", row.iphi: " << row->iphi << ", row.idepth: " << row->idepth << std::endl;
     // only ZDC channels
     if (row->zdc_section.find("ZDC") != std::string::npos) {
-      std::cout << "ZDC SECTION" << std::endl;
       if (_xml.count(row->crate) == 0 && split_by_crate) {
         _xml.insert(std::pair<int, std::shared_ptr<LutXml>>(row->crate, std::make_shared<LutXml>()));
       } else if (_xml.count(0) == 0 && !split_by_crate) {
@@ -1802,12 +1766,6 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(const HcalTP
       _cfg.formatrevision = "1";  //???
       _cfg.generalizedindex = 0;
 
-      std::cout << "_cfg.crate,_cfg.slot,_cfg.fiber,_cfg.fiberchan:" << _cfg.crate << "," << _cfg.slot << "," << _cfg.fiber << "," << _cfg.fiberchan << std::endl;
-
-      std::cout << "row->zdc_section: " << row->zdc_section << std::endl;
-      std::cout << "row->rawId: " << row->rawId << std::endl;
-
-      //std::cout << "fC: " << channelCoder->charge(*shape, 5, 1) << std::endl;
       HcalZDCDetId::Section section = HcalZDCDetId::Unknown;
       if (row->zdc_section == "ZDC EM"){
         section = HcalZDCDetId::EM;
@@ -1822,24 +1780,10 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(const HcalTP
       }
       HcalZDCDetId _detid(section, (row->zdc_zside>0), row->zdc_channel);
 
-      auto tpParam = conditions->getHcalTPChannelParameter(_detid, false);
-
-      std::cout << "_detid.rawId(): " << _detid.rawId() << std::endl;
-
       for (const auto i : _coder.getLinearizationLUT(_detid, ootpu_lut)){
         _cfg.lut.push_back(i);
       }
      
-/*      std::vector<int> coder_lut = zdc.get_lut(row->zdc_section, row->zdc_zside, row->zdc_channel);
-      if (!coder_lut.empty()) {
-        for (std::vector<int>::const_iterator _i = coder_lut.begin(); _i != coder_lut.end(); _i++) {
-          unsigned int _temp = (unsigned int)(*_i);
-	  std::cout << "_temp: " << _temp << std::endl;
-          _cfg.lut.push_back(_temp);
-        }
-        //_cfg.lut = _set.lut[lut_index];
-      }*/
-      std::cout << "split_by_crate: " << split_by_crate << std::endl;
       if (split_by_crate) {
         _xml[row->crate]->addLut(_cfg, lut_checksums_xml);
         _counter.count();
@@ -1851,38 +1795,9 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getZdcLutXml(const HcalTP
       
     }
   }
-  //MICHAEL: ZEROING CHANNELS THAT ARE NOT USED  for(int i=0; i<24; i++){
-/*  for(int i=0; i<24; i++){
-    LutXml::Config _cfg;
-    if(i>1 && i<9)continue;
-    else if(i>13 && i<21)continue;
-    else if(i>23)continue;
-    else{
-      _cfg.ieta = 500;
-      _cfg.depth = 1;
-      _cfg.crate = 38;
-      _cfg.slot = 11;
-      _cfg.fiber = i;
-      _cfg.fiberchan = 0;
-      _cfg.lut_type = 1;
-      _cfg.creationtag = _tag;
-      _cfg.creationstamp = get_time_stamp(time(nullptr));
-      _cfg.targetfirmware = "1.0.0";
-      _cfg.formatrevision = "1";  
-      _cfg.generalizedindex = 0;
-      for(int i =0;i<128;i++){
-         unsigned int _temp = 0;
-         _cfg.lut.push_back(_temp);
-      }
-    }
-    _xml[38]->addLut(_cfg, lut_checksums_xml);
-    _counter.count();
-  }*/
-
 
   edm::LogInfo("HcalLutManager") << "LUTs generated: " << _counter.getCount() << std::endl
                                  << "Generating ZDC LUTs...DONE" << std::endl;
 
-  
   return _xml;
 }

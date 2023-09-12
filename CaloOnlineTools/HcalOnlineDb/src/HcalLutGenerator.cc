@@ -20,7 +20,6 @@ HcalLutGenerator::HcalLutGenerator(const edm::ParameterSet& iConfig) {
 }
 
 void HcalLutGenerator::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  std::cout << "Inside HcalLutGenerator::analyze" << std::endl;
   const HcalTPGCoder* inputCoder = &iSetup.getData(tok_inCoder_);
   const HcalDbService* hcalcond = &iSetup.getData(tok_dbservice_);
   const HcalChannelQuality* _cq = &iSetup.getData(tok_hcalChStatus_);
