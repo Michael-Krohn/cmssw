@@ -65,6 +65,7 @@ void CaloTPGTranscoderULUT::loadHCALCompress(HcalLutMetadata const& lutMetadata,
       continue;
 
     unsigned int index = getOutputLUTId(id);
+    std::cout << "creating output lut with index: " << index << std::endl;
 
     const HcalLutMetadatum* meta = lutMetadata.getValues(id);
     unsigned int threshold = meta->getOutputLutThreshold();

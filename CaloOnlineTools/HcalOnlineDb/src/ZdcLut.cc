@@ -1,5 +1,7 @@
+#include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 #include "CaloOnlineTools/HcalOnlineDb/interface/ZdcLut.h"
 #include <cstdlib>
+#include <map>
 
 /**
 
@@ -8,6 +10,8 @@
    \brief Adopted to CMSSW HCAL LUT manager specs
    \brief by Gena Kukartsev, Brown University, Dec 08, 2009
    \author Elijah Dunn
+
+   \brief Updated by Quan Wang @KU for QIE10 upgrade, 2022
 */
 
 ZdcLut::ZdcLut() {
@@ -203,6 +207,8 @@ int ZdcLut::simple_loop() {
   return 0;
 }
 
+
+
 std::vector<int> ZdcLut::get_lut(int emap_side, int emap_htr_fiber, int emap_fi_ch) {
   int side_num = (1 - emap_side) / 2;
   int fiber_num = (int)(emap_htr_fiber / 4) + (emap_htr_fiber % 4);
@@ -244,4 +250,4 @@ std::vector<int> ZdcLut::get_lut(std::string zdc_section, int zdc_side, int zdc_
     return side[side_num].fiber[fiber_num].channel[channel_num].LUT;
   } else
     return side[side_num].fiber[fiber_num].channel[channel_num].LUT;
-}
+}  

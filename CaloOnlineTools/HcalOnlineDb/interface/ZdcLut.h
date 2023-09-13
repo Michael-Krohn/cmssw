@@ -9,6 +9,7 @@
    \brief by Gena Kukartsev, Brown University, Dec 08, 2009
    \author Elijah Dunn
 
+   \brief Updated by Quan Wang for QIE10
 */
 
 #include <iostream>
