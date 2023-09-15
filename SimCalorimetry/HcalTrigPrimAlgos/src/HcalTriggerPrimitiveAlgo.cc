@@ -262,8 +262,16 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
   }else if (detId.det() == DetId::Calo && detId.subdetId() == HcalZDCDetId::SubdetectorId){
     std::cout << "detId.subdetId(): " << detId.subdetId() << std::endl;
     HcalZDCDetId detId = frame.detid();
-    if (detId.section() != HcalZDCDetId::EM && detId.section() != HcalZDCDetId::HAD)
+    if (detId.section() == HcalZDCDetId::EM){
+      std::cout << "This is an EM ZDC channel" << std::endl;
+    }
+    if (detId.section() == HcalZDCDetId::HAD){
+      std::cout << "This is a HAD ZDC channel" << std::endl;
+    }
+    if (detId.section() != HcalZDCDetId::EM && detId.section() != HcalZDCDetId::HAD){
+        std::cout << "Not producing digis!" << std::endl;
         return;
+    }
 
     std::cout << "ZDC detId.rawId(): " << detId.rawId() << std::endl;
 
@@ -629,39 +637,49 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
                                          HcalTriggerPrimitiveDigi& result) {
   std::cout << "Inside HcalTriggerPrimitiveAlgo::analyzeZDC" << std::endl;  
 
+  HcalTrigTowerDetId detId(samples.id());
+
   unsigned int tpSamples;
   unsigned int tpPresamples;
 
-  std::cout << "samples.id().det(): " << samples.id().det() << std::endl;
-  std::cout << "samples.id().subdetId(): " << samples.id().subdetId() << std::endl;
-  if (samples.id().det() == DetId::Calo && samples.id().subdetId() == HcalZDCDetId::SubdetectorId){
-    std::cout << "Found a ZDC channel" << std::endl;
+  std::cout << "detId.iphi(): " << detId.iphi() << std::endl;
+
+  if (detId.iphi() == 99){
+    std::cout << "Found an HT ZDC channel" << std::endl;
+    tpSamples = 1;
+    tpPresamples = 1;
+
+    IntegerCaloSamples output(samples.id(), tpSamples);
+    output.setPresamples(tpPresamples);
+    std::vector<int> finegrain(tpSamples, false);
+
+    int sample_sum = 0;
+    for (int i = 0; i < samples.size(); i++) {
+      std::cout << "samples[i]: " << samples[i] << std::endl;
+      sample_sum += samples[i];
+    }
+    std::cout << "sample_sum: " << sample_sum << std::endl;
+    output[0] = sample_sum;
+
+    outcoder_->compress(output, finegrain, result);
+  }else{
+    tpSamples = samples.size();
+    tpPresamples = samples.presamples();
+    std::cout << "tpSamples: " << tpSamples << std::endl;
+    std::cout << "tpPresamples: " << tpPresamples << std::endl;
+    std::cout << "samples.size(): " << samples.size() << std::endl;
+    std::cout << "samples.id().rawId(): " << samples.id().rawId() << std::endl;
+    IntegerCaloSamples output(samples.id(), tpSamples);
+    output.setPresamples(tpPresamples);
+    std::vector<int> finegrain(tpSamples, false);
+
+    for (int i = 0; i < samples.size(); i++) {
+      std::cout << "samples[i]: " << samples[i] << std::endl;
+      output[i] = samples[i];
+    }
+
+    outcoder_->compress(output, finegrain, result);
   }
-  //unsigned int tpSamples = numberOfSamplesZDC_;
-  tpSamples = samples.size();
-  //unsigned int tpPresamples = numberOfPresamplesZDC_;
-  tpPresamples = samples.presamples();
-
-
-  std::cout << "tpSamples: " << tpSamples << std::endl;
-  std::cout << "tpPresamples: " << tpPresamples << std::endl;
-  std::cout << "samples.size(): " << samples.size() << std::endl;
-  std::cout << "samples.id().rawId(): " << samples.id().rawId() << std::endl;
-  IntegerCaloSamples output(samples.id(), tpSamples);
-  output.setPresamples(tpPresamples);
-  std::vector<int> finegrain(tpSamples, false);
-
-  int sample_sum = 0;
-  for (int i = 0; i < samples.size(); i++) {
-    std::cout << "samples[i]: " << samples[i] << std::endl;
-    sample_sum += samples[i];
-    output[i] = samples[i];
-  }
-  std::cout << "sample_sum: " << sample_sum << std::endl;
-
-  outcoder_->compress(output, finegrain, result);
-
-  std::cout << "put into outcoder" << std::endl;
 
 }
 
