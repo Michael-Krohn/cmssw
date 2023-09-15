@@ -146,6 +146,7 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
     tok_hbhe_up_ = consumes<QIE11DigiCollection>(inputUpgradeLabel_[0]);
     tok_hf_up_ = consumes<QIE10DigiCollection>(inputUpgradeLabel_[1]);
   }
+  std::cout << "inputUpgradeLabel_[1]: " << inputUpgradeLabel_[1] << std::endl;
   tok_dbService_ = esConsumes<HcalDbService, HcalDbRecord>();
   tok_dbService_beginRun_ = esConsumes<HcalDbService, HcalDbRecord, edm::Transition::BeginRun>();
   produces<HcalTrigPrimDigiCollection>();
@@ -158,6 +159,7 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
 }
 
 void HcalTrigPrimDigiProducer::beginRun(const edm::Run& run, const edm::EventSetup& eventSetup) {
+  std::cout << "Inside HcalTrigPrimDigiProducer::beginRun" << std::endl;
   edm::ESHandle<HcalDbService> db = eventSetup.getHandle(tok_dbService_beginRun_);
   const HcalTopology* topo = &eventSetup.getData(tok_hcalTopo_);
 
@@ -214,6 +216,7 @@ void HcalTrigPrimDigiProducer::beginRun(const edm::Run& run, const edm::EventSet
 
 void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup& eventSetup) {
   // Step A: get the conditions, for the decoding
+  std::cout << "Inside  HcalTrigPrimDigiProducer::produce" << std::endl;
   edm::ESHandle<HcalTPGCoder> inputCoder = eventSetup.getHandle(tok_tpgCoder_);
 
   edm::ESHandle<CaloTPGTranscoder> outTranscoder = eventSetup.getHandle(tok_tpgTranscoder_);
@@ -231,6 +234,8 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   edm::Handle<QIE11DigiCollection> hbheUpDigis;
   edm::Handle<QIE10DigiCollection> hfUpDigis;
+
+  std::cout << "legacy_: " << legacy_ << ", upgrade_: " << upgrade_ << std::endl;
 
   if (legacy_) {
     iEvent.getByToken(tok_hbhe_, hbheDigis);
@@ -304,6 +309,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
 
   // Step C: Invoke the algorithm, passing in inputs and getting back outputs.
   if (legacy_ and not upgrade_) {
+    std::cout << "legacy_ and not upgrade_" << std::endl;
     theAlgo_.run(inputCoder.product(),
                  outTranscoder->getHcalCompressor().get(),
                  pSetup.product(),
@@ -314,6 +320,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
                  *hbheDigis,
                  *hfDigis);
   } else if (legacy_ and upgrade_) {
+    std::cout << "legacy_ and upgrade_" << std::endl;
     theAlgo_.run(inputCoder.product(),
                  outTranscoder->getHcalCompressor().get(),
                  pSetup.product(),
@@ -326,6 +333,7 @@ void HcalTrigPrimDigiProducer::produce(edm::Event& iEvent, const edm::EventSetup
                  *hbheUpDigis,
                  *hfUpDigis);
   } else {
+    std::cout << "else" << std::endl;
     theAlgo_.run(inputCoder.product(),
                  outTranscoder->getHcalCompressor().get(),
                  pSetup.product(),

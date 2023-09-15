@@ -1,5 +1,6 @@
 #include "Geometry/HcalTowerAlgo/interface/HcalTrigTowerGeometry.h"
 #include "DataFormats/HcalDetId/interface/HcalDetId.h"
+#include "DataFormats/HcalDetId/interface/HcalZDCDetId.h"
 #include "DataFormats/HcalDetId/interface/HcalTrigTowerDetId.h"
 
 #include <iostream>
@@ -15,6 +16,7 @@ HcalTrigTowerGeometry::HcalTrigTowerGeometry(const HcalTopology* topology) : the
 std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId& cellId) const {
   std::vector<HcalTrigTowerDetId> results;
 
+  std::cout << "Inside HcalTrigTowerGeometry::towerIds" << std::endl;
   if (cellId.subdet() == HcalForward) {
     if (useRCT_) {
       // first do eta
@@ -49,13 +51,17 @@ std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId&
 
   } else {
     // the first twenty rings are one-to-one
+    std::cout << "cellId.iphi(): " << cellId.iphi() << ", cellId.depth(): " << cellId.depth() << std::endl;
+    std::cout << "cellId.ietaAbs(): " << cellId.ietaAbs() << ", theTopology->lastHBRing(): " << theTopology->lastHBRing() << ", theTopology->firstHEDoublePhiRing(): " << theTopology->firstHEDoublePhiRing() << std::endl;
     if (cellId.ietaAbs() <= theTopology->lastHBRing()) {
       results.emplace_back(HcalTrigTowerDetId(cellId.ieta(), cellId.iphi()));
     } else if (theTopology->maxDepthHE() == 0) {
       // Ignore these
+      std::cout << "theTopology->maxDepthHE(): " << theTopology->maxDepthHE() << std::endl;
     } else if (cellId.ietaAbs() < theTopology->firstHEDoublePhiRing()) {
       results.emplace_back(HcalTrigTowerDetId(cellId.ieta(), cellId.iphi()));
     } else {
+      std::cout << "HELP ME" << std::endl;
       // the remaining rings are two-to-one in phi
       int iphi1 = cellId.iphi();
       int ieta = cellId.ieta();
@@ -77,6 +83,45 @@ std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId&
       results.emplace_back(HcalTrigTowerDetId(ieta, iphi1 + 1));
     }
   }
+
+  return results;
+}
+
+std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds_ZDC(const HcalZDCDetId& cellId) const {
+  std::vector<HcalTrigTowerDetId> results;
+
+  std::cout << "HcalTrigTowerGeometry::towerIds_ZDC(const HcalZDCDetId& cellId)" << std::endl;
+  std::cout << "cellId.rawId(): " << cellId.rawId() << ", cellId.depth(): " << cellId.depth() << std::endl;
+  std::cout << "cellId.channel(): " << cellId.channel() << ", theTopology->lastHBRing(): " << theTopology->lastHBRing() << ", theTopology->firstHEDoublePhiRing(): " << theTopology->firstHEDoublePhiRing() << std::endl;
+
+  std::cout << "cellId.zside(): " << cellId.zside() << std::endl;
+
+  int ieta = 0;
+  int iphi = 99;
+  int channelId = 0;
+
+  if (cellId.zside() > 0)
+    ieta = 42;
+  else
+    ieta = -42;
+
+  if (cellId.zside() > 0){
+    if (cellId.depth() == 1){
+      channelId = cellId.channel();
+    }else{
+      channelId = cellId.channel() + 5;
+    }
+  }else{
+    if (cellId.depth() == 1){
+      channelId += cellId.channel() + 9;
+    }else{
+      channelId += cellId.channel() + 5 + 9;
+    }
+  }
+  
+
+  results.emplace_back(HcalTrigTowerDetId(ieta,channelId));
+  results.emplace_back(HcalTrigTowerDetId(ieta,iphi));
 
   return results;
 }

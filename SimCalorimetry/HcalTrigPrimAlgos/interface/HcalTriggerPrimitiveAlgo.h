@@ -38,6 +38,8 @@ public:
                            int numberOfFilterPresamplesHEQIE11,
                            int numberOfSamplesHF,
                            int numberOfPresamplesHF,
+                           int numberOfSamplesZDC,
+                           int numberOfPresamplesZDC,
                            bool useTDCInMinBiasBits,
                            uint32_t minSignalThreshold = 0,
                            uint32_t PMT_NoiseThreshold = 0);
@@ -68,9 +70,13 @@ public:
 
   template <typename D>
   void addDigis(const HcalDataFrameContainer<D>& collection) {
+    std::cout << "Inside addDigis(const HcalDataFrameContainer<D>& collection)" << std::endl;
     for (auto i = collection.begin(); i != collection.end(); ++i) {
+      std::cout << "Looping over digis" << std::endl;
       D digi(*i);
+      std::cout << "Created D digi" << std::endl;
       addSignal(digi);
+      std::cout << "Finished addSignal" << std::endl;
     }
   };
 
@@ -96,6 +102,7 @@ private:
   /// adds the signal to the map
   void addSignal(const HBHEDataFrame& frame);
   void addSignal(const HFDataFrame& frame);
+  //void addSignal(const ZDCDataFrame& frame);
   void addSignal(const QIE10DataFrame& frame);
   void addSignal(const QIE11DataFrame& frame);
   void addSignal(const IntegerCaloSamples& samples);
@@ -129,6 +136,8 @@ private:
                       const int HF_LUMI_SHIFT,
                       const HcalFeatureBit* HCALFEM);
 
+  void analyzeZDC(IntegerCaloSamples& samples, HcalTriggerPrimitiveDigi& result);
+
   // Member initialized by constructor
   const HcaluLUTTPGCoder* incoder_;
   const HcalTPGCompressor* outcoder_;
@@ -148,6 +157,8 @@ private:
   int numberOfFilterPresamplesHEQIE11_;
   int numberOfSamplesHF_;
   int numberOfPresamplesHF_;
+  int numberOfSamplesZDC_;
+  int numberOfPresamplesZDC_;
   bool useTDCInMinBiasBits_;
   uint32_t minSignalThreshold_;
   uint32_t PMT_NoiseThreshold_;
@@ -273,6 +284,7 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
   theHFDetailMap.clear();
   theHFUpgradeDetailMap.clear();
 
+  std::cout << "Inside HcalTriggerPrimitiveAlgo::run" << std::endl;
   // Add all digi collections
   addDigis(digis...);
 
@@ -286,10 +298,13 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
 
   // VME produces additional bits on the front used by lumi but not the
   // trigger, this shift corrects those out by right shifting over them.
+  std::cout << "Prior to for loop" << std::endl;
   for (auto& item : theSumMap) {
+    std::cout << "Inside for loop" << std::endl;
     result.push_back(HcalTriggerPrimitiveDigi(item.first));
     HcalTrigTowerDetId detId(item.second.id());
-    if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version())) {
+    std::cout << "detId.ieta(): " << detId.ieta() << std::endl;
+    if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version()) && detId.ietaAbs() < 42) {
       if (detId.version() == 0) {
         analyzeHF(item.second, result.back(), RCTScaleShift);
       } else if (detId.version() == 1) {
@@ -300,6 +315,8 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
       } else {
         // Things are going to go poorly
       }
+    } else if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version()) && detId.ietaAbs() > 41) {
+      analyzeZDC(item.second, result.back());
     } else {
       // Determine which energy reconstruction path to take based on the
       // fine-grain availability:

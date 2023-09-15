@@ -42,7 +42,7 @@ public:
 
   void adc2Linear(const HBHEDataFrame& df, IntegerCaloSamples& ics) const override;
   void adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics) const override;
-  void adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& ics) const override;
+  void adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& ics, bool ootpu_lut) const override;
   void adc2Linear(const QIE11DataFrame& df, IntegerCaloSamples& ics) const override;
   std::vector<unsigned short> group0FGbits(const QIE11DataFrame& df) const;
   void compress(const IntegerCaloSamples& ics,
@@ -91,6 +91,7 @@ public:
   static const int QIE8_LUT_BITMASK = 0x3FF;
   static const int QIE10_LUT_BITMASK = 0x7FF;
   static const int QIE11_LUT_BITMASK = 0x3FF;
+  static const int QIE10_ZDC_LUT_BITMASK = 0x3FF;
 
 private:
   // typedef

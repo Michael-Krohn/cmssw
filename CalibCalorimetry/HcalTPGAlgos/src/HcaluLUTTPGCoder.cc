@@ -34,6 +34,7 @@ const float HcaluLUTTPGCoder::zdc_lsb_ = 50.;
 const int HcaluLUTTPGCoder::QIE8_LUT_BITMASK;
 const int HcaluLUTTPGCoder::QIE10_LUT_BITMASK;
 const int HcaluLUTTPGCoder::QIE11_LUT_BITMASK;
+const int HcaluLUTTPGCoder::QIE10_ZDC_LUT_BITMASK;
 
 constexpr double MaximumFractionalError = 0.002;  // 0.2% error allowed from this source
 
@@ -590,7 +591,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
           }
         }
       }
-    }else if (id.det() == DetId::Calo){
+    }else if (id.det() == DetId::Calo && id.subdetId() == HcalZDCDetId::SubdetectorId){
       HcalZDCDetId cell(id.rawId());
 
       if (cell.section() != HcalZDCDetId::EM && cell.section() != HcalZDCDetId::HAD)
@@ -646,7 +647,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       int qieType = conditions.getHcalQIEType(cell)->getValue();
 
       const size_t SIZE = qieType == QIE8 ? INPUT_LUT_SIZE : UPGRADE_LUT_SIZE;
-      const int MASK = qieType == QIE8 ? QIE8_LUT_BITMASK : qieType == QIE10 ? QIE10_LUT_BITMASK : QIE11_LUT_BITMASK;
+      const int MASK = QIE10_ZDC_LUT_BITMASK;
 
       lut.resize(SIZE, 0);
       lut_ootpu.resize(SIZE, 0);
@@ -684,11 +685,25 @@ void HcaluLUTTPGCoder::adc2Linear(const HFDataFrame& df, IntegerCaloSamples& ics
   }
 }
 
-void HcaluLUTTPGCoder::adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& ics) const {
-  int lutId = getLUTId(HcalDetId(df.id()));
-  const Lut& lut = inputLUT_.at(lutId);
-  for (int i = 0; i < df.samples(); i++) {
-    ics[i] = (lut.at(df[i].adc()) & QIE10_LUT_BITMASK);
+void HcaluLUTTPGCoder::adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& ics, bool ootpu_lut) const {
+  DetId detId = DetId(df.detid());
+  if (detId.det() == DetId::Hcal) {
+    int lutId = getLUTId(HcalDetId(df.id()));
+    const Lut& lut = inputLUT_.at(lutId);
+    for (int i = 0; i < df.samples(); i++) {
+      ics[i] = (lut.at(df[i].adc()) & QIE10_LUT_BITMASK);
+    }
+  }else{
+    int lutId = getLUTId(HcalZDCDetId(df.id()));
+    if (ootpu_lut)
+      lutId = lutId + sizeZDC_;
+    std::cout << "adc2Linear lutId: " << lutId << std::endl;
+    const Lut& lut = inputLUT_.at(lutId);
+    for (int i = 0; i < df.samples(); i++) {
+      std::cout << "df[i].adc(): " << df[i].adc() << std::endl;
+      std::cout << "lut.at(df[i].adc()): " << lut.at(df[i].adc()) << std::endl;
+      ics[i] = (lut.at(df[i].adc()) & QIE10_ZDC_LUT_BITMASK);
+    }
   }
 }
 
