@@ -284,7 +284,8 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
       std::cout << "ran adc2Linear" << std::endl;
 
       for (int i = 1; i < samples.size(); ++i) {
-         samples[i] = samples[i] - samples_PUsub[i-1];
+        if (samples_PUsub[i-1]>samples[i]) samples[i]=0;
+        else samples[i]-=samples_PUsub[i-1];
       }
 
       addSignal(samples);
