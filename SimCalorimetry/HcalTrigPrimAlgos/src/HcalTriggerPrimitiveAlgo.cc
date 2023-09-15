@@ -262,6 +262,9 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
   }else if (detId.det() == DetId::Calo && detId.subdetId() == HcalZDCDetId::SubdetectorId){
     std::cout << "detId.subdetId(): " << detId.subdetId() << std::endl;
     HcalZDCDetId detId = frame.detid();
+    if (cell.section() != HcalZDCDetId::EM && cell.section() != HcalZDCDetId::HAD)
+        continue;
+
     std::cout << "ZDC detId.rawId(): " << detId.rawId() << std::endl;
 
     std::cout << "frame.id(): " << frame.id() << frame.id() << std::endl;
