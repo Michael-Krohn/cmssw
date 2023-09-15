@@ -262,8 +262,8 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
   }else if (detId.det() == DetId::Calo && detId.subdetId() == HcalZDCDetId::SubdetectorId){
     std::cout << "detId.subdetId(): " << detId.subdetId() << std::endl;
     HcalZDCDetId detId = frame.detid();
-    if (cell.section() != HcalZDCDetId::EM && cell.section() != HcalZDCDetId::HAD)
-        continue;
+    if (detId.section() != HcalZDCDetId::EM && detId.section() != HcalZDCDetId::HAD)
+        return;
 
     std::cout << "ZDC detId.rawId(): " << detId.rawId() << std::endl;
 
@@ -351,6 +351,7 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples& samples) {
     }
   }
 
+  std::cout << "fix_saturation_: " << fix_saturation_ << std::endl;
   // if fix_saturation == true, keep track of tower with saturated input LUT
   if (fix_saturation_) {
     SatMap::iterator itr_sat = theSatMap.find(id);
@@ -472,6 +473,8 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
 
   unsigned int tpSamples = numberOfSamples_;
   unsigned int tpPresamples = numberOfPresamples_;
+
+  std::cout << "tpSamples: " << tpSamples << std::endl;
 
   unsigned int filterSamples = weightsQIE11_[theIeta].size();
   unsigned int filterPresamples = theIeta > theTrigTowerGeometry->topology().lastHBRing()
@@ -626,24 +629,39 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
                                          HcalTriggerPrimitiveDigi& result) {
   std::cout << "Inside HcalTriggerPrimitiveAlgo::analyzeZDC" << std::endl;  
 
-  unsigned int tpSamples = numberOfSamplesZDC_;
-  unsigned int tpPresamples = numberOfPresamplesZDC_;
+  unsigned int tpSamples;
+  unsigned int tpPresamples;
 
-
-  std::cout << "samples.size(): " << samples.size() << std::endl;
-  int sample_sum = 0;
-  for (int i = 0; i < samples.size(); i++) {
-    std::cout << "samples[i]: " << samples[i] << std::endl;
-    sample_sum += samples[i];
+  std::cout << "samples.id().det(): " << samples.id().det() << std::endl;
+  std::cout << "samples.id().subdetId(): " << samples.id().subdetId() << std::endl;
+  if (samples.id().det() == DetId::Calo && samples.id().subdetId() == HcalZDCDetId::SubdetectorId){
+    std::cout << "Found a ZDC channel" << std::endl;
   }
+  //unsigned int tpSamples = numberOfSamplesZDC_;
+  tpSamples = samples.size();
+  //unsigned int tpPresamples = numberOfPresamplesZDC_;
+  tpPresamples = samples.presamples();
 
+
+  std::cout << "tpSamples: " << tpSamples << std::endl;
+  std::cout << "tpPresamples: " << tpPresamples << std::endl;
+  std::cout << "samples.size(): " << samples.size() << std::endl;
+  std::cout << "samples.id().rawId(): " << samples.id().rawId() << std::endl;
   IntegerCaloSamples output(samples.id(), tpSamples);
   output.setPresamples(tpPresamples);
   std::vector<int> finegrain(tpSamples, false);
 
+  int sample_sum = 0;
+  for (int i = 0; i < samples.size(); i++) {
+    std::cout << "samples[i]: " << samples[i] << std::endl;
+    sample_sum += samples[i];
+    output[i] = samples[i];
+  }
+  std::cout << "sample_sum: " << sample_sum << std::endl;
 
   outcoder_->compress(output, finegrain, result);
 
+  std::cout << "put into outcoder" << std::endl;
 
 }
 

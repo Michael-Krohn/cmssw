@@ -317,6 +317,7 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
       }
     } else if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version()) && detId.ietaAbs() > 41) {
       analyzeZDC(item.second, result.back());
+      std::cout << "done running analyzeZDC" << std::endl;
     } else {
       // Determine which energy reconstruction path to take based on the
       // fine-grain availability:
