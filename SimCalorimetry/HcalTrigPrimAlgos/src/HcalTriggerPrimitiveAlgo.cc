@@ -355,7 +355,9 @@ void HcalTriggerPrimitiveAlgo::addSignal(const IntegerCaloSamples& samples) {
     // wish CaloSamples had a +=
     for (int i = 0; i < samples.size(); ++i) {
       std::cout << "added to the SumMap" << std::endl;
+      std::cout << "(itr->second)[i]: " << (itr->second)[i] << std::endl;
       (itr->second)[i] += samples[i];
+      std::cout << "(itr->second)[i]: " << (itr->second)[i] << std::endl;
     }
   }
 
@@ -648,6 +650,9 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
     std::cout << "Found an HT ZDC channel" << std::endl;
     tpSamples = 1;
     tpPresamples = 1;
+ 
+    result.setSize(tpSamples);
+    result.setPresamples(tpPresamples);
 
     IntegerCaloSamples output(samples.id(), tpSamples);
     output.setPresamples(tpPresamples);
@@ -661,10 +666,15 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
     std::cout << "sample_sum: " << sample_sum << std::endl;
     output[0] = sample_sum;
 
-    outcoder_->compress(output, finegrain, result);
+    HcalTriggerPrimitiveSample zdcSample(output[0]);
+    std::cout << "zdcSample.raw(): " << zdcSample.raw() << std::endl;
+    result.setSample(0, zdcSample);
+    //outcoder_->compress(output, finegrain, result);
   }else{
     tpSamples = samples.size();
     tpPresamples = samples.presamples();
+    result.setSize(tpSamples);
+    result.setPresamples(tpPresamples);
     std::cout << "tpSamples: " << tpSamples << std::endl;
     std::cout << "tpPresamples: " << tpPresamples << std::endl;
     std::cout << "samples.size(): " << samples.size() << std::endl;
@@ -676,9 +686,11 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
     for (int i = 0; i < samples.size(); i++) {
       std::cout << "samples[i]: " << samples[i] << std::endl;
       output[i] = samples[i];
+      HcalTriggerPrimitiveSample zdcSample(output[i]);
+      result.setSample(i, zdcSample);
     }
 
-    outcoder_->compress(output, finegrain, result);
+//    outcoder_->compress(output, finegrain, result);
   }
 
 }
