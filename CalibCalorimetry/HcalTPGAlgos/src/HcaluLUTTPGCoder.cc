@@ -697,11 +697,8 @@ void HcaluLUTTPGCoder::adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& 
     int lutId = getLUTId(HcalZDCDetId(df.id()));
     if (ootpu_lut)
       lutId = lutId + sizeZDC_;
-    std::cout << "adc2Linear lutId: " << lutId << std::endl;
     const Lut& lut = inputLUT_.at(lutId);
     for (int i = 0; i < df.samples(); i++) {
-      std::cout << "df[i].adc(): " << df[i].adc() << std::endl;
-      std::cout << "lut.at(df[i].adc()): " << lut.at(df[i].adc()) << std::endl;
       ics[i] = (lut.at(df[i].adc()) & QIE10_ZDC_LUT_BITMASK);
     }
   }

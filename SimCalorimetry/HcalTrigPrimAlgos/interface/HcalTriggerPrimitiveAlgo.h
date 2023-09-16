@@ -70,13 +70,9 @@ public:
 
   template <typename D>
   void addDigis(const HcalDataFrameContainer<D>& collection) {
-    std::cout << "Inside addDigis(const HcalDataFrameContainer<D>& collection)" << std::endl;
     for (auto i = collection.begin(); i != collection.end(); ++i) {
-      std::cout << "Looping over digis" << std::endl;
       D digi(*i);
-      std::cout << "Created D digi" << std::endl;
       addSignal(digi);
-      std::cout << "Finished addSignal" << std::endl;
     }
   };
 
@@ -284,7 +280,6 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
   theHFDetailMap.clear();
   theHFUpgradeDetailMap.clear();
 
-  std::cout << "Inside HcalTriggerPrimitiveAlgo::run" << std::endl;
   // Add all digi collections
   addDigis(digis...);
 
@@ -298,12 +293,9 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
 
   // VME produces additional bits on the front used by lumi but not the
   // trigger, this shift corrects those out by right shifting over them.
-  std::cout << "Prior to for loop" << std::endl;
   for (auto& item : theSumMap) {
-    std::cout << "Inside for loop" << std::endl;
     result.push_back(HcalTriggerPrimitiveDigi(item.first));
     HcalTrigTowerDetId detId(item.second.id());
-    std::cout << "detId.ieta(): " << detId.ieta() << std::endl;
     if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version()) && detId.ietaAbs() < 42) {
       if (detId.version() == 0) {
         analyzeHF(item.second, result.back(), RCTScaleShift);
@@ -317,7 +309,6 @@ void HcalTriggerPrimitiveAlgo::run(const HcalTPGCoder* incoder,
       }
     } else if (detId.ietaAbs() >= theTrigTowerGeometry->firstHFTower(detId.version()) && detId.ietaAbs() > 41) {
       analyzeZDC(item.second, result.back());
-      std::cout << "done running analyzeZDC" << std::endl;
     } else {
       // Determine which energy reconstruction path to take based on the
       // fine-grain availability:

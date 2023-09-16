@@ -16,7 +16,6 @@ HcalTrigTowerGeometry::HcalTrigTowerGeometry(const HcalTopology* topology) : the
 std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId& cellId) const {
   std::vector<HcalTrigTowerDetId> results;
 
-  std::cout << "Inside HcalTrigTowerGeometry::towerIds" << std::endl;
   if (cellId.subdet() == HcalForward) {
     if (useRCT_) {
       // first do eta
@@ -51,17 +50,13 @@ std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId&
 
   } else {
     // the first twenty rings are one-to-one
-    std::cout << "cellId.iphi(): " << cellId.iphi() << ", cellId.depth(): " << cellId.depth() << std::endl;
-    std::cout << "cellId.ietaAbs(): " << cellId.ietaAbs() << ", theTopology->lastHBRing(): " << theTopology->lastHBRing() << ", theTopology->firstHEDoublePhiRing(): " << theTopology->firstHEDoublePhiRing() << std::endl;
     if (cellId.ietaAbs() <= theTopology->lastHBRing()) {
       results.emplace_back(HcalTrigTowerDetId(cellId.ieta(), cellId.iphi()));
     } else if (theTopology->maxDepthHE() == 0) {
       // Ignore these
-      std::cout << "theTopology->maxDepthHE(): " << theTopology->maxDepthHE() << std::endl;
     } else if (cellId.ietaAbs() < theTopology->firstHEDoublePhiRing()) {
       results.emplace_back(HcalTrigTowerDetId(cellId.ieta(), cellId.iphi()));
     } else {
-      std::cout << "HELP ME" << std::endl;
       // the remaining rings are two-to-one in phi
       int iphi1 = cellId.iphi();
       int ieta = cellId.ieta();
@@ -89,12 +84,6 @@ std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds(const HcalDetId&
 
 std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds_ZDC(const HcalZDCDetId& cellId) const {
   std::vector<HcalTrigTowerDetId> results;
-
-  std::cout << "HcalTrigTowerGeometry::towerIds_ZDC(const HcalZDCDetId& cellId)" << std::endl;
-  std::cout << "cellId.rawId(): " << cellId.rawId() << ", cellId.depth(): " << cellId.depth() << std::endl;
-  std::cout << "cellId.channel(): " << cellId.channel() << ", theTopology->lastHBRing(): " << theTopology->lastHBRing() << ", theTopology->firstHEDoublePhiRing(): " << theTopology->firstHEDoublePhiRing() << std::endl;
-
-  std::cout << "cellId.zside(): " << cellId.zside() << std::endl;
 
   int ieta = 0;
   int iphi = 99;
