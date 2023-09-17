@@ -606,39 +606,18 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
   unsigned int tpPresamples;
 
 
-  if (detId.iphi() == 99){
-    tpSamples = 1;
-    tpPresamples = 1;
- 
-    result.setSize(tpSamples);
-    result.setPresamples(tpPresamples);
+  tpSamples = samples.size();
+  tpPresamples = samples.presamples();
+  result.setSize(tpSamples);
+  result.setPresamples(tpPresamples);
 
-    IntegerCaloSamples output(samples.id(), tpSamples);
-    output.setPresamples(tpPresamples);
+  IntegerCaloSamples output(samples.id(), tpSamples);
+  output.setPresamples(tpPresamples);
 
-    int sample_sum = 0;
-    for (int i = 0; i < samples.size(); i++) {
-      sample_sum += samples[i];
-    }
-    output[0] = sample_sum;
-
-    HcalTriggerPrimitiveSample zdcSample(output[0]);
-    result.setSample(0, zdcSample);
-  }else{
-    tpSamples = samples.size();
-    tpPresamples = samples.presamples();
-    result.setSize(tpSamples);
-    result.setPresamples(tpPresamples);
-
-    IntegerCaloSamples output(samples.id(), tpSamples);
-    output.setPresamples(tpPresamples);
-
-    for (int i = 0; i < samples.size(); i++) {
-      output[i] = samples[i];
-      HcalTriggerPrimitiveSample zdcSample(output[i]);
-      result.setSample(i, zdcSample);
-    }
-
+  for (int i = 0; i < samples.size(); i++) {
+    output[i] = samples[i];
+    HcalTriggerPrimitiveSample zdcSample(output[i]);
+    result.setSample(i, zdcSample);
   }
 
 }
