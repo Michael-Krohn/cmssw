@@ -252,10 +252,10 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
         detail.passTDC[idx] = passTDC(frame, idx);
       }
     }
-  }else if (detId.det() == DetId::Calo && detId.subdetId() == HcalZDCDetId::SubdetectorId){
+  } else if (detId.det() == DetId::Calo && detId.subdetId() == HcalZDCDetId::SubdetectorId) {
     HcalZDCDetId detId = frame.detid();
-    if (detId.section() != HcalZDCDetId::EM && detId.section() != HcalZDCDetId::HAD){
-        return;
+    if (detId.section() != HcalZDCDetId::EM && detId.section() != HcalZDCDetId::HAD) {
+      return;
     }
 
     auto ids = theTrigTowerGeometry->towerIds_ZDC(frame.id());
@@ -272,12 +272,13 @@ void HcalTriggerPrimitiveAlgo::addSignal(const QIE10DataFrame& frame) {
       incoder_->adc2Linear(frame, samples_PUsub, true);
 
       for (int i = 1; i < samples.size(); ++i) {
-        if (samples_PUsub[i-1]>samples[i]) samples[i]=0;
-        else samples[i]-=samples_PUsub[i-1];
+        if (samples_PUsub[i - 1] > samples[i])
+          samples[i] = 0;
+        else
+          samples[i] -= samples_PUsub[i - 1];
       }
 
       addSignal(samples);
-
     }
   }
 }
@@ -598,13 +599,11 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
   outcoder_->compress(output, finegrain, result);
 }
 
-void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
-                                         HcalTriggerPrimitiveDigi& result) {
+void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples, HcalTriggerPrimitiveDigi& result) {
   HcalTrigTowerDetId detId(samples.id());
 
   unsigned int tpSamples;
   unsigned int tpPresamples;
-
 
   tpSamples = samples.size();
   tpPresamples = samples.presamples();
@@ -619,7 +618,6 @@ void HcalTriggerPrimitiveAlgo::analyzeZDC(IntegerCaloSamples& samples,
     HcalTriggerPrimitiveSample zdcSample(output[i]);
     result.setSample(i, zdcSample);
   }
-
 }
 
 void HcalTriggerPrimitiveAlgo::analyzeHF(IntegerCaloSamples& samples,

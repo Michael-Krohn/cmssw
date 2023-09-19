@@ -94,23 +94,22 @@ std::vector<HcalTrigTowerDetId> HcalTrigTowerGeometry::towerIds_ZDC(const HcalZD
   else
     ieta = -42;
 
-  if (cellId.zside() > 0){
-    if (cellId.depth() == 1){
+  if (cellId.zside() > 0) {
+    if (cellId.depth() == 1) {
       channelId = cellId.channel();
-    }else{
+    } else {
       channelId = cellId.channel() + 5;
     }
-  }else{
-    if (cellId.depth() == 1){
+  } else {
+    if (cellId.depth() == 1) {
       channelId += cellId.channel() + 9;
-    }else{
+    } else {
       channelId += cellId.channel() + 5 + 9;
     }
   }
-  
 
-  results.emplace_back(HcalTrigTowerDetId(ieta,channelId));
-  results.emplace_back(HcalTrigTowerDetId(ieta,iphi));
+  results.emplace_back(HcalTrigTowerDetId(ieta, channelId));
+  results.emplace_back(HcalTrigTowerDetId(ieta, iphi));
 
   return results;
 }

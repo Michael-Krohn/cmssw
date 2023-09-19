@@ -83,7 +83,7 @@ private:
 };
 
 L1TZDCMapper::L1TZDCMapper(const edm::ParameterSet& ps)
-  : hcalTPSource(consumes<HcalTrigPrimDigiCollection>(ps.getParameter<edm::InputTag>("hcalTPDigis"))) {
+    : hcalTPSource(consumes<HcalTrigPrimDigiCollection>(ps.getParameter<edm::InputTag>("hcalTPDigis"))) {
   // register what you produce
   etToken_ = produces<EtSumBxCollection>();
 
@@ -103,52 +103,51 @@ void L1TZDCMapper::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
 
   edm::Handle<HcalTrigPrimDigiCollection> hcalTPs;
   iEvent.getByToken(hcalTPSource, hcalTPs);
-  
+
   //Check if the hcal tokens are valid
-  if (hcalTPs.isValid()) {      
-    
+  if (hcalTPs.isValid()) {
     //If valid, process
     for (const auto& hcalTp : *hcalTPs) {
-      int ieta = hcalTp.id().ieta();	
+      int ieta = hcalTp.id().ieta();
       uint32_t absIEta = std::abs(ieta);
 
       //absIEta position 42 is used for the ZDC; -42 for ZDCM, +42 for ZDCP
-      if(absIEta != 42) continue;
-      
+      if (absIEta != 42)
+        continue;
+
       int iphi = hcalTp.id().iphi();
       //iphi position 99 is used for the etSums
-      if(iphi != 99) continue;
+      if (iphi != 99)
+        continue;
 
-      //Get number of samples and number of presamples; bx 0 is nPresamples      
+      //Get number of samples and number of presamples; bx 0 is nPresamples
       int nSamples = hcalTp.size();
       int nPresamples = hcalTp.presamples();
-      
+
       for (int ibx = 0; ibx < nSamples; ibx++) {
-	if (ibx >= nPresamples + bxFirst_ && ibx <= nPresamples + bxLast_) {
-	  HcalTriggerPrimitiveSample hcalTpSample = hcalTp.sample(ibx);	  	  
-	  int ietIn = hcalTpSample.compressedEt();
-	  	  
-	  l1t::EtSum tempEt = l1t::EtSum();
-	  tempEt.setHwPt(ietIn);
-	  tempEt.setHwPhi(0.);
+        if (ibx >= nPresamples + bxFirst_ && ibx <= nPresamples + bxLast_) {
+          HcalTriggerPrimitiveSample hcalTpSample = hcalTp.sample(ibx);
+          int ietIn = hcalTpSample.compressedEt();
 
-	  //ieta < 0 is ZDCMinus; > 0 is ZDCPlus
-	  if(ieta < 0){
-	    tempEt.setHwEta(-1.);
-	    tempEt.setType(EtSum::EtSumType::kZDCM);
-	  }
-	  else{
-	    tempEt.setHwEta(1.);
-	    tempEt.setType(EtSum::EtSumType::kZDCP);
-	  }
+          l1t::EtSum tempEt = l1t::EtSum();
+          tempEt.setHwPt(ietIn);
+          tempEt.setHwPhi(0.);
 
-	  //By construction, nPresamples is 0 bx (since presamples span 0 to nPresamples-1)
-	  etsumsReduced.push_back(ibx - nPresamples, CaloTools::etSumP4Demux(tempEt));
-	}	  
+          //ieta < 0 is ZDCMinus; > 0 is ZDCPlus
+          if (ieta < 0) {
+            tempEt.setHwEta(-1.);
+            tempEt.setType(EtSum::EtSumType::kZDCM);
+          } else {
+            tempEt.setHwEta(1.);
+            tempEt.setType(EtSum::EtSumType::kZDCP);
+          }
+
+          //By construction, nPresamples is 0 bx (since presamples span 0 to nPresamples-1)
+          etsumsReduced.push_back(ibx - nPresamples, CaloTools::etSumP4Demux(tempEt));
+        }
       }
     }
-  }
-  else{   
+  } else {
     // If the collection is not valid issue a warning before putting an empty collection
     edm::LogWarning("L1TZDCMapper") << "hcalTps not valid; return empty ZDC Et Sum BXCollection" << std::endl;
   }

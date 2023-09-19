@@ -103,7 +103,7 @@ void HcaluLUTTPGCoder::init(const HcalTopology* top, const HcalTimeSlew* delay) 
   maxDepthHF_ = topo_->maxDepth(HcalForward);
   sizeHF_ = 2 * nHFEta_ * nFi_ * maxDepthHF_;
   sizeZDC_ = 2 * 9;
-  size_t nluts = (size_t)(sizeHB_ + sizeHE_ + sizeHF_ + sizeZDC_*2 + 1);
+  size_t nluts = (size_t)(sizeHB_ + sizeHE_ + sizeHF_ + sizeZDC_ * 2 + 1);
   inputLUT_ = std::vector<HcaluLUTTPGCoder::Lut>(nluts);
   gain_ = std::vector<float>(nluts, 0.);
   ped_ = std::vector<float>(nluts, 0.);
@@ -142,16 +142,16 @@ int HcaluLUTTPGCoder::getLUTId(HcalSubdetector id, int ieta, int iphi, int depth
       retval += maxDepthHF_ * nFi_ * (ieta + lastHFEta_ + nHFEta_);
   } else if (id == HcalOther) {
     retval = sizeHB_ + sizeHE_ + sizeHF_;
-    if (ieta > 0){
-      if (iphi == 1){
+    if (ieta > 0) {
+      if (iphi == 1) {
         retval += depth;
-      }else{
+      } else {
         retval += depth + 5;
       }
-    }else{
-      if (iphi == 1){
+    } else {
+      if (iphi == 1) {
         retval += depth + 9;
-      }else{
+      } else {
         retval += depth + 5 + 9;
       }
     }
@@ -169,16 +169,15 @@ int HcaluLUTTPGCoder::getLUTId(const HcalDetId& detid) const {
 }
 
 int HcaluLUTTPGCoder::getLUTId(const HcalZDCDetId& detid) const {
-  if (detid.section() == HcalZDCDetId::EM){
+  if (detid.section() == HcalZDCDetId::EM) {
     return getLUTId(HcalOther, detid.zside(), 1, detid.channel());
-  }else if (detid.section() == HcalZDCDetId::HAD){
+  } else if (detid.section() == HcalZDCDetId::HAD) {
     return getLUTId(HcalOther, detid.zside(), 2, detid.channel());
-  }else if (detid.section() == HcalZDCDetId::LUM){
+  } else if (detid.section() == HcalZDCDetId::LUM) {
     return getLUTId(HcalOther, detid.zside(), 3, detid.channel());
-  }else {
+  } else {
     return getLUTId(HcalOther, detid.zside(), 4, detid.channel());
   }
-  
 }
 
 void HcaluLUTTPGCoder::update(const char* filename, bool appendMSB) {
@@ -417,8 +416,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
   }
 
   for (const auto& id : metadata->getAllChannels()) {
-    if (id.det() == DetId::Hcal and topo_->valid(id)){
-
+    if (id.det() == DetId::Hcal and topo_->valid(id)) {
       HcalDetId cell(id);
       HcalSubdetector subdet = cell.subdet();
 
@@ -549,10 +547,11 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
                                linearLSB / cosh_ieta(cell.ietaAbs(), cell.depth(), HcalEndcap))),
                   MASK);
             else
-              lut[adc] = (LutElement)std::min(std::max(0,
-                                                       int((adc2fC(adc) - ped) * gain * rcalib * nonlinearityCorrection *
-                                                           containmentCorrection / nominalgain_ / granularity)),
-                                              MASK);
+              lut[adc] =
+                  (LutElement)std::min(std::max(0,
+                                                int((adc2fC(adc) - ped) * gain * rcalib * nonlinearityCorrection *
+                                                    containmentCorrection / nominalgain_ / granularity)),
+                                       MASK);
 
             unsigned int linearizedADC =
                 lut[adc];  // used for bits 12, 13, 14, 15 for Group 0 LUT for LLP time and depth bits that rely on linearized energies
@@ -582,8 +581,8 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
           if (isMasked)
             lut[adc] = 0;
           else {
-            lut[adc] =
-                std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / lsb_ / cosh_ieta_[cell.ietaAbs()])), MASK);
+            lut[adc] = std::min(
+                std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / lsb_ / cosh_ieta_[cell.ietaAbs()])), MASK);
             if (adc > FG_HF_thresholds_[0])
               lut[adc] |= QIE10_LUT_MSB0;
             if (adc > FG_HF_thresholds_[1])
@@ -591,7 +590,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
           }
         }
       }
-    }else if (id.det() == DetId::Calo && id.subdetId() == HcalZDCDetId::SubdetectorId){
+    } else if (id.det() == DetId::Calo && id.subdetId() == HcalZDCDetId::SubdetectorId) {
       HcalZDCDetId cell(id.rawId());
 
       if (cell.section() != HcalZDCDetId::EM && cell.section() != HcalZDCDetId::HAD)
@@ -622,8 +621,8 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
         ped /= 4.0;
         gain /= 4.0;
 
-      const HcalChannelStatus* channelStatus = conditions.getHcalChannelStatus(cell);
-      status = channelStatus->getValue();
+        const HcalChannelStatus* channelStatus = conditions.getHcalChannelStatus(cell);
+        status = channelStatus->getValue();
 
       } else {
         const HcalL1TriggerObject* myL1TObj = conditions.getHcalL1TriggerObject(cell);
@@ -653,17 +652,16 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       lut_ootpu.resize(SIZE, 0);
 
       for (unsigned int adc = 0; adc < SIZE; ++adc) {
-        if (isMasked){
+        if (isMasked) {
           lut[adc] = 0;
           lut_ootpu[adc] = 0;
-        }else {
-          lut[adc] =
-              std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / zdc_lsb_ )), MASK);
+        } else {
+          lut[adc] = std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / zdc_lsb_)), MASK);
           lut_ootpu[adc] =
               std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib * weight / (zdc_lsb_ * 256))), MASK);
         }
       }
-    }else{
+    } else {
       continue;
     }
   }
@@ -693,7 +691,7 @@ void HcaluLUTTPGCoder::adc2Linear(const QIE10DataFrame& df, IntegerCaloSamples& 
     for (int i = 0; i < df.samples(); i++) {
       ics[i] = (lut.at(df[i].adc()) & QIE10_LUT_BITMASK);
     }
-  }else{
+  } else {
     int lutId = getLUTId(HcalZDCDetId(df.id()));
     if (ootpu_lut)
       lutId = lutId + sizeZDC_;
