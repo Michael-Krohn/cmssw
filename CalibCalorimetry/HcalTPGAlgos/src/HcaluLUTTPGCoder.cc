@@ -598,6 +598,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
 
       const HcalQIECoder* channelCoder = conditions.getHcalCoder(cell);
       const HcalQIEShape* shape = conditions.getHcalShape(cell);
+      const HcalPedestal* effPedestals = conditions.getEffectivePedestal(cell);
       HcalCoderDb coder(*channelCoder, *shape);
       const HcalLutMetadatum* meta = metadata->getValues(cell);
 
@@ -610,6 +611,7 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
       Lut& lut_ootpu = inputLUT_[lutId_ootpu];
       float ped = 0;
       float gain = 0;
+      float pedWidth = 0;
       uint32_t status = 0;
 
       if (LUTGenerationMode_) {
@@ -617,9 +619,11 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
         for (auto capId : {0, 1, 2, 3}) {
           ped += calibrations.effpedestal(capId);
           gain += calibrations.LUTrespcorrgain(capId);
+          pedWidth += effPedestals->getWidth(capId);
         }
         ped /= 4.0;
         gain /= 4.0;
+        pedWidth /= 4.0;
 
         const HcalChannelStatus* channelStatus = conditions.getHcalChannelStatus(cell);
         status = channelStatus->getValue();
@@ -656,9 +660,14 @@ void HcaluLUTTPGCoder::update(const HcalDbService& conditions) {
           lut[adc] = 0;
           lut_ootpu[adc] = 0;
         } else {
-          lut[adc] = std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / zdc_lsb_)), MASK);
-          lut_ootpu[adc] =
-              std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib * weight / (zdc_lsb_ * 256))), MASK);
+          if ((adc2fC(adc) - ped) < (pedWidth*5.)) {
+            lut[adc] = 0;
+            lut_ootpu[adc] = 0;
+          } else {
+            lut[adc] = std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib / zdc_lsb_ )), MASK);
+            lut_ootpu[adc] =
+                std::min(std::max(0, int((adc2fC(adc) - ped) * gain * rcalib * weight / (zdc_lsb_ * 256))), MASK);
+          }
         }
       }
     } else {
