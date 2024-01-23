@@ -516,8 +516,9 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
       int sampleTSminus1 = samples[ibin];
 
       if (fix_saturation_ && (sample_saturation.size() > ibin + 1))
-        check_sat = (sample_saturation[ibin + 1] || (sampleTS >= QIE11_MAX_LINEARIZATION_ET) ||
-                     sample_saturation[ibin] || (sampleTSminus1 >= QIE11_MAX_LINEARIZATION_ET));
+        check_sat = (check_sat | sample_saturation[ibin + 1] | (sampleTS > QIE11_MAX_LINEARIZATION_ET));
+//        check_sat = (sample_saturation[ibin + 1] || (sampleTS >= QIE11_MAX_LINEARIZATION_ET) ||
+//                     sample_saturation[ibin] || (sampleTSminus1 >= QIE11_MAX_LINEARIZATION_ET));
 
       if (sampleTS > QIE11_MAX_LINEARIZATION_ET)
         sampleTS = QIE11_MAX_LINEARIZATION_ET;
@@ -553,6 +554,13 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
   IntegerCaloSamples output(samples.id(), tpSamples);
   output.setPresamples(tpPresamples);
 
+  //Hard-coding the peak finding threshold for PFA1'
+  //88 uncompressed -> 10 ADC = 5 GeV
+  //168 uncompressed -> 20 ADC = 10 Gev
+  //248 uncompressed -> 30 ADc = 15 GeV
+  //328 uncompressed -> 40 ADc = 20 GeV
+  theThreshold = 328;
+
   for (unsigned int ibin = 0; ibin < tpSamples; ++ibin) {
     // ibin - index for output TP
     // idx - index for samples + shift - filterPresamples
@@ -580,12 +588,34 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
         output[ibin] = 0;
       }
     } else {
-      output[ibin] = std::min<unsigned int>(sum[idx], QIE11_MAX_LINEARIZATION_ET);
+      bool isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1]);
+      if (!(!force_saturation[idx-1] && !force_saturation[idx] && !force_saturation[idx+1])){
+        if (force_saturation[idx])
+          isPeak = force_saturation[idx];
+        else
+          isPeak = false;
+      }
+      if (isPeak) {
+        output[ibin] = std::min<unsigned int>(sum[idx], QIE11_MAX_LINEARIZATION_ET);
 
-      if (fix_saturation_ && force_saturation[idx] && ids.size() == 2)
-        output[ibin] = QIE11_MAX_LINEARIZATION_ET / 2;
-      else if (fix_saturation_ && force_saturation[idx])
-        output[ibin] = QIE11_MAX_LINEARIZATION_ET;
+
+        if (fix_saturation_ && force_saturation[idx] && ids.size() == 2)
+          output[ibin] = QIE11_MAX_LINEARIZATION_ET / 2;
+        else if (fix_saturation_ && force_saturation[idx])
+          output[ibin] = QIE11_MAX_LINEARIZATION_ET;
+      }
+      else if (!isPeak && ((sum[idx - 1] >= sum[idx] && sum[idx - 1] > theThreshold) || (sum[idx + 1] > sum[idx] && sum[idx + 1] > theThreshold) || (force_saturation[idx-1]) || (force_saturation[idx+1]))) {
+        output[ibin] = 0;
+      }
+      else {
+        output[ibin] = std::min<unsigned int>(sum[idx], QIE11_MAX_LINEARIZATION_ET);
+
+
+        if (fix_saturation_ && force_saturation[idx] && ids.size() == 2)
+          output[ibin] = QIE11_MAX_LINEARIZATION_ET / 2;
+        else if (fix_saturation_ && force_saturation[idx])
+          output[ibin] = QIE11_MAX_LINEARIZATION_ET;
+      }
     }
     // peak-finding is not applied for FG bits
     // compute(msb) returns two bits (MIP). compute(timingTDC,ids) returns 6 bits (1 depth, 1 prompt, 1 delayed 01, 1 delayed 10, 2 reserved)
