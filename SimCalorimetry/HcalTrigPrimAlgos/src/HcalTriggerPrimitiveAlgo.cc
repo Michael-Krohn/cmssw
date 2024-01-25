@@ -26,6 +26,8 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo(bool pf,
                                                    uint32_t FG_threshold,
                                                    const std::vector<uint32_t>& FG_HF_thresholds,
                                                    uint32_t ZS_threshold,
+                                                   double peakFindingThreshold,
+                                                   bool usePeakFindingThresholdFromDB,
                                                    int numberOfSamples,
                                                    int numberOfPresamples,
                                                    int numberOfFilterPresamplesHBQIE11,
@@ -39,7 +41,8 @@ HcalTriggerPrimitiveAlgo::HcalTriggerPrimitiveAlgo(bool pf,
                                                    uint32_t PMT_NoiseThreshold)
     : incoder_(nullptr),
       outcoder_(nullptr),
-      theThreshold(0),
+      peakFindingThreshold_(peakFindingThreshold),
+      usePeakFindingThresholdFromDB_(usePeakFindingThresholdFromDB),
       peakfind_(pf),
       weights_(w),
       latency_(latency),
@@ -405,10 +408,10 @@ void HcalTriggerPrimitiveAlgo::analyze(IntegerCaloSamples& samples, HcalTriggerP
       bool isPeak = false;
       switch (peak_finder_algorithm_) {
         case 1:
-          isPeak = (samples[idx] > samples[idx - 1] && samples[idx] >= samples[idx + 1] && samples[idx] > theThreshold);
+          isPeak = (samples[idx] > samples[idx - 1] && samples[idx] >= samples[idx + 1] && samples[idx] > peakFindingThreshold_);
           break;
         case 2:
-          isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1] && sum[idx] > theThreshold);
+          isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1] && sum[idx] > peakFindingThreshold_);
           break;
         default:
           break;
@@ -523,7 +526,7 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
       if (sampleTS > QIE11_MAX_LINEARIZATION_ET)
         sampleTS = QIE11_MAX_LINEARIZATION_ET;
 
-      if (sampleTSminus1 > QIE11_MAX_LINEARIZATION_ET)
+      if (sampleTSminus1 > QIE11_MAX_LINEARIZATION_ET || sample_saturation[ibin])
         sampleTSminus1 = QIE11_MAX_LINEARIZATION_ET;
 
       // Usually use a segmentation factor of 1.0 but for ieta >= 21 use 2
@@ -554,12 +557,8 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
   IntegerCaloSamples output(samples.id(), tpSamples);
   output.setPresamples(tpPresamples);
 
-  //Hard-coding the peak finding threshold for PFA1'
-  //88 uncompressed -> 10 ADC = 5 GeV
-  //168 uncompressed -> 20 ADC = 10 Gev
-  //248 uncompressed -> 30 ADc = 15 GeV
-  //328 uncompressed -> 40 ADc = 20 GeV
-  theThreshold = 328;
+  // Code will be added here to take peakFindingThreshold from conditions DB
+  //if (usePeakFindingThresholdFromDB_)peakFindingThreshold_ = ....
 
   for (unsigned int ibin = 0; ibin < tpSamples; ++ibin) {
     // ibin - index for output TP
@@ -574,7 +573,7 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
 
     //Only run the peak-finder when the PFA2 FIR filter is running, which corresponds to weights = 1
     if (weightsQIE11_[theIeta][0] == 255) {
-      bool isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1] && sum[idx] > theThreshold);
+      bool isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1] && sum[idx] > peakFindingThreshold_);
       if (isPeak) {
         output[ibin] = std::min<unsigned int>(sum[idx], QIE11_MAX_LINEARIZATION_ET);
 
@@ -590,7 +589,7 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
     } else {
       bool isPeak = (sum[idx] > sum[idx - 1] && sum[idx] >= sum[idx + 1]);
       if (!(!force_saturation[idx-1] && !force_saturation[idx] && !force_saturation[idx+1])){
-        if (force_saturation[idx])
+        if (force_saturation[idx] && !force_saturation[idx-1])
           isPeak = force_saturation[idx];
         else
           isPeak = false;
@@ -604,7 +603,7 @@ void HcalTriggerPrimitiveAlgo::analyzeQIE11(IntegerCaloSamples& samples,
         else if (fix_saturation_ && force_saturation[idx])
           output[ibin] = QIE11_MAX_LINEARIZATION_ET;
       }
-      else if (!isPeak && ((sum[idx - 1] >= sum[idx] && sum[idx - 1] > theThreshold) || (sum[idx + 1] > sum[idx] && sum[idx + 1] > theThreshold) || (force_saturation[idx-1]) || (force_saturation[idx+1]))) {
+      else if (!isPeak && ((sum[idx - 1] >= sum[idx] && sum[idx - 1] > peakFindingThreshold_) || (sum[idx + 1] > sum[idx] && sum[idx + 1] > peakFindingThreshold_) || (force_saturation[idx-1]) || (force_saturation[idx+1]))) {
         output[ibin] = 0;
       }
       else {
