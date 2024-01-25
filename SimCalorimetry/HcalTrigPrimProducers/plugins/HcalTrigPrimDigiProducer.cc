@@ -85,6 +85,8 @@ HcalTrigPrimDigiProducer::HcalTrigPrimDigiProducer(const edm::ParameterSet& ps)
                ps.getParameter<uint32_t>("FG_threshold"),
                ps.getParameter<std::vector<uint32_t> >("FG_HF_thresholds"),
                ps.getParameter<uint32_t>("ZS_threshold"),
+               ps.getParameter<double>("peakFindingThreshold"),
+               ps.getParameter<bool>("usePeakFindingThresholdFromDB"),
                ps.getParameter<int>("numberOfSamples"),
                ps.getParameter<int>("numberOfPresamples"),
                ps.getParameter<int>("numberOfFilterPresamplesHBQIE11"),

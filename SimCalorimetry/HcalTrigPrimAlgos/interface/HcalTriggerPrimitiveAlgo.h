@@ -32,6 +32,8 @@ public:
                            uint32_t FG_threshold,
                            const std::vector<uint32_t>& FG_HF_thresholds,
                            uint32_t ZS_threshold,
+                           double peakFindingThreshold,
+                           bool usePeakFindingThresholdFromDB,
                            int numberOfSamples,
                            int numberOfPresamples,
                            int numberOfFilterPresamplesHBQIE11,
@@ -133,7 +135,8 @@ private:
   const HcaluLUTTPGCoder* incoder_;
   const HcalTPGCompressor* outcoder_;
   const HcalDbService* conditions_;
-  double theThreshold;
+  double peakFindingThreshold_;
+  bool usePeakFindingThresholdFromDB_;
   bool peakfind_;
   std::vector<double> weights_;
   std::array<std::array<int, 2>, 29> weightsQIE11_;
