@@ -15,6 +15,7 @@
 #include "DataFormats/Common/interface/SortedCollection.h"
 #include "DarkPhoton/MuAnalyzer/interface/EventInfo.h"
 
+class TTree;
 class TH1F;
 class TH2F;
 
@@ -42,9 +43,31 @@ public:
   void IncCutFlow(double weight);
   void IncCutFlow(double weight, int nCuts);
   void FillHists(EventInfo);
+  void FillTree(EventInfo);
 
 public:
   int cutProgress;
+  int hitsOverThresh;
+  int depthsFound;
+  int iEta;
+  int charge;
+  double eta;
+  double phi;
+  double cellDetaDepth[7];
+  double cellDphiDepth[7];
+  double hitEnergies[7];
+  double neighborHitEnergies[7];
+  double neighborHitEnergiesPhi[7];
+  double xShiftEnergies[7];
+  double yShiftEnergies[7];
+  double zShiftEnergies[7];
+  double xShifts[7];
+  double yShifts[7];
+  double zShifts[7];
+  double pt;
+  double vertexZ; 
+
+  TTree* m_treeVariables;
   TH1F* m_eventCount;
   TH1F* m_cutProgress;
   TH1F* m_MuonTrackMass;
@@ -53,9 +76,15 @@ public:
   TH1F* m_probePt;
   TH1F* m_CSCMinDR;
   TH1F* m_CSCMinDepthDr[4];
+  TH1F* m_CSCRecMinDepthDr[4];
+  TH1F* m_RpcMinDepthDr[4];
   TH1F* m_CSCOtherStationsGood[4];
   TH2F* m_CSCMissingDepthDr[4];
   TH2F* m_CSCGoodDepthDr[4];
+  TH2F* m_CSCRecMissingDepthDr[4];
+  TH2F* m_CSCRecGoodDepthDr[4];
+  TH2F* m_RpcMissingDepthDr[4];
+  TH2F* m_RpcGoodDepthDr[4];
   TH2F* m_CSCOtherGoodMissingDepth[4];
   //Tracker track location
   TH2F* m_histogram_TrackerTrack_EtaPhi_negEta;

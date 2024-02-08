@@ -24,7 +24,7 @@
 
 class CSC {
 public:
-  CSC(bool loadSFs=false);
+  CSC(bool loadSFs = false);
 
   void ExtrapolateTrackToCSC(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,
@@ -49,10 +49,19 @@ public:
   void ExtrapolateTrackToCSC(const edm::Event& iEvent,
                              const edm::EventSetup& iSetup,
                              edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                             edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken,
                              edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken,
                              const reco::Track* iTrack,
                              reco::TransientTrack tracksToVertex,
                              GlobalPoint VertexPosition);
+  void ExtrapolateTrackToDTs(const edm::Event& iEvent,
+                             const edm::EventSetup& iSetup,
+                             edm::EDGetTokenT<DTRecSegment4DCollection> DTSegment_Label,
+                             edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken,
+                             const reco::Track* iTrack,
+                             reco::TransientTrack tracksToVertex,
+                             GlobalPoint VertexPosition);
+
   void ExtrapolateMuonToCSC(const edm::Event& iEvent,
                             const edm::EventSetup& iSetup,
                             edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
@@ -63,7 +72,7 @@ public:
                                 const edm::EventSetup& iSetup,
                                 edm::EDGetToken cscSimHitsToken,
                                 const reco::Track* selectedTrack);
- 
+
   double GetMissingHitWeight(int station, double eta, double phi);
 
   GlobalPoint MuonGlobalPoint;
@@ -82,9 +91,22 @@ public:
   double minDR;
   int nSimCSCHits;
   double CSCdEta;
+  int nCloseHits[4];
   double minDrByDepth[4];
+  double minRecDrByDepth[4];
+  double minRpcDrByDepth[4];
+  double secMinDrByDepth[4];
+  double minDPhiByDepth[4];
+  double secMinDPhiByDepth[4];
+  double minDEtaByDepth[4];
+  double minDZByDepth[4];
+  double minDtDrByDepth[4];
+  double minDtDPhiByDepth[4];
+  double minDtDEtaByDepth[4];
+  double minDtDZByDepth[4];
   double minSimCSCDr;
   double CSCdPhi;
+  double rpcMinDR;
   double recMinDR;
   double minDR_Muon;
   double minTotalImpactParameter;

@@ -57,7 +57,8 @@ public:
   double GetIsolation(const edm::Event&,
                       const edm::EventSetup&,
                       edm::EDGetTokenT<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>>,
-                      const reco::TransientTrack);
+                      const reco::TransientTrack,
+		      double coneSize=0.2);
   double MuonHitEnergy;
   int MuonHitDepth;
   double MuonMinDr;
@@ -72,6 +73,12 @@ public:
   double Tdphi;
   double cellDetaByDepth[7];
   double cellDphiByDepth[7];
+  double cellXShiftsByDepth[7];
+  double cellYShiftsByDepth[7];
+  double cellZShiftsByDepth[7];
+  double cellXShiftsEnergy[7];
+  double cellYShiftsEnergy[7];
+  double cellZShiftsEnergy[7];
   double cellEtaEdgeDistance[7];
   double cellPhiEdgeDistance[7];
   double BigConeEnergy;
@@ -132,6 +139,17 @@ private:
   int GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom,
                                  HcalDetId* TrackAlignedCells,
                                  reco::TransientTrack muTrack);
+  int GetTransientProjectedCellsNeighborX(const CaloSubdetectorGeometry* HEGeom,
+                                          HcalDetId* TrackAlignedCells,
+                                          reco::TransientTrack muTrack);
+  int GetTransientProjectedCellsNeighborY(const CaloSubdetectorGeometry* HEGeom,
+                                          HcalDetId* TrackAlignedCells,
+                                          reco::TransientTrack muTrack);
+  int GetTransientProjectedCellsNeighborZ(const CaloSubdetectorGeometry* HEGeom,
+                                          HcalDetId* TrackAlignedCells,
+					  HcalDetId* unShiftedCells,
+                                          reco::TransientTrack muTrack);
 };
+
 
 #endif

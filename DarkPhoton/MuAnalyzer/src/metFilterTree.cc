@@ -13,7 +13,7 @@
 metFilterTree::metFilterTree() {}
 
 void metFilterTree::book(TFileDirectory histFolder) {
-  failingEvents = histFolder.make<TTree>("failingEventInfo","Tree containing event number and failed path");
+  failingEvents = histFolder.make<TTree>("failingEventInfo", "Tree containing event number and failed path");
   failingEvents->Branch("run", &m_run);
   failingEvents->Branch("lumi", &m_lumi);
   failingEvents->Branch("event", &m_event);
@@ -21,8 +21,7 @@ void metFilterTree::book(TFileDirectory histFolder) {
   failingEvents->Branch("foundTrig", &m_foundTrig);
 }
 
-void metFilterTree::FillTree(int run, int lumi, int event, std::string path, bool foundTrig) 
-{
+void metFilterTree::FillTree(int run, int lumi, int event, std::string path, bool foundTrig) {
   m_lumi = lumi;
   m_run = run;
   m_event = event;

@@ -29,11 +29,15 @@ public:
   double minDR;
   double ProbeEta;
   double ProbePhi;
+  int probeCharge;
+  double vertexZ;
   double probePt;
   double heConeEnergy;
   double probeHcalIso;
   double tagHcalIso;
   double minDrByDepth[4];
+  double minRecDrByDepth[4];
+  double minRpcDrByDepth[4];
   int probeiEta;
   int centerInCone;
   int centerOutOfCone;
@@ -50,6 +54,7 @@ public:
   int cellsFound;
   int expectedHits;
   bool crossDepths;
+  int hitsOver0p2;
   double etaEdgeMin;
   double phiEdgeMin;
   double hitEnergies[7];
@@ -57,10 +62,15 @@ public:
   double randHitEnergies[7];
   double neighborHitEnergies[7];
   double neighborHitEnergiesPhi[7];
+  double xShiftEnergies[7];
+  double yShiftEnergies[7];
+  double zShiftEnergies[7];
+  double xShifts[7];
+  double yShifts[7];
+  double zShifts[7];
   double cellCenterDEta[7];
   double cellCenterDPhi[7];
   double cellEtaEdgeDistance[7];
   double cellPhiEdgeDistance[7];
-  int probeCharge;
 };
 #endif

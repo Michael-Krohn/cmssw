@@ -152,9 +152,9 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso) {
   m_TagEcalIso = histFolder.make<TH1F>("TagEcalIsolation", "; Ecal Energy within cone (GeV); Events", 200, 0, 100);
   //Jet Histograms
   m_NJets = histFolder.make<TH1F>("Njets", "; Number of Jets in Event; Events", 10, -0.5, 9.5);
-  m_nLooseBTagJets = histFolder.make<TH1F>("nLooseBTagJets","; Loose B Tagged Jets; Events", 10,-0.5,9.5);
-  m_nMedBTagJets = histFolder.make<TH1F>("nMedBTagJets","; Medium B Tagged Jets; Events", 10,-0.5,9.5); 
-  m_nTightBTagJets = histFolder.make<TH1F>("nTightBTagjets","; Tight B Tagged Jets; Events", 10,-0.5,9.5);
+  m_nLooseBTagJets = histFolder.make<TH1F>("nLooseBTagJets", "; Loose B Tagged Jets; Events", 10, -0.5, 9.5);
+  m_nMedBTagJets = histFolder.make<TH1F>("nMedBTagJets", "; Medium B Tagged Jets; Events", 10, -0.5, 9.5);
+  m_nTightBTagJets = histFolder.make<TH1F>("nTightBTagjets", "; Tight B Tagged Jets; Events", 10, -0.5, 9.5);
   m_CaloSumJetE = histFolder.make<TH2F>(
       "CaloSumJetE", ";ECAL+HCAL Energy Sum (GeV); Energy of Nearest Jet (GeV); Events", 100, 0, 200, 100, 0, 200);
   m_HCALIsoJetDr =
@@ -277,9 +277,9 @@ void MuPXHistograms::book(TFileDirectory histFolder, bool binIso) {
   m_TrigSF = histFolder.make<TH1F>("TrigSF", ";Tight muon Trigger scale factor; Events", 100, 0.9, 1.1);
   m_TrigSFup = histFolder.make<TH1F>("TrigSFup", ";Tight muon Trigger scale factor up; Events", 100, 0.9, 1.1);
   m_TrigSFdown = histFolder.make<TH1F>("TrigSFdown", ";Tight muon Trigger scale factor down; Events", 100, 0.9, 1.1);
-  m_totalMET = histFolder.make<TH1F>("totalMET",";MET (GeV); Events", 200,0,200);
-  m_muMetMT = histFolder.make<TH1F>("muMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
-  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
+  m_totalMET = histFolder.make<TH1F>("totalMET", ";MET (GeV); Events", 200, 0, 200);
+  m_muMetMT = histFolder.make<TH1F>("muMetMT", ";Tag muon/MET MT (GeV); Events", 200, 0, 200);
+  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT", ";Tag muon/MET MT (GeV); Events", 200, 0, 200);
   m_matchGenEle = histFolder.make<TH1F>("MatchGenEle", ";Match Probe to Gen Electron; Events", 2, -0.5, 1.5);
   m_matchGenEle->GetXaxis()->SetBinLabel(1, "Fail Matching");
   m_matchGenEle->GetXaxis()->SetBinLabel(2, "Pass Matching");
@@ -387,8 +387,8 @@ void MuPXHistograms::FillHists(MuPXEventInfo info, bool binIso, bool isMC, bool 
   m_HitsOverThresh->Fill(info.hitsOverThresh, info.eventWeight);
   m_ConeEnergy->Fill(info.coneEnergy, info.eventWeight);
   m_HECellsFound->Fill(info.nCellsFound, info.eventWeight);
-  m_totalMET->Fill(info.pfMet_pt,info.eventWeight);
-  m_muMetMT->Fill(info.muMetMT,info.eventWeight);
+  m_totalMET->Fill(info.pfMet_pt, info.eventWeight);
+  m_muMetMT->Fill(info.muMetMT, info.eventWeight);
   if (fabs(info.iEta) > 20) {
     m_BigEtadEtadPhi->Fill(info.cellCenterDEta, info.cellCenterDPhi, info.eventWeight);
   } else {

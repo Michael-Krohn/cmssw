@@ -22,17 +22,16 @@
 #include "TTree.h"
 #include <iostream>
 
-SimHistograms::SimHistograms() {
-}
+SimHistograms::SimHistograms() {}
 
 void SimHistograms::book(TFileDirectory histFolder) {
   m_initialMuE = histFolder.make<TH1F>("MuInitialE", ";Energy (GeV);Events", 200, 0, 200);
   m_finalMuE = histFolder.make<TH1F>("MuFinalE", ";Energy (GeV);Events", 200, 0, 200);
-  m_initialMuEt = histFolder.make<TH1F>("MuInitialEt", "; Et (GeV); Events", 200,0,200);
+  m_initialMuEt = histFolder.make<TH1F>("MuInitialEt", "; Et (GeV); Events", 200, 0, 200);
 }
 
 void SimHistograms::FillHists(SigEventInfo info) {
-  m_initialMuE->Fill(info.dbremInitialE,info.eventWeight);
-  m_finalMuE->Fill(info.dbremFinalE,info.eventWeight);
-  m_initialMuEt->Fill(info.dbremInitialEt,info.eventWeight);
+  m_initialMuE->Fill(info.dbremInitialE, info.eventWeight);
+  m_finalMuE->Fill(info.dbremFinalE, info.eventWeight);
+  m_initialMuEt->Fill(info.dbremInitialEt, info.eventWeight);
 }

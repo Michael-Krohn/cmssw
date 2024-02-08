@@ -117,6 +117,7 @@
 #include "DarkPhoton/MuAnalyzer/interface/HCAL.h"
 #include "DarkPhoton/MuAnalyzer/interface/ECAL.h"
 #include "DarkPhoton/MuAnalyzer/interface/Jets.h"
+#include "DarkPhoton/MuAnalyzer/interface/ZptCorrection.h"
 
 // class declaration
 //
@@ -143,12 +144,14 @@ private:
 
   bool isTrackMatchedToMuon(const edm::Event&, std::vector<const reco::Track*>::const_iterator&, MCHistograms);
   bool MatchMotherToTrack(const edm::Event& iEvent,
-                          math::XYZTLorentzVectorD mother,
+                          const reco::Muon* mother,
                           edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,
                           SigEventInfo info);
-  double MatchTrackToGenMuon(const edm::Event& iEvent,
-                             const reco::Track* selTrack,
-                             edm::EDGetToken m_genParticleToken);
+  std::vector<int> GetGenParticlesInCone(const edm::Event& iEvent,
+						    const reco::Track* selTrack,
+						    edm::EDGetToken m_genParticleToken);
+
+  double MatchTrackToGenMuon(const edm::Event& iEvent, const reco::Track* selTrack, edm::EDGetToken m_genParticleToken);
   bool MatchTrackToMuon(const edm::Event& iEvent,
                         math::XYZTLorentzVectorD mother,
                         Muons myMuons,
@@ -177,6 +180,8 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
   edm::EDGetToken m_genParticleToken;
   edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label;
+  edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHit_Label;
+  edm::EDGetTokenT<DTRecSegment4DCollection> DTSegment_Label;
   edm::EDGetToken m_cscSimHits;
   //    edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
   edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken;
@@ -192,29 +197,38 @@ private:
   edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
   std::vector<std::string> m_muonPathsToPass;
   const reco::Track* selectedTrack;
+  const reco::Track* selectedTagTrack;
   const reco::Muon* selectedMuon;
+  const reco::Muon* matchedMuon;
   double hcalIso;
+  double hcalIso0p3;
+  double hcalIso0p4;
   edm::EDGetTokenT<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>> HBHERecHit_Label;
   edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label;
   edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label;
   edm::EDGetToken m_caloJet_label;
-  std::vector<edm::EDGetTokenT<reco::JetTagCollection> > m_jetTagTokens;
+  std::vector<edm::EDGetTokenT<reco::JetTagCollection>> m_jetTagTokens;
   edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
   edm::EDGetToken m_PFMetToken;
   edm::EDGetToken m_PUInfoToken;
   edm::EDGetToken m_theSTAMuonLabel;
   edm::EDGetToken m_displacedSTAMuonLabel;
+  edm::EDGetToken m_refittedSTAMuonLabel;
   edm::EDGetToken m_pfJetCollection_label;
   bool m_isMC;
-  bool m_isSig;
   bool m_hasDpho;
+  bool m_ecalBrem;
   bool m_sameSign;
+  bool m_offPeak;
   bool m_ttbarCR;
   bool m_missingCSCFilter;
   bool m_highHcalCR;
+  bool m_tagAligned;
+  bool m_studyBarrel;
   double m_scaleFactor;
   std::string m_binSFsfname;
   bool m_runRandomTrackEfficiency;
+  bool noBrem;
   double standaloneE;
   double weight_;
   double nPUmean_;
@@ -222,7 +236,7 @@ private:
   double diMuonMass;
   double probeTIP;
   double probeLIP;
-  std::map<int,std::vector<int>> metFailingEvents;
+  std::map<int, std::vector<int>> metFailingEvents;
   //DBrem binning scale factors
   std::map<int, TH1F*> binningSFs;
   //pileup reweighting
@@ -237,6 +251,7 @@ private:
 
   edm::Handle<reco::CaloJetCollection> caloJets;
   MCHistograms allEvents;
+  MCHistograms noBremEvents;
   MCHistograms gen;
   MCHistograms genAccepted;
   MCHistograms preSelectedEvents;
@@ -244,6 +259,7 @@ private:
   MCHistograms failSig;
   MCHistograms totalDisappear;
   MCHistograms totalDisappearLowEcal;
+  MCHistograms totalDisappearNoHcalIso;
   MCHistograms passSigNearbyCSC;
   MCHistograms partialDisappear;
   MCHistograms partialDisappearLowEcal;
@@ -267,6 +283,8 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       primaryVertices_Label(
           consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
       CSCSegment_Label(consumes<CSCSegmentCollection>(iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
+      CSCRecHit_Label(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitsLabel"))),
+      DTSegment_Label(consumes<DTRecSegment4DCollection>(iConfig.getParameter<edm::InputTag>("DTSegmentLabel"))),
       //  CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
       rpcRecHitToken(consumes<RPCRecHitCollection>(iConfig.getParameter<edm::InputTag>("RPCRecHitTag"))),
       HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>>(
@@ -277,18 +295,23 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
           consumes<EcalRecHitCollection>(iConfig.getParameter<edm::InputTag>("EBRecHits"))),
       m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
       m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
-      m_PFMetToken(consumes<std::vector<reco::PFMET>> (iConfig.getParameter<edm::InputTag>("met"))),
+      m_PFMetToken(consumes<std::vector<reco::PFMET>>(iConfig.getParameter<edm::InputTag>("met"))),
       m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
       m_displacedSTAMuonLabel(
           consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("DisplacedStandaloneTracks"))),
+      m_refittedSTAMuonLabel(
+          consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("RefittedStandaloneTracks"))),
       m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
       m_isMC(iConfig.getUntrackedParameter<bool>("isMC", true)),
-      m_isSig(iConfig.getUntrackedParameter<bool>("isSig", false)),
       m_hasDpho(iConfig.getUntrackedParameter<bool>("hasDpho", false)),
-      m_sameSign(iConfig.getUntrackedParameter<bool>("sameSign",false)),
-      m_ttbarCR(iConfig.getUntrackedParameter<bool>("ttbarCR",false)),
-      m_missingCSCFilter(iConfig.getUntrackedParameter<bool>("missingCSC",false)),
+      m_ecalBrem(iConfig.getUntrackedParameter<bool>("ecalBrem", false)),
+      m_sameSign(iConfig.getUntrackedParameter<bool>("sameSign", false)),
+      m_offPeak(iConfig.getUntrackedParameter<bool>("offPeakCR", false)),
+      m_ttbarCR(iConfig.getUntrackedParameter<bool>("ttbarCR", false)),
+      m_missingCSCFilter(iConfig.getUntrackedParameter<bool>("missingCSC", false)),
       m_highHcalCR(iConfig.getUntrackedParameter<bool>("highHcalCr", false)),
+      m_tagAligned(iConfig.getUntrackedParameter<bool>("tagAlignedCr", false)),
+      m_studyBarrel(iConfig.getUntrackedParameter<bool>("studyBarrelMuons", false)),
       m_scaleFactor(iConfig.getUntrackedParameter<double>("scaleFactor", 2000)),
       m_binSFsfname(iConfig.getUntrackedParameter<std::string>("binSFsfname", "")),
       m_runRandomTrackEfficiency(iConfig.getUntrackedParameter<bool>("runRandomTrackEfficiency", false)) {
@@ -322,13 +345,15 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       }
       dbremBinSFs->Close();
     }
-  } 
+  }
   m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
   m_trigEventToken = consumes<trigger::TriggerEvent>(edm::InputTag("hltTriggerSummaryAOD"));
   m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
-  m_jetTagTokens = edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag> >("btagAlgos"),[this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag); });
+  m_jetTagTokens =
+      edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag>>("btagAlgos"),
+                            [this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag); });
 
-  if(m_isMC){
+  if (m_isMC) {
     TFile* puFile = TFile::Open(
         "/local/cms/user/revering/datafiles/PileupHists/PileupHistogram-goldenJSON-13tev-2018-69200ub-99bins.root");
     fPUDataHist_ = (TH1F*)puFile->Get("pileup");
@@ -358,36 +383,39 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
     puWeightUpHist_ = (TH1F*)fPUDataUpHist_->Clone();
     puWeightDownHist_ = (TH1F*)fPUDataDownHist_->Clone();
   }
- 
-  std::string metFname = iConfig.getUntrackedParameter<std::string>("metFailName","");
-  if(metFname!="")
-  {
-     TFile* metFailingFile = TFile::Open(iConfig.getUntrackedParameter<std::string>("metFailName","").c_str());
-     TTree* metFailingTree = (TTree*)metFailingFile->Get("myMetFilter/failingEvents/failingEventInfo");
-     int metFailLumi, metFailEvent; 
-     metFailingTree->SetBranchAddress("lumi",&metFailLumi);
-     metFailingTree->SetBranchAddress("event",&metFailEvent);
-     for(int eventNum=0; eventNum<metFailingTree->GetEntries();eventNum++)
-     {
-        metFailingTree->GetEntry(eventNum);
-        if(metFailingEvents.count(metFailLumi)==0){metFailingEvents[metFailLumi];}
-        metFailingEvents[metFailLumi].push_back(metFailEvent);
-     }
-     metFailingFile->Close();
+
+  noBrem=false;
+  std::string metFname = iConfig.getUntrackedParameter<std::string>("metFailName", "");
+  if (metFname != "") {
+    TFile* metFailingFile = TFile::Open(iConfig.getUntrackedParameter<std::string>("metFailName", "").c_str());
+    TTree* metFailingTree = (TTree*)metFailingFile->Get("myMetFilter/failingEvents/failingEventInfo");
+    int metFailLumi, metFailEvent;
+    metFailingTree->SetBranchAddress("lumi", &metFailLumi);
+    metFailingTree->SetBranchAddress("event", &metFailEvent);
+    for (int eventNum = 0; eventNum < metFailingTree->GetEntries(); eventNum++) {
+      metFailingTree->GetEntry(eventNum);
+      if (metFailingEvents.count(metFailLumi) == 0) {
+        metFailingEvents[metFailLumi];
+      }
+      metFailingEvents[metFailLumi].push_back(metFailEvent);
+    }
+    metFailingFile->Close();
   }
 
-  allEvents.book(fs->mkdir("allEvents"),m_isMC);
-  genAccepted.book(fs->mkdir("genAccepted"),m_isMC);
-  gen.book(fs->mkdir("genInfo"),m_isMC);
-  preSelectedEvents.book(fs->mkdir("preSelected"),m_isMC);
-  failSig.book(fs->mkdir("failSig"),m_isMC);
-  lowHits.book(fs->mkdir("lowHits"),m_isMC);
-  totalDisappear.book(fs->mkdir("totalDisappear"),m_isMC);
-  totalDisappearLowEcal.book(fs->mkdir("totalDisappearLowEcal"),m_isMC);
-  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"),m_isMC);
-  partialDisappear.book(fs->mkdir("partialDisappear"),m_isMC);
-  partialDisappearLowEcal.book(fs->mkdir("oartialDisappearLowEcal"),m_isMC);
-  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"),m_isMC);
+  allEvents.book(fs->mkdir("allEvents"), m_isMC);
+  noBremEvents.book(fs->mkdir("noBremEvents"), m_isMC);
+  genAccepted.book(fs->mkdir("genAccepted"), m_isMC);
+  gen.book(fs->mkdir("genInfo"), m_isMC);
+  preSelectedEvents.book(fs->mkdir("preSelected"), m_isMC);
+  failSig.book(fs->mkdir("failSig"), m_isMC);
+  lowHits.book(fs->mkdir("lowHits"), m_isMC);
+  totalDisappear.book(fs->mkdir("totalDisappear"), m_isMC, 1);
+  totalDisappearLowEcal.book(fs->mkdir("totalDisappearLowEcal"), m_isMC);
+  totalDisappearNoHcalIso.book(fs->mkdir("totalDisappearNoHcalIso"), m_isMC);
+  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"), m_isMC);
+  partialDisappear.book(fs->mkdir("partialDisappear"), m_isMC);
+  partialDisappearLowEcal.book(fs->mkdir("oartialDisappearLowEcal"), m_isMC);
+  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"), m_isMC);
 }
 
 SigAnalyzer::~SigAnalyzer() {
@@ -414,40 +442,58 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   ECAL myECAL;
   SigEventInfo info;
   //if(!m_isMC){
-  if(!info.passTriggers(iEvent,m_trigResultsToken,m_trigEventToken,m_muonPathsToPass)) return;
+  if (!info.passTriggers(iEvent, m_trigResultsToken, m_trigEventToken, m_muonPathsToPass))
+    return;
   //}
+  noBrem=false;
   allEvents.ResetCutFlow();
+  noBremEvents.ResetCutFlow();
   genAccepted.ResetCutFlow();
+  totalDisappear.ResetCutFlow();
   edm::Handle<float> dbremweight, dbremInitialE, dbremFinalE, dbremAngle, dbremX, dbremY, dbremZ;
   bool genAccept = false;
-  if(m_isMC){
+  if (m_isMC) {
     if (m_hasDpho) {
       iEvent.getByToken(m_dbremweighttoken, dbremweight);
       edm::Handle<GenEventInfoProduct> eventInfo;
       iEvent.getByToken(m_genInfoToken, eventInfo);
       weight_ = eventInfo->weight();
       allEvents.IncCutFlow(weight_);
-      if (*dbremweight > 0) {
-        iEvent.getByToken(m_dbremFinalEToken, dbremFinalE);
+      noBremEvents.IncCutFlow(weight_);
+      if (*dbremweight>0) 
+      {
         iEvent.getByToken(m_dbremInitialEToken, dbremInitialE);
         iEvent.getByToken(m_dbremAngleToken, dbremAngle);
         iEvent.getByToken(m_dbremXToken, dbremX);
         iEvent.getByToken(m_dbremYToken, dbremY);
         iEvent.getByToken(m_dbremZToken, dbremZ);
-        weight_ = *dbremweight * weight_;
+        iEvent.getByToken(m_dbremFinalEToken, dbremFinalE);
         info.dbremWeight = *dbremweight * m_scaleFactor;
-	double hyp = sqrt(*dbremX*(*dbremX)+*dbremY*(*dbremY)+*dbremZ*(*dbremZ));
-	double dt = sqrt(*dbremX*(*dbremX)+*dbremY*(*dbremY));
-	double sinTheta = dt/hyp;
-	double et = *dbremInitialE*sinTheta;
-	info.dbremInitialEt=et;
+	if(*dbremweight>0){weight_ = *dbremweight * weight_;}
+        double hyp = sqrt(*dbremX * (*dbremX) + *dbremY * (*dbremY) + *dbremZ * (*dbremZ));
+        double dt = sqrt(*dbremX * (*dbremX) + *dbremY * (*dbremY));
+        double sinTheta = dt / hyp;
+        double et = *dbremInitialE * sinTheta;
+        info.dbremInitialEt = et;
         info.dbremFinalE = *dbremFinalE;
-	info.dbremInitialE = *dbremInitialE;
-        if (*dbremweight > 0.01) {
-          return;
-        }
-        if (*dbremInitialE < 20) {
-          return;
+        info.dbremInitialE = *dbremInitialE;
+        GlobalPoint vtx(*dbremX / 10., *dbremY / 10., *dbremZ / 10.);
+        info.vtxZ = fabs(vtx.z());
+        info.vtxPerp = vtx.perp();
+        //if(fabs(vtx.z())>388&&vtx.perp()<268&&vtx.perp()<(1.2857*fabs(vtx.z()-302.8)))
+        //info.bremR = vtx.mag();
+        if(m_ecalBrem){
+          bool goodZone=false;
+          if(info.vtxZ>220&&info.vtxZ<300&&info.vtxPerp<150&&info.vtxPerp>125){goodZone=true;}
+          else if(info.vtxZ>299&&info.vtxZ<309&&info.vtxPerp>50&&info.vtxPerp<126){goodZone=true;}
+          else if(info.vtxZ>315&&info.vtxZ<345&&info.vtxPerp>55&&info.vtxPerp<160){goodZone=true;}
+          if(!goodZone)
+          {
+    	   info.vtxPerp=info.vtxPerp/10.;
+               info.vtxZ=info.vtxZ/10.;
+    	   failSig.FillHists(info);
+    	   return;
+          }
         }
         for (auto const& iter : binningSFs) {
           //Use the first bin with energy > initial energy.
@@ -456,7 +502,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             info.energyBinSF = iter.second->GetBinContent(iter.second->FindBin(*dbremFinalE / *dbremInitialE));
             break;
           }
-	gen.FillHists(info);
+          gen.FillHists(info);
         }
         edm::Handle<reco::GenParticleCollection> genParticles;
         iEvent.getByToken(m_genParticleToken, genParticles);
@@ -490,22 +536,51 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             maybeTag = true;
           }
         }
-
-      } else {
-        return;
-      }
-    } else {
-    weight_ = 1.;
-    allEvents.IncCutFlow(weight_);
+      } 
+      else{noBrem=true;}
+    } 
+    else 
+    {
+      weight_ = 1.;
+      allEvents.IncCutFlow(weight_);
     }
-  }
-  else{
+  } else {
     weight_ = 1.;
     allEvents.IncCutFlow(weight_);
   }
-  
-  if(!passesMetFilters(iEvent)){return;}
-  allEvents.IncCutFlow(weight_); //Passes met filters
+  //Zpt Correction
+  if(m_isMC){
+     std::string ZptPath = "/local/cms/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/ZptCorrection/ZptWeight_DYJets_MG.root";
+     ZptCorrection myZptCorrection(ZptPath);
+
+     edm::Handle<reco::GenParticleCollection> genParticles;
+     iEvent.getByToken(m_genParticleToken, genParticles);
+     bool foundZ = false;
+     info.foundZ=false;
+     double Zpt = 0;
+     for (const auto& particle : *(genParticles.product())) 
+     {
+       if (std::abs(particle.pdgId()) != 23) 
+       {
+         continue;
+       }
+       foundZ=true;
+       if(particle.pt()>Zpt){Zpt=particle.pt();}
+     }
+     if(foundZ)
+     {
+        info.ZptWeight=myZptCorrection.GetZptWeight(Zpt);
+        info.Zpt = Zpt;
+        info.eventWeight = info.eventWeight * info.ZptWeight;
+	info.foundZ=true;
+     }
+  }
+
+  if (!passesMetFilters(iEvent)) {
+    return;
+  }
+  if(!noBrem){allEvents.IncCutFlow(weight_);}  //Passes met filters
+  noBremEvents.IncCutFlow(weight_);
 
   if (m_isMC) {
     edm::Handle<std::vector<PileupSummaryInfo>> hPileupInfoProduct;
@@ -520,7 +595,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   }
   info.eventWeight = weight_;
   info.genEventWeight = weight_;
-  allEvents.IncCutFlow(info.eventWeight);
+  if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+  noBremEvents.IncCutFlow(info.eventWeight);
   if (genAccept) {
     genAccepted.IncCutFlow(info.eventWeight);
   }
@@ -528,6 +604,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iEvent.getByToken(m_theSTAMuonLabel, staTracks);
   edm::Handle<reco::TrackCollection> displacedStaTracks;
   iEvent.getByToken(m_displacedSTAMuonLabel, displacedStaTracks);
+  edm::Handle<reco::TrackCollection> refittedStaTracks;
+  iEvent.getByToken(m_refittedSTAMuonLabel, refittedStaTracks);
+
   edm::Handle<reco::VertexCollection> vtxHandle;
   iEvent.getByToken(primaryVertices_Label, vtxHandle);
   edm::ESHandle<MagneticField> theMGField;
@@ -536,7 +615,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   iSetup.get<GlobalTrackingGeometryRecord>().get(theTrackingGeometry);
   int muProgress = myMuons.SelectMuons(iEvent, m_recoMuonToken);
   for (int i = 0; i < muProgress; i++) {
-    allEvents.IncCutFlow(info.eventWeight);
+    if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+    noBremEvents.IncCutFlow(info.eventWeight);
+
     if (genAccept) {
       genAccepted.IncCutFlow(info.eventWeight);
     }
@@ -586,9 +667,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
   }
-  if(m_isMC){
-  info.eventWeight =
-      info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
+  if (m_isMC) {
+    info.eventWeight =
+        info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
   }
   if (maxTrackProgress == 13) {
     SiblingMatched = true;
@@ -601,37 +682,36 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     }
   }
   for (int i = 0; i < maxTrackProgress; i++) {
-    allEvents.IncCutFlow(info.eventWeight);
+    if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+    noBremEvents.IncCutFlow(info.eventWeight);
     if (genAccept) {
       genAccepted.IncCutFlow(info.eventWeight);
     }
+  }
+  if(maxTrackProgress >=12){
+    if(diMuonMass>80&&diMuonMass<100){
+      allEvents.FillBaseEvents(info);}
   }
   if (maxTrackProgress < 13) {
     return;
   }
   //Make sure the tag muon passed the trigger
-  if(!info.matchTagAndTrigger(selectedMuon)){return;}
-  allEvents.IncCutFlow(info.eventWeight);
+  if (!info.matchTagAndTrigger(selectedMuon)) {
+    return;
+  }
+  if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+  noBremEvents.IncCutFlow(info.eventWeight);
 
   math::XYZTLorentzVectorD mother;
-  //find dark brem vertex
-  if (m_isMC && m_hasDpho) {
-    GlobalPoint vtx(*dbremX / 10., *dbremY / 10., *dbremZ / 10.);
-    //     if(fabs(vtx.z())>388&&vtx.perp()<268&&vtx.perp()<(1.2857*fabs(vtx.z()-302.8)))
-    info.bremR = vtx.mag();
-    info.vtxZ = vtx.z();
-    info.vtxPerp = vtx.perp();
-    info.dbremInitialE = *dbremInitialE;
-    //   }
-  }
   //Find deflected muon or the initial muon if there was no deflection
   double FmuE = 0;
-  if (m_isMC && m_hasDpho) {
+  if (m_isMC && m_hasDpho &&!noBrem) {
     info.finalMuE = *dbremFinalE;
     FmuE = *dbremFinalE;
   }
 
   info.nTagMuons = myMuons.selectedMuons.size();
+  //Check if another track also passes the pairing requirements.
   if (SiblingMatched) {
     for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedTracks.begin();
          iTrack != myTracks.selectedTracks.end();
@@ -647,7 +727,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                                                   iSetup,
                                                   reducedEndcapRecHitCollection_Label,
                                                   reducedBarrelRecHitCollection_Label,
-                                                  transientTrackBuilder->build(*iTrack));
+                                                  transientTrackBuilder->build(*iTrack),
+                                                  0.4);
         if ((probeTrackIso / (*iTrack)->pt()) > 0.2 || probeEcalIso > 30.)
           continue;
         if (probeTrackIso < 0) {
@@ -656,12 +737,27 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         SiblingMatched = false;
       }
     }
+    //Increment cut flow if no other tracks paired
+    if (SiblingMatched) {
+      if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+      noBremEvents.IncCutFlow(info.eventWeight);
+    }
+    //Check if another global muon also passes the pairing requirements
+    for (std::vector<const reco::Muon*>::const_iterator muon = myMuons.globalMuons.begin();
+         muon != myMuons.globalMuons.end();
+         muon++) {
+      if (deltaR(selectedTrack->eta(), selectedTrack->phi(), (*muon)->eta(), (*muon)->phi()) > 1.0) {
+        if (myTracks.PairMuons((*muon)->muonBestTrack(), selectedMuon->muonBestTrack(), transientTrackBuilder)) {
+          SiblingMatched = false;
+        }
+      }
+    }
     mother.SetPxPyPzE(selectedTrack->momentum().x(),
                       selectedTrack->momentum().y(),
                       selectedTrack->momentum().z(),
                       selectedTrack->p());
   }
-  //  if(!myEventInfo.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
+  if(!info.goodPrimaryVertex(iEvent, primaryVertices_Label)) return;
   if (SiblingMatched) {
     //Accept events that pass preselection w/o passing gen acceptance
     if (!genAccept) {
@@ -670,9 +766,20 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         genAccepted.IncCutFlow(info.eventWeight);
       }
     }
-    allEvents.IncCutFlow(info.eventWeight);
+    //Increment the cut flow if no other global muons paired
+    if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+    noBremEvents.IncCutFlow(info.eventWeight);
+
     if (genAccept) {
       genAccepted.IncCutFlow(info.eventWeight);
+    }
+    if(m_tagAligned)
+    {
+       if(!MatchMotherToTrack(iEvent,
+                          selectedMuon,
+                          trackCollection_label,
+                          info)){return;}
+       selectedTrack = selectedTagTrack;
     }
     info.probeTrackIso =
         myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, selectedTrack) / selectedTrack->pt();
@@ -686,7 +793,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                                             iSetup,
                                             reducedEndcapRecHitCollection_Label,
                                             reducedBarrelRecHitCollection_Label,
-                                            transientTrackBuilder->build(selectedTrack));
+                                            transientTrackBuilder->build(selectedTrack),
+                                            0.4);
     info.probeEcalIso0p1 = myECAL.GetIsolation(iEvent,
                                                iSetup,
                                                reducedEndcapRecHitCollection_Label,
@@ -720,35 +828,52 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     myCSCs.ExtrapolateTrackToCSC(iEvent,
                                  iSetup,
                                  CSCSegment_Label,
+				 CSCRecHit_Label,
                                  rpcRecHitToken,
                                  selectedTrack,
                                  transientTrackBuilder->build(selectedTrack),
                                  FillerPoint);
+    myCSCs.ExtrapolateTrackToDTs(iEvent,
+			                 iSetup,
+			                 DTSegment_Label,
+			                 rpcRecHitToken,
+			                 selectedTrack,
+			                 transientTrackBuilder->build(selectedTrack),
+			                 FillerPoint);
     info.cscRecHitMinDR = myCSCs.recMinDR;
+    info.cscRpcHitMinDR = myCSCs.rpcMinDR;
     info.CSCdEta = myCSCs.CSCdEta;
     info.CSCdPhi = myCSCs.CSCdPhi;
     //Find number of good depths for 1 depth -> 0 depths MC correction
     int nGoodDepths = 0;
-    int goodDepth=0;
+    int goodDepth = 0;
     for (int i = 0; i < 4; i++) {
+      info.nCloseCSCHits[i] = myCSCs.nCloseHits[i];
       info.minDrByStation[i] = myCSCs.minDrByDepth[i];
-      if(myCSCs.minDrByDepth[i]<0.05&&myCSCs.minDrByDepth[i]>0)
-      {
-         nGoodDepths++;
-         goodDepth=i;
+      info.minDtDrByStation[i] = myCSCs.minDtDrByDepth[i];
+      info.minDPhiByStation[i] = myCSCs.minDPhiByDepth[i];
+      info.secMinDPhiByStation[i] = myCSCs.secMinDPhiByDepth[i];
+      info.secMinDrByStation[i] = myCSCs.secMinDrByDepth[i];
+      info.minDtDPhiByStation[i] = myCSCs.minDtDPhiByDepth[i];
+      info.minDEtaByStation[i] = myCSCs.minDEtaByDepth[i];
+      info.minDtDEtaByStation[i] = myCSCs.minDtDEtaByDepth[i];
+      info.minDZByStation[i] = myCSCs.minDZByDepth[i];
+      info.minDtDZByStation[i] = myCSCs.minDtDZByDepth[i];
+
+      if (myCSCs.minDrByDepth[i] < 0.05 && myCSCs.minDrByDepth[i] > 0) {
+        nGoodDepths++;
+        goodDepth = i;
       }
     }
-    if(m_missingCSCFilter)
-    {
-      if(nGoodDepths==1)
-      {
-         double scalefactor = myCSCs.GetMissingHitWeight(goodDepth,selectedTrack->eta(),selectedTrack->phi());
-         info.eventWeight=info.eventWeight*(1-scalefactor);
+    double cscScaleFactor = 0;
+    if (m_missingCSCFilter) {
+      if (nGoodDepths == 1) {
+        cscScaleFactor = myCSCs.GetMissingHitWeight(goodDepth, selectedTrack->eta(), selectedTrack->phi());
       }
     }
     GlobalPoint TrackGlobalPoint =
-        GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(), selectedTrack->phi(), info.bremR));
-    if (m_isMC && m_hasDpho) {
+        GlobalPoint(GlobalPoint::Polar(selectedTrack->theta(), selectedTrack->phi(), 525));
+    if (m_isMC && m_hasDpho && !noBrem) {
       info.deflectingAngle = *dbremAngle;
       info.dbremFinalE = *dbremFinalE;
     }
@@ -761,16 +886,21 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     double staMinDr = 7.;
     if (MuonMatched) {
       info.cscChiSq = myCSCs.CSCChiSq;
+      int pairingResult = myTracks.PairTracks(selectedMuon->innerTrack(), matchedMuon->globalTrack(), transientTrackBuilder);
+      if(pairingResult==3){
+         info.altInvMass = myTracks.MuonTrackMass;
+      }
       ROOT::Math::DisplacementVector3D unitmother = mother.Vect().unit();
       GlobalVector unitcsc = myCSCs.CSCTraj.unit();
       double dotpro = unitmother.x() * unitcsc.x() + unitmother.y() * unitcsc.y() + unitmother.z() * unitcsc.z();
       info.cscHitAngleChange = std::acos(dotpro);
     }
-    if(m_isMC){
-       info.minGenMuDr = MatchTrackToGenMuon(iEvent,selectedTrack, m_genParticleToken);
-       myCSCs.ExtrapolateTrackToSimCSC(iEvent, iSetup, m_cscSimHits, selectedTrack);
-       info.nSimCSCHits = myCSCs.nSimCSCHits;
-       info.minSimCSCDr = myCSCs.minSimCSCDr;
+    if (m_isMC) {
+      info.minGenMuDr = MatchTrackToGenMuon(iEvent, selectedTrack, m_genParticleToken);
+      info.pdgIds = GetGenParticlesInCone(iEvent, selectedTrack, m_genParticleToken); 
+      myCSCs.ExtrapolateTrackToSimCSC(iEvent, iSetup, m_cscSimHits, selectedTrack);
+      info.nSimCSCHits = myCSCs.nSimCSCHits;
+      info.minSimCSCDr = myCSCs.minSimCSCDr;
     }
     double stadEoverE = 10.;
     double staE = -10;
@@ -830,8 +960,40 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           if (track.chi2() / track.ndof() > 6) {
             continue;
           }
+          info.disStadEta = track.impactPointTSCP().momentum().eta() - selectedTrack->eta();
+          info.disStadPhi = track.impactPointTSCP().momentum().phi() - selectedTrack->phi();
+          info.disStaChi2 = track.chi2() / track.ndof();
+
           info.disStaE = std::sqrt(track.impactPointTSCP().momentum().mag2());
           info.disStaDEoverE = (info.disStaE - mother.P()) / mother.P();
+        }
+      }
+    }
+    if (refittedStaTracks->size() > 0) {
+      double disStaE = -10;
+      for (reco::TrackCollection::const_iterator staTrack = refittedStaTracks->begin();
+           staTrack != refittedStaTracks->end();
+           ++staTrack) {
+        reco::TransientTrack track = transientTrackBuilder->build(*staTrack);
+        double dR = deltaR(track.impactPointTSCP().momentum().eta(),
+                           track.impactPointTSCP().momentum().phi(),
+                           selectedTrack->eta(),
+                           selectedTrack->phi());
+        if (dR < 1.0 && std::sqrt(track.impactPointTSCP().momentum().mag2() > disStaE)) {
+          if (track.ndof() < 1) {
+            continue;
+          }
+          if (track.chi2() / track.ndof() > 6) {
+            continue;
+          }
+          info.refitStaE = std::sqrt(track.impactPointTSCP().momentum().mag2());
+          info.refitStaDEoverE = (info.disStaE - mother.P()) / mother.P();
+          info.refitStadEta = track.impactPointTSCP().momentum().eta() - selectedTrack->eta();
+          info.refitStadPhi = track.impactPointTSCP().momentum().phi() - selectedTrack->phi();
+          info.refitStaChi2 = track.chi2() / track.ndof();
+
+          info.refitStaE = std::sqrt(track.impactPointTSCP().momentum().mag2());
+          info.refitStaDEoverE = (info.disStaE - mother.P()) / mother.P();
         }
       }
     }
@@ -840,54 +1002,67 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (staMinDr < 1.0) {
       info.standaloneE = staE;
       info.standaloneDEoverE = stadEoverE;
+
     }
     info.staMinDr = staMinDr;
+    /*if (!MatchMotherToTrack(iEvent,
+                                     tagVec,
+                                     trackCollection_label,
+                                     info)) {return;}*/
     if (!myHCAL.FindMuonHits(iEvent,
                              iSetup,
                              HBHERecHit_Label,
                              TrackGlobalPoint,
                              selectedTrack->charge(),
-                             transientTrackBuilder->build(selectedTrack))) {
+                             transientTrackBuilder->build(selectedTrack))&&!m_studyBarrel) {
       allEvents.FailLocation(myHCAL.ieta, myHCAL.iphi, weight_);
       return;
     }
-    allEvents.IncCutFlow(info.eventWeight);
+    if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+    noBremEvents.IncCutFlow(info.eventWeight);
     if (genAccept) {
       genAccepted.IncCutFlow(info.eventWeight);
     }
     info.nCellsFound = myHCAL.CellsFound;
     info.nNeighborCellsFound = myHCAL.NeighborCellsFound;
+    for (int depth = 0; depth < 7; depth++) {
+      info.foundDepths[depth] = myHCAL.foundDepths[depth];
+    }
     info.iEta = myHCAL.TrackiEta;
     info.cellCenterDEta = myHCAL.etaEdgeMin;
     info.cellCenterDPhi = myHCAL.phiEdgeMin;
-    if (info.nCellsFound < 4) {
+    if (info.nCellsFound < 4&&!m_studyBarrel) {
       return;
     }
     //Check MET
-    edm::Handle<std::vector<reco::PFMET >> pfMETCollection;
+    edm::Handle<std::vector<reco::PFMET>> pfMETCollection;
     bool ValidPFMET = iEvent.getByToken(m_PFMetToken, pfMETCollection);
-    if (!ValidPFMET)
-    {
-	    printf("Invalid PF Met!\n");
-	    return;
+    if (!ValidPFMET) {
+      printf("Invalid PF Met!\n");
+      return;
     }
-    info.pfMet_pt=(*pfMETCollection)[0].et();
-    double met=(*pfMETCollection)[0].et();
-    double phi=(*pfMETCollection)[0].phi();
-    TLorentzVector vmet,vlep;
-    vlep.SetPxPyPzE(selectedMuon->px(),selectedMuon->py(),selectedMuon->pz(),selectedMuon->pfP4().E());
+    info.pfMet_pt = (*pfMETCollection)[0].et();
+    double met = (*pfMETCollection)[0].et();
+    double phi = (*pfMETCollection)[0].phi();
+    TLorentzVector vmet, vlep;
+    vlep.SetPxPyPzE(selectedMuon->px(), selectedMuon->py(), selectedMuon->pz(), selectedMuon->pfP4().E());
     double metx = met * std::cos(phi);
     double mety = met * std::sin(phi);
     vmet.SetPxPyPzE(metx, mety, 0.0, met);
     TLorentzVector vw = vlep + vmet;
-    info.muMetMT=std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
-    vlep.SetPxPyPzE(selectedMuon->px()+selectedTrack->px(),selectedMuon->py()+selectedTrack->py(),selectedMuon->pz()+selectedTrack->pz(),selectedMuon->pfP4().E()+selectedTrack->p());
-    info.muAndProbeMetMT=std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
+    info.muMetMT = std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
+    vlep.SetPxPyPzE(selectedMuon->px() + selectedTrack->px(),
+                    selectedMuon->py() + selectedTrack->py(),
+                    selectedMuon->pz() + selectedTrack->pz(),
+                    selectedMuon->pfP4().E() + selectedTrack->p());
+    info.muAndProbeMetMT = std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
 
     //Signal categories
-    bool passSigCuts = false;
+    //bool passSigCuts = false;
     //if(myHCAL.m_HitsOverThresh<2){return;}
-    allEvents.IncCutFlow(info.eventWeight);
+    if(!noBrem){allEvents.IncCutFlow(info.eventWeight);}
+    noBremEvents.IncCutFlow(info.eventWeight);
+
     if (genAccept) {
       genAccepted.IncCutFlow(info.eventWeight);
     }
@@ -897,6 +1072,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     double nearProbeCaloJetHadE = -1.;
     double nearProbeCaloJetEmE = -1.;
     double minProbeDr = -1;
+    double caloJetPt = -1;
     for (auto CaloJet = caloJets->begin(); CaloJet != caloJets->end(); ++CaloJet) {
       double probeDr = deltaR(selectedTrack->eta(), selectedTrack->phi(), CaloJet->eta(), CaloJet->phi());
       double hadE = CaloJet->hadEnergyInHE() + CaloJet->hadEnergyInHB();
@@ -909,6 +1085,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
           nearProbeCaloJetHadE = hadE;
           nearProbeCaloJetEmE = ecalE;
         }
+	caloJetPt = CaloJet->pt();
       }
     }
     for (int k = 0; k < 7; k++) {
@@ -917,6 +1094,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     }
     info.bremDepth = myHCAL.m_bremDepth;
     info.minCaloJetDr = minProbeDr;
+    info.caloJetPt = caloJetPt;
     info.hitsOverThresh = myHCAL.m_HitsOverThresh;
     info.coneHits = myHCAL.m_coneHits;
     info.coneEnergy = myHCAL.m_coneEnergy;
@@ -925,6 +1103,8 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.caloJetTotalE = nearProbeCaloJetHadE + nearProbeCaloJetEmE;
     //info.caloConeE = coneHits.first;
     info.caloConeE = hcalIso;
+    info.hcalIso0p3 = hcalIso0p3;
+    info.hcalIso0p4 = hcalIso0p4;
     info.caloConeHits = coneHits.second;
     //PF Jets stuff
     myJets.SelectJets(iEvent, m_pfJetCollection_label);
@@ -937,6 +1117,10 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.nearestJetDr = myJets.nearestJetDr;
     info.nearestJetE = myJets.nearestJetE;
     info.nearJetMaxE = myJets.nearJetMaxE;
+    info.run = iEvent.id().run();
+    info.lumi = iEvent.id().luminosityBlock();
+    info.event = iEvent.id().event();
+
     //Check nearby leptons
     for (const auto& iEle : iEvent.get(m_electronsToken)) {
       if (iEle.pt() < 15)
@@ -967,22 +1151,34 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         continue;
       info.nExtraMuon++;
     }
+    if(noBrem)
+    {
+       noBremEvents.FillHists(info);
+       return;
+    }
+
     //Signal cut flow
-    bool passMassCut = (info.diMuonMass>80 && info.diMuonMass<100);
-    if(m_ttbarCR){passMassCut = (info.diMuonMass<76 || info.diMuonMass>106);} 
-    if(m_sameSign){passMassCut = (info.diMuonMass>50 && info.diMuonMass<150);}
+    bool passMassCut = (info.diMuonMass > 80 && info.diMuonMass < 100);
+    if (m_offPeak) {
+      passMassCut = (info.diMuonMass < 70 || info.diMuonMass > 110);
+    }
+    if (m_ttbarCR) {
+      passMassCut = (info.diMuonMass < 76 || info.diMuonMass > 106);
+    }
+    if (m_sameSign) {
+      passMassCut = (info.diMuonMass > 50 && info.diMuonMass < 150);
+    }
     if (myHCAL.m_coneEnergy < 10) {
       allEvents.IncCutFlow(info.eventWeight);
       if (genAccept) {
         genAccepted.IncCutFlow(info.eventWeight);
       }
-      if(passMassCut)
-      {
+      if (passMassCut) {
         allEvents.IncCutFlow(info.eventWeight);
-        if(genAccept){
+        if (genAccept) {
           genAccepted.IncCutFlow(info.eventWeight);
         }
-        if (myCSCs.minDR > 0.05) {
+        if (myCSCs.minDR > 0.05 && info.cscRecHitMinDR > 0.1) {
           allEvents.IncCutFlow(info.eventWeight);
           if (genAccept) {
             genAccepted.IncCutFlow(info.eventWeight);
@@ -997,53 +1193,92 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
     bool passPreSelection = true;
-    if (staMinDr > 1.0) {
-      if(myCSCs.minDR > 0.05 ||(m_missingCSCFilter&&nGoodDepths==1)){
-        if (myHCAL.m_coneEnergy < 10){
-          if(passMassCut) {
-            info.sigCat = 3;
-            passSigCuts = true;
-            totalDisappear.FillHists(info);
-            if(info.probeEcalIso<5){totalDisappearLowEcal.FillHists(info);} 
+    /*bool passSecCSCDrs = true;
+    for(int station=1;station<4;station++)
+    {
+      if(myCSCs.minDrByDepth[station]<1.0){passSecCSCDrs=false;}
+    }*/
+    totalDisappear.IncCutFlow(info.eventWeight);
+    if (passMassCut) {
+      totalDisappear.IncCutFlow(info.eventWeight);
+      if (staMinDr > 1.0) {
+        totalDisappear.IncCutFlow(info.eventWeight);
+        //if ((myCSCs.minDR > 0.05 || (m_missingCSCFilter && nGoodDepths == 1)) && info.cscRecHitMinDR > 0.1 && passSecCSCDrs) 
+        if ((myCSCs.minDR > 0.05 && info.cscRecHitMinDR>0.1) || (m_missingCSCFilter && nGoodDepths == 1)) 
+//        if ((myCSCs.minDR > 0.05 || (m_missingCSCFilter && nGoodDepths == 1))) 
+	{
+          if(m_missingCSCFilter&&nGoodDepths==1){info.eventWeight = info.eventWeight * (1 - cscScaleFactor);}
+
+	  totalDisappear.IncCutFlow(info.eventWeight);
+          if (info.hitsOverThresh > 1) {
+            totalDisappear.IncCutFlow(info.eventWeight);
+            if (info.hcalIso0p3<15 || m_highHcalCR) {
+	      totalDisappear.IncCutFlow(info.eventWeight);
+	      if(!myHCAL.onEdge){
+                 totalDisappear.IncCutFlow(info.eventWeight);
+                 info.sigCat = 3;
+                 //passSigCuts = true;
+                 totalDisappear.FillHists(info);
+	         totalDisappear.FillTotalDisappTree(info);
+                 if (info.probeEcalIso < 5) {
+                   totalDisappearLowEcal.FillHists(info);
+                 }
+	      }
+            }
+	    totalDisappearNoHcalIso.FillHists(info);
+          }
+        } //else if ((myCSCs.minDR > 0.05 || (m_missingCSCFilter && nGoodDepths == 1)) && passSecCSCDrs) 
+	else
+	{
+          passSigNearbyCSC.IncCutFlow(info.eventWeight);
+          if (myCSCs.minDR < 0.05 && info.cscRpcHitMinDR>0.1) {
+	    bool steelBrem = true;
+	    passSigNearbyCSC.IncCutFlow(info.eventWeight);
+	    for(int cscStation = 1; cscStation<4; cscStation++){
+	      if(fabs(info.minDrByStation[cscStation])<0.05){steelBrem=false;}
+	      if(steelBrem){passSigNearbyCSC.IncCutFlow(info.eventWeight);}
+	    }
+            if (info.hitsOverThresh > 1 && steelBrem) {
+	      passSigNearbyCSC.IncCutFlow(info.eventWeight);
+              if (info.hcalIso0p3<15 || m_highHcalCR) {
+	        passSigNearbyCSC.IncCutFlow(info.eventWeight);
+                passSigNearbyCSC.FillHists(info);
+                passSigNearbyCSC.FillTree(info);
+	      }
+            }
+	  }
+        }
+    }	
+	if (staMinDr < 1.0) {
+        partialDisappear.FillHists(info);
+        partialDisappear.FillTree(info);
+        if (info.probeEcalIso < 5) {
+          partialDisappearLowEcal.FillHists(info);
+          partialDisappearLowEcal.FillTree(info);
+        }
+        if (info.probeCharge > 0) {
+          if (info.stadPhi > 0.1) {
+            partialDisappear_largeCSCDefl.FillHists(info);
+          }
+        } else {
+          if (info.stadPhi < -0.1) {
+            partialDisappear_largeCSCDefl.FillHists(info);
           }
         }
-      }
-      else
-      {
-        if(passMassCut){
-          passSigNearbyCSC.FillHists(info);
+        if (stadEoverE < -0.8 && myHCAL.m_coneEnergy < 1.) {
+          info.sigCat = 2;
+        } else if (stadEoverE < -0.6 && myHCAL.m_coneEnergy < 2.) {
+          info.sigCat = 1;
+        } else {
+          info.sigCat = 0;
         }
-      }
-    } else if (staMinDr < 1.0 && passMassCut) {
-      partialDisappear.FillHists(info);
-      partialDisappear.FillTree(info);
-      if(info.probeEcalIso<5)
-      {
-         partialDisappearLowEcal.FillHists(info);
-         partialDisappearLowEcal.FillTree(info);
-      }
-      if (info.probeCharge > 0) {
-        if (info.stadPhi > 0.1) {
-          partialDisappear_largeCSCDefl.FillHists(info);
-        }
-      } else {
-        if (info.stadPhi < -0.1) {
-          partialDisappear_largeCSCDefl.FillHists(info);
-        }
-      }
-      if (stadEoverE < -0.8 && myHCAL.m_coneEnergy < 1.) {
-        info.sigCat = 2;
-      } else if (stadEoverE < -0.6 && myHCAL.m_coneEnergy < 2.) {
-        info.sigCat = 1;
-      } else {
-        info.sigCat = 0;
       }
     } else {
       info.sigCat = 0;
     }
-    if (!passSigCuts) {
-      failSig.FillHists(info);
-    }
+    //if (!passSigCuts) {
+    //  failSig.FillHists(info);
+   // }
     if (passPreSelection) {
       preSelectedEvents.FillHists(info);
     }
@@ -1051,6 +1286,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       lowHits.FillHists(info);
     }
     allEvents.FillHists(info);
+    if(!myHCAL.onEdge){allEvents.FillTotalDisappTree(info);}
+    if(m_tagAligned){allEvents.FillTree(info);}
+
     if (genAccept) {
       genAccepted.FillHists(info);
     }
@@ -1058,7 +1296,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 }
 
 bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent,
-                                     math::XYZTLorentzVectorD mother,
+                                     const reco::Muon* mother,
                                      edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label,
                                      SigEventInfo info) {
   edm::Handle<std::vector<reco::Track>> thePATTrackHandle;
@@ -1069,19 +1307,18 @@ bool SigAnalyzer::MatchMotherToTrack(const edm::Event& iEvent,
   double mindE = 0.2;
   for (std::vector<reco::Track>::const_iterator iTrack = thePATTrackHandle->begin(); iTrack != thePATTrackHandle->end();
        ++iTrack) {
-    if (fabs(iTrack->eta()) > 2.4 || fabs(iTrack->eta()) < 1.653)
-      continue;
     if (iTrack->pt() < 26)
       continue;
-    double dR = deltaR(iTrack->eta(), iTrack->phi(), mother.eta(), mother.phi());
-    double dEOverE = std::abs(std::sqrt(pow(iTrack->outerP(), 2) + pow(0.1056, 2)) - mother.E()) / mother.E();
+    double dR = deltaR(iTrack->eta(), iTrack->phi(), mother->eta(), mother->phi());
+    double dEOverE = std::abs(iTrack->pt() - mother->pt()) / mother->pt();
     if (dR > 0.1)
       continue;
     if (dEOverE < mindE) {
       mindR = dR;
       mindE = dEOverE;
-      selectedTrack = (&(*iTrack));
+      selectedTagTrack = (&(*iTrack));
       matched = true;
+      break;
     }
   }
   if (matched) {
@@ -1109,14 +1346,12 @@ int SigAnalyzer::PairTagAndProbe(
   for (std::vector<const reco::Track*>::const_iterator iTrack = myTracks.selectedEndcapTracks.begin();
        iTrack != myTracks.selectedEndcapTracks.end();
        ++iTrack) {
-    if(!m_sameSign)
-    {
-       if (Tag->charge() == (*iTrack)->charge())
-         continue;
-    }
-    else
-    {
-       if (Tag->charge() != (*iTrack)->charge()) continue;
+    if (!m_sameSign) {
+      if (Tag->charge() == (*iTrack)->charge())
+        continue;
+    } else {
+      if (Tag->charge() != (*iTrack)->charge())
+        continue;
     }
     if (cutpro < 1) {
       cutpro = 1;
@@ -1132,8 +1367,12 @@ int SigAnalyzer::PairTagAndProbe(
                                                 reducedEndcapRecHitCollection_Label,
                                                 reducedBarrelRecHitCollection_Label,
                                                 transientTrackBuilder->build(*iTrack));
-      double probeHcalIso =
-          myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack));
+      double probeHcalIso0p2 =
+          myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack), 0.2);
+      double probeHcalIso0p3 = 
+          myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack), 0.3);
+      double probeHcalIso0p4 = 
+          myHCAL.GetIsolation(iEvent, iSetup, HBHERecHit_Label, transientTrackBuilder->build(*iTrack), 0.4);
       double minProbeDr = 5;
       for (auto CaloJet = caloJets->begin(); CaloJet != caloJets->end(); ++CaloJet) {
         double probeDr = deltaR((*iTrack)->eta(), (*iTrack)->phi(), CaloJet->eta(), CaloJet->phi());
@@ -1153,45 +1392,71 @@ int SigAnalyzer::PairTagAndProbe(
       }
       if (probeEcalIso > 10. || probeEcalIso < 0.)
         continue;
+      printf("Track passed iso, ecal iso is %f and eta/phi is %f, %f.\n",
+             probeEcalIso,
+             (*iTrack)->eta(),
+             (*iTrack)->phi());
       if (cutpro < 6) {
         cutpro = 6;
       }
       //if(minProbeDr<0.4) continue;
-      if(!m_highHcalCR){
-         if (probeHcalIso > 20.)
-           continue;
-      }
-      else if(probeHcalIso<30.){continue;}
-      if (cutpro < 7) {
-        cutpro = 7;
-      }
       selectedTrack = (*iTrack);
       selectedMuon = Tag;
-      hcalIso = probeHcalIso;
+      hcalIso = probeHcalIso0p2;
+      hcalIso0p3 = probeHcalIso0p3;
+      hcalIso0p4 = probeHcalIso0p4;
       diMuonMass = myTracks.MuonTrackMass;
       pairVtxChi = myTracks.pairvertexchi;
       reco::TransientTrack tk = transientTrackBuilder->build(*iTrack);
       TrajectoryStateClosestToPoint traj = tk.trajectoryStateClosestToPoint(myTracks.probeVertPoint);
       probeTIP = traj.perigeeParameters().transverseImpactParameter();
       probeLIP = traj.perigeeParameters().longitudinalImpactParameter();
+     //
+      if (!m_highHcalCR) {
+        if (probeHcalIso0p3 > 30.)
+          continue;
+      } else if (probeHcalIso0p2 < 30.) {
+        continue;
+      }
+      if (cutpro < 7) {
+        cutpro = 7;
+      }
     }
   }
   return cutpro;
 }
 
+std::vector<int> SigAnalyzer::GetGenParticlesInCone(const edm::Event& iEvent,
+						    const reco::Track* selTrack,
+						    edm::EDGetToken m_genParticleToken){
+  double minDR = 0.01;
+  std::vector<int> particleIds;
+  edm::Handle<reco::GenParticleCollection> genParticles;
+  iEvent.getByToken(m_genParticleToken, genParticles);
+  for (const auto& particle : *(genParticles.product())) {
+    double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
+    if (dR < minDR) {
+       particleIds.push_back(particle.pdgId());
+    }
+  }
+  return particleIds;
+}
+
 double SigAnalyzer::MatchTrackToGenMuon(const edm::Event& iEvent,
-                                      const reco::Track* selTrack,
-                                      edm::EDGetToken m_genParticleToken)
-{
-   double minDR=-1;
-   edm::Handle<reco::GenParticleCollection> genParticles;
-   iEvent.getByToken(m_genParticleToken, genParticles);
-   for (const auto& particle : *(genParticles.product())) {
-      if (std::abs(particle.pdgId()) != 13) continue;
-      double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
-      if(dR<minDR||minDR<0){minDR=dR;}
-   }
-   return minDR;
+                                        const reco::Track* selTrack,
+                                        edm::EDGetToken m_genParticleToken) {
+  double minDR = -1;
+  edm::Handle<reco::GenParticleCollection> genParticles;
+  iEvent.getByToken(m_genParticleToken, genParticles);
+  for (const auto& particle : *(genParticles.product())) {
+    if (std::abs(particle.pdgId()) != 13)
+      continue;
+    double dR = deltaR(particle.eta(), particle.phi(), selTrack->eta(), selTrack->phi());
+    if (dR < minDR || minDR < 0) {
+      minDR = dR;
+    }
+  }
+  return minDR;
 }
 
 bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,
@@ -1219,6 +1484,8 @@ bool SigAnalyzer::MatchTrackToMuon(const edm::Event& iEvent,
       mindR = dR;
       mindE = dEOverE;
       matched = true;
+      matchedMuon = (*iMuon);
+
       if ((*iMuon)->isAValidMuonTrack(reco::Muon::OuterTrack)) {
         standaloneE = (*iMuon)->outerTrack()->p();
       } else {
@@ -1275,15 +1542,14 @@ std::vector<double> SigAnalyzer::GetPuWeight(edm::Handle<std::vector<PileupSumma
   return puWeights;
 }
 
-bool SigAnalyzer::passesMetFilters(const edm::Event& iEvent)
-{
-  int thisLumi=iEvent.id().luminosityBlock();
-  int thisEvent=iEvent.id().event();
-  if(metFailingEvents.count(thisLumi)>0)
-  {
-    for(uint16_t event=0; event<metFailingEvents[thisLumi].size();event++)
-    {
-      if(thisEvent==metFailingEvents[thisLumi].at(event)){return false;}   
+bool SigAnalyzer::passesMetFilters(const edm::Event& iEvent) {
+  int thisLumi = iEvent.id().luminosityBlock();
+  int thisEvent = iEvent.id().event();
+  if (metFailingEvents.count(thisLumi) > 0) {
+    for (uint16_t event = 0; event < metFailingEvents[thisLumi].size(); event++) {
+      if (thisEvent == metFailingEvents[thisLumi].at(event)) {
+        return false;
+      }
     }
   }
   return true;

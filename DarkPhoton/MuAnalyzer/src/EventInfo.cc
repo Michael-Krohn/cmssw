@@ -18,7 +18,7 @@ EventInfo::EventInfo() {
   centerOutOfCone = -1;
   minDR_muonHCAL = -1;
   minDR_randomHCAL = -1;
-  expectedHits=0;
+  expectedHits = 0;
   coneHits = -1;
   coneEnergy = -1;
   randomConeHits = -1;
@@ -26,6 +26,15 @@ EventInfo::EventInfo() {
   hitsOverThresh = -1;
   randomHitsOverThresh = -1;
   cellsFound = -1;
+  for(int depth=0;depth<7;depth++)
+  {
+    xShiftEnergies[depth] = -1;
+    yShiftEnergies[depth] = -1;
+    zShiftEnergies[depth] = -1;
+    xShifts[depth] = 10;
+    yShifts[depth] = 10;
+    zShifts[depth] = 10;
+  }
 }
 
 bool EventInfo::goodPrimaryVertex(const edm::Event& iEvent,

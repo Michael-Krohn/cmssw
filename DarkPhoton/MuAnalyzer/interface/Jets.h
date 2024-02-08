@@ -15,7 +15,10 @@ public:
 
   void SelectJets(const edm::Event& iEvent, edm::EDGetToken m_jetsToken);
   void FindNearestJet(const reco::Track* probe);
-  void SelectBTagJets(const edm::Event& iEvent, std::vector<edm::EDGetTokenT<edm::AssociationVector<edm::RefToBaseProd<reco::Jet>, std::vector<float> > > > jetTagTokens);
+  void SelectBTagJets(
+      const edm::Event& iEvent,
+      std::vector<edm::EDGetTokenT<edm::AssociationVector<edm::RefToBaseProd<reco::Jet>, std::vector<float> > > >
+          jetTagTokens);
 
   std::vector<const reco::PFJet*> selectedJets;
   double nearestJetDr;
@@ -24,7 +27,7 @@ public:
   struct JetRefCompare {
     inline bool operator()(const edm::RefToBase<reco::Jet>& j1, const edm::RefToBase<reco::Jet>& j2) const {
       return (j1.id() < j2.id()) || ((j1.id() == j2.id()) && (j1.key() < j2.key()));
-      }
+    }
   };
   typedef std::map<edm::RefToBase<reco::Jet>, float, JetRefCompare> JetTagMap;
   double wpLoose;

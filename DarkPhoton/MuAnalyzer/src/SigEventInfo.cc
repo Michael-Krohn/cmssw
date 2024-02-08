@@ -9,6 +9,8 @@ SigEventInfo::SigEventInfo() {
   eventWeight = 1;
   genEventWeight = 1;
   muRocWeight = 1;
+  ZptWeight = 1;
+  foundZ=false;
   filledWeights = false;
   dbremZ = -1;
   dbremPerp = -1;
@@ -40,6 +42,7 @@ SigEventInfo::SigEventInfo() {
   probeTrackPt = -1.;
   pairVtxChi = -1;
   diMuonMass = -1;
+  altInvMass = -1;
   minCSCImpactParameter = -1;
   cscMinDR = -1;
   cscRecHitMinDR = -1;
@@ -51,9 +54,9 @@ SigEventInfo::SigEventInfo() {
   nCellsFound = -1;
   nNeighborCellsFound = -1;
   iEta = 0;
-  pfMet_pt=0;
-  muMetMT=0;
-  muAndProbeMetMT=0;
+  pfMet_pt = 0;
+  muMetMT = 0;
+  muAndProbeMetMT = 0;
   cellCenterDEta = -1;
   cellCenterDPhi = -1;
   coneEnergy = -1;
@@ -72,6 +75,8 @@ SigEventInfo::SigEventInfo() {
   caloJetEcalE = -1;
   caloJetTotalE = -1;
   caloConeE = -1;
+  hcalIso0p3 = -1;
+  hcalIso0p4 = -1;
   caloConeHits = -1;
   hitsOverThresh = -1;
   genProbeMatchdE = -1;
@@ -93,54 +98,86 @@ SigEventInfo::SigEventInfo() {
   finalMuE = -1.;
   disStaE = -1.;
   disStaDEoverE = 10.;
+  disStadEta = -10.;
+  disStadPhi = -10.;
+  disStaChi2 = -1.;
+  refitStaE = -1.;
+  refitStaDEoverE = 10.;
+  refitStadEta = -10.;
+  refitStadPhi = -10.;
+  refitStaChi2 = -1.;
+
   nPUmean = -1.;
   pileupWeight = -1.;
   usedBin = -1;
   energyBinSF = 1;
 }
 
-bool SigEventInfo::passTriggers(const edm::Event& iEvent, 
-		                edm::EDGetToken m_trigResultsToken,
-				edm::EDGetToken m_trigEventToken,
-				std::vector<std::string> m_muonPathsToPass) 
-{ 
-   bool passTriggers;
-   edm::Handle<edm::TriggerResults> triggerResults;
-   edm::Handle<trigger::TriggerEvent> trigEvent;
-   iEvent.getByToken(m_trigEventToken,trigEvent);
-   iEvent.getByToken(m_trigResultsToken, triggerResults);
-   const edm::TriggerNames& trigNames = iEvent.triggerNames(*triggerResults);
-   for (size_t i = 0; i < trigNames.size(); ++i) {
-      const std::string& name = trigNames.triggerName(i);
-      for (auto& pathName : m_muonPathsToPass) {
-         if ((name.find(pathName) != std::string::npos)) {
-            if (triggerResults->accept(i)) { 
-               passTriggers = true;
-               trigger::size_type filterIndex = trigEvent->filterIndex(edm::InputTag("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07","","HLT"));
-	       if(filterIndex<trigEvent->sizeFilters())
-	       {
-	          const trigger::Keys& trigKeys = trigEvent->filterKeys(filterIndex);
-		  const trigger::TriggerObjectCollection & trigObjColl(trigEvent->getObjects());
-		  for(trigger::Keys::const_iterator keyIt=trigKeys.begin();keyIt!=trigKeys.end();++keyIt)
-		  {
-		     const trigger::TriggerObject& obj = trigObjColl[*keyIt];
-                     passingMuons.push_back(obj);
-		  }
-	       }
+bool SigEventInfo::passTriggers(const edm::Event& iEvent,
+                                edm::EDGetToken m_trigResultsToken,
+                                edm::EDGetToken m_trigEventToken,
+                                std::vector<std::string> m_muonPathsToPass) {
+  bool passTriggers = false;
+  edm::Handle<edm::TriggerResults> triggerResults;
+  edm::Handle<trigger::TriggerEvent> trigEvent;
+  iEvent.getByToken(m_trigEventToken, trigEvent);
+  iEvent.getByToken(m_trigResultsToken, triggerResults);
+  const edm::TriggerNames& trigNames = iEvent.triggerNames(*triggerResults);
+  for (size_t i = 0; i < trigNames.size(); ++i) {
+    const std::string& name = trigNames.triggerName(i);
+    for (auto& pathName : m_muonPathsToPass) {
+      if ((name.find(pathName) != std::string::npos)) {
+        if (triggerResults->accept(i)) {
+          passTriggers = true;
+          trigger::size_type filterIndex = trigEvent->filterIndex(
+              edm::InputTag("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07", "", "HLT"));
+          if (filterIndex < trigEvent->sizeFilters()) {
+            const trigger::Keys& trigKeys = trigEvent->filterKeys(filterIndex);
+            const trigger::TriggerObjectCollection& trigObjColl(trigEvent->getObjects());
+            for (trigger::Keys::const_iterator keyIt = trigKeys.begin(); keyIt != trigKeys.end(); ++keyIt) {
+              const trigger::TriggerObject& obj = trigObjColl[*keyIt];
+              passingMuons.push_back(obj);
             }
-         }
+          }
+        }
       }
-   }
+    }
+  }
 
-   return passTriggers;
-}   
+  return passTriggers;
+}
 
-bool SigEventInfo::matchTagAndTrigger(const reco::Muon* selectedMuon)
-{
-   for(std::vector<trigger::TriggerObject>::const_iterator trigObject = passingMuons.begin(); trigObject!=passingMuons.end();++trigObject)
-   {
-      double dR=deltaR(trigObject->eta(),trigObject->phi(),selectedMuon->eta(),selectedMuon->phi());
-      if(dR<0.1) return true;
-   }
-   return false;
+bool SigEventInfo::goodPrimaryVertex(const edm::Event& iEvent,
+		                     edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label) {
+	using namespace reco;
+	edm::Handle<std::vector<reco::Vertex>> vertices; 
+	iEvent.getByToken(primaryVertices_Label, vertices);
+	std::vector<const reco::Vertex*> PVertices;
+	std::vector<reco::Vertex>::const_iterator firstGoodVertex = vertices->end();
+	for (std::vector<reco::Vertex>::const_iterator it = vertices->begin(); it != firstGoodVertex; ++it) {
+		if (!it->isFake() && it->ndof() > 4 && it->position().Rho() < 2. && std::abs(it->position().Z()) < 24.) {
+			if (firstGoodVertex == vertices->end()) { 
+			   firstGoodVertex = it;
+			   PVertices.push_back(&(*it));
+			}
+			break;
+                }
+	}
+  if (firstGoodVertex == vertices->end()) {    
+	  std::cout << "NO GOOD VERTEX" << std::endl;	
+	  return false;
+  } else {
+	  return true;
+  }
+}
+
+bool SigEventInfo::matchTagAndTrigger(const reco::Muon* selectedMuon) {
+  for (std::vector<trigger::TriggerObject>::const_iterator trigObject = passingMuons.begin();
+       trigObject != passingMuons.end();
+       ++trigObject) {
+    double dR = deltaR(trigObject->eta(), trigObject->phi(), selectedMuon->eta(), selectedMuon->phi());
+    if (dR < 0.1)
+      return true;
+  }
+  return false;
 }

@@ -27,6 +27,7 @@ public:
   TH2D* Muon_TightISO;
   TH2D* Muon_Trig;
   std::vector<const reco::Muon*> selectedMuons;
+  std::vector<const reco::Muon*> globalMuons;
   std::vector<const reco::Muon*> selectedEndcapMuons;
   const reco::Muon* highPtSelectedMuon;
   const reco::Muon* highPtSelectedEndcapMuon;

@@ -18,7 +18,8 @@ public:
                       edm::EDGetTokenT<EcalRecHitCollection>,
                       edm::EDGetTokenT<EcalRecHitCollection>,
                       const reco::TransientTrack,
-                      double dR = 0.4);
+                      double dR = 0.4,
+                      bool print = false);
   std::vector<std::pair<double, double>> badCellPositions;
 };
 

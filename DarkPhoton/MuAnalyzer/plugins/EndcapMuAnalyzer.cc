@@ -276,14 +276,14 @@ EndcapMuAnalyzer::EndcapMuAnalyzer(const edm::ParameterSet& iConfig)
     m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
     m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   }
-  allEvents.book(fs->mkdir("allEvents"),m_isMC);
-  genAccepted.book(fs->mkdir("genAccepted"),m_isMC);
-  preSelectedEvents.book(fs->mkdir("preSelected"),m_isMC);
-  failSig.book(fs->mkdir("failSig"),m_isMC);
-  lowHits.book(fs->mkdir("lowHits"),m_isMC);
-  totalDisappear.book(fs->mkdir("totalDisappear"),m_isMC);
-  partialDisappear.book(fs->mkdir("partialDisappear"),m_isMC);
-  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"),m_isMC);
+  allEvents.book(fs->mkdir("allEvents"), m_isMC);
+  genAccepted.book(fs->mkdir("genAccepted"), m_isMC);
+  preSelectedEvents.book(fs->mkdir("preSelected"), m_isMC);
+  failSig.book(fs->mkdir("failSig"), m_isMC);
+  lowHits.book(fs->mkdir("lowHits"), m_isMC);
+  totalDisappear.book(fs->mkdir("totalDisappear"), m_isMC);
+  partialDisappear.book(fs->mkdir("partialDisappear"), m_isMC);
+  partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"), m_isMC);
 }
 
 EndcapMuAnalyzer::~EndcapMuAnalyzer() {
@@ -386,7 +386,6 @@ void EndcapMuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& 
     myCSCs.ExtrapolateTrackToCSC(iEvent,
                                  iSetup,
                                  CSCSegment_Label,
-                                 rpcRecHitToken,
                                  selectedTrack,
                                  transientTrackBuilder->build(selectedTrack),
                                  FillerPoint);

@@ -25,6 +25,7 @@ public:
 
   void book(TFileDirectory histFolder);
   void FillHists(SigEventInfo info);
+
 public:
   //Histograms
   TH1F* m_genEventCount;

@@ -6,6 +6,7 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "Geometry/Records/interface/MuonGeometryRecord.h"
+#include "Geometry/DTGeometry/interface/DTGeometry.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrack.h"
 #include "TrackingTools/TransientTrack/interface/TransientTrackBuilder.h"
 #include "TrackingTools/Records/interface/TransientTrackRecord.h"
@@ -15,6 +16,7 @@
 CSC::CSC(bool loadSFs) {
   minDR = 10;
   recMinDR = 100;
+  rpcMinDR = 100;
   minSimCSCDr = -1;
   nSimCSCHits = 0;
   CSCdEta = -10;
@@ -22,24 +24,68 @@ CSC::CSC(bool loadSFs) {
   minTotalImpactParameter = 10000;
   for (int i = 0; i < 4; i++) {
     minDrByDepth[i] = -1;
+    minRpcDrByDepth[i] = 100;
+    secMinDrByDepth[i] = -1;
+    minDtDrByDepth[i] = -1;
   }
-  if(loadSFs)
-  {
-      printf("Trying to open the CSC scale factors.\n");
-      std::string sfName = "/data/cmszfs1/user/revering/dphoton/slc7/CMSSW_10_6_17_patch1/src/DarkPhoton/MuAnalyzer/histograms/missingCSCscaleFactors.root";
-    TFile* lFile_SF = TFile::Open(sfName.c_str(),"READ");
-    printf("Opened the file.\n");
-    for (int station=0;station<4;station++)
-    {
-      std::string name="missingCSCSf_station"+std::to_string(station+1);
+  if (loadSFs) {
+    std::string sfName = "missingCSCscaleFactors.root";
+    TFile* lFile_SF = TFile::Open(sfName.c_str(), "READ");
+    for (int station = 0; station < 4; station++) {
+      std::string name = "missingCSCSf_station" + std::to_string(station + 1);
       missingCSCScaleFactors[station] = (TH2F*)lFile_SF->Get(name.c_str());
       missingCSCScaleFactors[station]->SetDirectory(0);
-      printf("Filled a station thingy.\n");
     }
     lFile_SF->Close();
   }
 }
 
+void CSC::ExtrapolateTrackToDTs(const edm::Event& iEvent,
+                                const edm::EventSetup& iSetup,
+                                edm::EDGetTokenT<DTRecSegment4DCollection> DTSegment_Label,
+				edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken,
+                                const reco::Track* iTrack,
+                                reco::TransientTrack tracksToVertex,
+                                GlobalPoint VertexPosition) {
+
+  edm::Handle<DTRecSegment4DCollection> TheDTSegments = iEvent.getHandle(DTSegment_Label);
+  iEvent.getByToken(DTSegment_Label, TheDTSegments);
+  minTotalImpactParameter = 10000;
+  int nStations = 4;
+  for (int i = 0; i < nStations; i++) {
+    minDtDrByDepth[i] = -1;
+    minDtDEtaByDepth[i] = -1;
+    minDtDPhiByDepth[i] = -1;
+    minDtDZByDepth[i] = -1;
+  }
+
+  edm::ESHandle<DTGeometry> dtGeom;
+  iSetup.get<MuonGeometryRecord>().get(dtGeom);
+  if (TheDTSegments.isValid()) {
+    DTRecSegment4DCollection::id_iterator chamberIdIt;
+    for (chamberIdIt = TheDTSegments->id_begin(); chamberIdIt != TheDTSegments->id_end(); ++chamberIdIt)
+    {
+       const DTChamber* chamber = dtGeom->chamber(*chamberIdIt);
+
+       DTRecSegment4DCollection::range range = TheDTSegments->get((*chamberIdIt));
+       for (DTRecSegment4DCollection::const_iterator iSegment = range.first; iSegment != range.second; ++iSegment){
+
+         GlobalPoint TheGlobalPosition = chamber->toGlobal((*iSegment).localPosition());
+         TrajectoryStateClosestToPoint traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+         double thisMinDr =
+             deltaR(traj.position().eta(), traj.position().phi(), TheGlobalPosition.eta(), TheGlobalPosition.phi());
+
+      	 int stationId = chamber->id().station()-1;
+         if (thisMinDr < minDtDrByDepth[stationId] || minDtDrByDepth[stationId] < 0) {
+           minDtDrByDepth[stationId] = thisMinDr;
+	   minDtDPhiByDepth[stationId] = traj.position().phi()-TheGlobalPosition.phi();
+	   minDtDEtaByDepth[stationId] = traj.position().eta()-TheGlobalPosition.eta();
+	   minDtDZByDepth[stationId] = traj.position().z()-TheGlobalPosition.z();
+         }
+       }
+     }
+  }
+}
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
                                 const edm::EventSetup& iSetup,
                                 edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
@@ -110,6 +156,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
                                 const edm::EventSetup& iSetup,
                                 edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
+                                edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken,
                                 edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken,
                                 const reco::Track* iTrack,
                                 reco::TransientTrack tracksToVertex,
@@ -132,11 +179,52 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
     TrajectoryStateClosestToPoint traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
     double RHdEta = traj.position().eta() - TheGlobalPosition.eta();
     double RHdPhi = traj.position().phi() - TheGlobalPosition.phi();
+    if (rpcMinDR >  sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)))) {
+       rpcMinDR = sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)));
+    }
+    
+    RPCDetId iDetId = (RPCDetId)(*recIt).rpcId();
+    int stationId = iDetId.station() - 1;
+    if (minRpcDrByDepth[stationId] > sqrt(pow(RHdEta, 2.0) + pow(RHdPhi, 2.0))) {
+       minRpcDrByDepth[stationId] = sqrt(pow(RHdEta, 2.0) + pow(RHdPhi, 2.0));
+    }
+
     if (recMinDR > sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)))) {
       recMinDR = sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)));
     }
   }
+  edm::Handle<CSCRecHit2DCollection> cscRecHits;
+  iEvent.getByToken(CSCRecHitToken, cscRecHits);
+  edm::ESHandle<CSCGeometry> TheCSCGeometry;
+  iSetup.get<MuonGeometryRecord>().get(TheCSCGeometry);
+
+  CSCRecHit2DCollection::const_iterator CSCRecIt;
+  for (CSCRecIt = cscRecHits->begin(); CSCRecIt != cscRecHits->end(); CSCRecIt++) {
+    CSCDetId iDetId = (CSCDetId)(*CSCRecIt).cscDetId();
+    if (iTrack->eta() < 0 && iDetId.endcap() == 1)
+      continue;
+    if (iTrack->eta() > 0 && iDetId.endcap() == 2)
+      continue;
+    DetId TheDetUnitId(CSCRecIt->cscDetId());
+    const GeomDetUnit* TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+    int stationId = iDetId.station() - 1;
+
+    LocalPoint TheLocalPosition = CSCRecIt->localPosition();
+    const BoundPlane& TheSurface = TheUnit->surface();
+    GlobalPoint TheGlobalPosition = TheSurface.toGlobal(TheLocalPosition);
+    TrajectoryStateClosestToPoint traj = tracksToVertex.trajectoryStateClosestToPoint(TheGlobalPosition);
+    double RHdEta = traj.position().eta() - TheGlobalPosition.eta();
+    double RHdPhi = traj.position().phi() - TheGlobalPosition.phi();
+    if (recMinDR > sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)))) {
+      recMinDR = sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)));
+    }
+    if (minRecDrByDepth[stationId]> sqrt(pow(RHdEta, 2.0) + pow(RHdPhi, 2.0))) {
+      minRecDrByDepth[stationId] = sqrt(pow(RHdEta, 2.0) + pow(RHdPhi, 2.0));
+    }
+    //if((stationId>0)&&(sqrt((pow(RHdEta, 2.0)+pow(RHdPhi,2.0)))<1.0)){recMinDR=0;}
+  }
 }
+
 void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
                                 const edm::EventSetup& iSetup,
                                 edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label,
@@ -160,6 +248,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
       continue;
     DetId TheDetUnitId(recIt->cscDetId());
     const GeomDetUnit* TheUnit = (*TheCSCGeometry).idToDetUnit(TheDetUnitId);
+    int stationId = iDetId.station() - 1;
 
     LocalPoint TheLocalPosition = recIt->localPosition();
     const BoundPlane& TheSurface = TheUnit->surface();
@@ -170,6 +259,7 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
     if (recMinDR > sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)))) {
       recMinDR = sqrt((pow(RHdEta, 2.0) + pow(RHdPhi, 2.0)));
     }
+//if((stationId>0)&&(sqrt((pow(RHdEta, 2.0)+pow(RHdPhi,2.0)))<1.0)){recMinDR=0;}
   }
 }
 
@@ -187,7 +277,15 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
   minTotalImpactParameter = 10000;
   int nStations = 4;
   for (int i = 0; i < nStations; i++) {
+    nCloseHits[i] = 0;
     minDrByDepth[i] = -1;
+    minRecDrByDepth[i] = 100;
+    minDPhiByDepth[i] = -1;
+    secMinDrByDepth[i] = -1;
+    secMinDPhiByDepth[i] = -1;
+    minDEtaByDepth[i] = -1;
+    minDZByDepth[i] = -1;
+    nCloseHits[i] = 0;
   }
 
   if (TheCSCSegments.isValid()) {
@@ -227,10 +325,19 @@ void CSC::ExtrapolateTrackToCSC(const edm::Event& iEvent,
         CSCChiSq = iSegment->chi2();
       }
       int stationId = iDetId.station() - 1;
+      if(thisMinDr < 0.1){nCloseHits[stationId]++;}
       if (thisMinDr < minDrByDepth[stationId] || minDrByDepth[stationId] < 0) {
+	secMinDrByDepth[stationId] = minDrByDepth[stationId];
+        secMinDPhiByDepth[stationId] = minDPhiByDepth[stationId];
         minDrByDepth[stationId] = thisMinDr;
+	minDPhiByDepth[stationId] = traj.position().phi()-TheGlobalPosition.phi();
+	minDEtaByDepth[stationId] = traj.position().eta()-TheGlobalPosition.eta();
+	minDZByDepth[stationId] = traj.position().z()-TheGlobalPosition.z();
       }
-
+      else if (thisMinDr < secMinDrByDepth[stationId] || secMinDrByDepth[stationId] < 0){
+	      secMinDrByDepth[stationId] = thisMinDr;
+	      secMinDPhiByDepth[stationId] = traj.position().phi()-TheGlobalPosition.phi();
+      }
       if (minTotalImpactParameter > sqrt(traj.perigeeParameters().transverseImpactParameter() *
                                              traj.perigeeParameters().transverseImpactParameter() +
                                          traj.perigeeParameters().longitudinalImpactParameter() *
@@ -322,8 +429,7 @@ void CSC::ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
     goodDepths[depth] = false;
   }
   if (cscSimHits.isValid()) {
-    for (unsigned int simHitCounter = 0; simHitCounter < cscSimHits->size(); simHitCounter++)
-    {
+    for (unsigned int simHitCounter = 0; simHitCounter < cscSimHits->size(); simHitCounter++) {
       const PSimHit& simHit = (*cscSimHits)[simHitCounter];
       //if (abs(simHit.particleType()) == 13) {
       const CSCLayer* csclayer = cscGeom->layer((CSCDetId)simHit.detUnitId());
@@ -346,11 +452,13 @@ void CSC::ExtrapolateTrackToSimCSC(const edm::Event& iEvent,
   }
 }
 
-double CSC::GetMissingHitWeight(int station, double eta, double phi)
-{
-  if(missingCSCScaleFactors[station]->GetBinError(missingCSCScaleFactors[station]->FindBin(eta,phi))==0) return 1;
-  double scaleFactor=missingCSCScaleFactors[station]->GetBinContent(missingCSCScaleFactors[station]->FindBin(eta,phi));
-  if(scaleFactor>1){scaleFactor=1;}
+double CSC::GetMissingHitWeight(int station, double eta, double phi) {
+  if (missingCSCScaleFactors[station]->GetBinError(missingCSCScaleFactors[station]->FindBin(eta, phi)) == 0)
+    return 1;
+  double scaleFactor =
+      missingCSCScaleFactors[station]->GetBinContent(missingCSCScaleFactors[station]->FindBin(eta, phi));
+  if (scaleFactor > 1) {
+    scaleFactor = 1;
+  }
   return scaleFactor;
 }
-

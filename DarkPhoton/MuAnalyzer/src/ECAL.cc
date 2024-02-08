@@ -37,8 +37,12 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
                           edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label,
                           edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label,
                           const reco::TransientTrack track,
-                          double dR) {
+                          double dR,
+                          bool print) {
   TrajectoryStateClosestToPoint t0 = track.impactPointTSCP();
+  if (print) {
+    printf("T0 eta is %f.\n", t0.momentum().eta());
+  }
   for (uint8_t i = 0; i < badCellPositions.size(); i++) {
     if (deltaR(badCellPositions[i].first, badCellPositions[i].second, t0.momentum().eta(), t0.momentum().phi()) < 0.1) {
       return -1.;
@@ -65,6 +69,13 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
     math::XYZVector trajRoot(traj.position().x(), traj.position().y(), traj.position().z());
     if (ROOT::Math::VectorUtil::DeltaR(idPositionRoot, trajRoot) < dR && (*hit).energy() > 0.3) {
       eDR += (*hit).energy();
+      if (print) {
+        printf("Adding an endcap hit, energy is %f, dr is %f, traj x is %f, id x is %f.\n",
+               (*hit).energy(),
+               ROOT::Math::VectorUtil::DeltaR(idPositionRoot, trajRoot),
+               traj.position().x(),
+               hitPos.x());
+      }
     }
   }
   for (EcalRecHitCollection::const_iterator hit = rechitsEB->begin(); hit != rechitsEB->end(); hit++) {
@@ -79,6 +90,9 @@ double ECAL::GetIsolation(const edm::Event& iEvent,
     math::XYZVector trajRoot(traj.position().x(), traj.position().y(), traj.position().z());
     if (ROOT::Math::VectorUtil::DeltaR(idPositionRoot, trajRoot) < dR && (*hit).energy() > 0.3) {
       eDR += (*hit).energy();
+      if (print) {
+        printf("Adding a barrel hit, energy is %f.\n", (*hit).energy());
+      }
     }
   }
   return eDR;

@@ -31,16 +31,22 @@ HCAL::HCAL() {
   centerInCone = 0;
   centerOutOfCone = 0;
   m_crossDepths = false;
-  onEdge=false;
-  etaEdgeMin = -1;
-  phiEdgeMin = -1;
-  for(int depth=0;depth<7;depth++){
-    cellDetaByDepth[depth]=10.;
-    cellDphiByDepth[depth]=10.;
-    cellEtaEdgeDistance[depth]=10.;
-    cellPhiEdgeDistance[depth]=10.;
-    m_hitEnergies[depth]=0;
-    foundDepths[depth]=false;
+  onEdge = false;
+  etaEdgeMin = 10;
+  phiEdgeMin = 10;
+  for (int depth = 0; depth < 7; depth++) {
+    cellDetaByDepth[depth] = 10.;
+    cellDphiByDepth[depth] = 10.;
+    cellEtaEdgeDistance[depth] = 10.;
+    cellPhiEdgeDistance[depth] = 10.;
+    cellXShiftsEnergy[depth] = -1;
+    cellYShiftsEnergy[depth] = -1;
+    cellZShiftsEnergy[depth] = -1;
+    cellXShiftsByDepth[depth] = 100.;
+    cellYShiftsByDepth[depth] = 100.;
+    cellZShiftsByDepth[depth] = 100.;
+    m_hitEnergies[depth] = 0;
+    foundDepths[depth] = false;
   }
 }
 
@@ -356,41 +362,90 @@ bool HCAL::HitsPlots(
   HcalDetId CenterCells[Ndepths];
   HcalDetId NeighborCells[Ndepths];
   HcalDetId NeighborPhiCells[Ndepths];
+  HcalDetId XShiftCells[Ndepths];
+  HcalDetId YShiftCells[Ndepths];
+  HcalDetId ZShiftCells[Ndepths];
+
   Tdeta = TrackGlobalPoint.eta() - caloGeom->getGeometry(ClosestCell)->etaPos();
   Tdphi = TrackGlobalPoint.phi() - caloGeom->getGeometry(ClosestCell)->phiPos();
 
   CellsFound = GetTransientProjectedCells(HEGeom, CenterCells, track);
+  double CellsFoundX = GetTransientProjectedCellsNeighborX(HEGeom, XShiftCells, track);
+  double CellsFoundY = GetTransientProjectedCellsNeighborY(HEGeom, YShiftCells, track);
   int lastDepth = -1;
-  int depthOffset=0;
-  for(int cell=0;cell<CellsFound;cell++){
-    if(cell>=Ndepths){break;}
-    GlobalPoint cellGlobalPoint = caloGeom->getGeometry(CenterCells[cell])->getPosition();
-    int thisDepth = CenterCells[cell].depth()-1;
-    if(thisDepth<7){foundDepths[thisDepth]=true;}
-    if(thisDepth==lastDepth)
-    {
-       m_crossDepths=true;
-       depthOffset++;
-       continue;
+  int depthOffset = 0;
+  for (int cell = 0; cell < CellsFound; cell++) {
+    if (cell >= Ndepths) {
+      break;
     }
-    lastDepth=thisDepth;
+    GlobalPoint cellGlobalPoint = caloGeom->getGeometry(CenterCells[cell])->getPosition();
+    int thisDepth = CenterCells[cell].depth() - 1;
+    if (thisDepth < 7) {
+      foundDepths[thisDepth] = true;
+    }
+    if (thisDepth == lastDepth) {
+      m_crossDepths = true;
+      depthOffset++;
+      continue;
+    }
+    lastDepth = thisDepth;
     double etaSize = caloGeom->getGeometry(CenterCells[cell])->etaSpan();
     double phiSize = caloGeom->getGeometry(CenterCells[cell])->phiSpan();
     TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(cellGlobalPoint);
-    cellDetaByDepth[cell-depthOffset]=traj.position().eta()-cellGlobalPoint.eta();
-    cellDphiByDepth[cell-depthOffset]=traj.position().phi()-cellGlobalPoint.phi(); 
-    double etaEdge=etaSize/2.-fabs(cellDetaByDepth[cell-depthOffset]);
-    double phiEdge=phiSize/2.-fabs(cellDphiByDepth[cell-depthOffset]);
-    if(etaEdgeMin<0||etaEdge<etaEdgeMin){etaEdgeMin=etaEdge;}
-    if(phiEdgeMin<0||phiEdge<phiEdgeMin){phiEdgeMin=phiEdge;}
-    if(cellDetaByDepth[cell-depthOffset]>0){cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]-etaSize/2.;}
-    else{cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]+etaSize/2.;}
-    if(cellDphiByDepth[cell-depthOffset]>0){cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]-phiSize/2.;}
-    else{cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]+phiSize/2.;}
+    CaloCellGeometry::CornersVec cellCorners = caloGeom->getGeometry(CenterCells[cell])->getCorners();
+    double closestDeta = 10;
+    double closestDphi = 10;
+    for(unsigned int i(0); i!=cellCorners.size(); i++)
+    {
+       GlobalPoint shiftedGlobalPoint;
+       shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y(),traj.position().z());
+//       if(traj.position().eta()>0){shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y()+0.7,traj.position().z());}
+//       else{shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y()+0.3,traj.position().z());}
+       if(fabs(shiftedGlobalPoint.eta()-cellCorners[i].eta())<fabs(closestDeta)){closestDeta=shiftedGlobalPoint.eta()-cellCorners[i].eta();}
+       if(fabs(shiftedGlobalPoint.phi()-cellCorners[i].phi())<fabs(closestDphi)){closestDphi=shiftedGlobalPoint.phi()-cellCorners[i].phi();}
+    }
+
+    cellDetaByDepth[cell - depthOffset] = traj.position().eta() - cellGlobalPoint.eta();
+    cellDphiByDepth[cell - depthOffset] = traj.position().phi() - cellGlobalPoint.phi();
+    cellEtaEdgeDistance[cell - depthOffset] = closestDeta;
+    cellPhiEdgeDistance[cell - depthOffset] = closestDphi;
+
+/*    if (cellDetaByDepth[cell - depthOffset] > 0) {
+      cellEtaEdgeDistance[cell - depthOffset] = cellDetaByDepth[cell - depthOffset] - etaSize / 2.;
+    } else {
+      cellEtaEdgeDistance[cell - depthOffset] = cellDetaByDepth[cell - depthOffset] + etaSize / 2.;
+    }
+    if (cellDphiByDepth[cell - depthOffset] > 0) {
+      cellPhiEdgeDistance[cell - depthOffset] = cellDphiByDepth[cell - depthOffset] - phiSize / 2.;
+    } else {
+      cellPhiEdgeDistance[cell - depthOffset] = cellDphiByDepth[cell - depthOffset] + phiSize / 2.;
+    }
+*/
+    double etaEdge = cellEtaEdgeDistance[cell - depthOffset];
+    double phiEdge = cellPhiEdgeDistance[cell - depthOffset];
+    if (etaEdgeMin > 10 || fabs(etaEdge) < fabs(etaEdgeMin)) {
+      etaEdgeMin = etaEdge;
+    }
+    if (phiEdgeMin > 10 || fabs(phiEdge) < fabs(phiEdgeMin)) {
+      phiEdgeMin = phiEdge;
+    }
   }
-  if(fabs(etaEdgeMin)<0.016||fabs(phiEdgeMin)<0.004){onEdge=true;}
+
+  bool etaEdgeCond = false;
+  if((TrackGlobalPoint.eta()<0)&(etaEdgeMin>-0.002)&(etaEdgeMin<0.016)){etaEdgeCond=true;}
+  else if((TrackGlobalPoint.eta()>0)&(etaEdgeMin<0.002)&(etaEdgeMin>-0.016)){etaEdgeCond=true;}
+  
+  bool phiEdgeCond = false;
+  if((fabs(TrackGlobalPoint.phi())>1.5)&(phiEdgeMin<0.001)&(phiEdgeMin>-0.004)){phiEdgeCond=true;}
+  else if((fabs(TrackGlobalPoint.phi())<1.5)&(phiEdgeMin>-0.001)&(phiEdgeMin<0.004)){phiEdgeCond=true;}
+  if (etaEdgeCond || phiEdgeCond) {
+    onEdge = true;
+  }
+
   bool etaPlus = Tdeta > 0;
   bool phiPlus = Tdphi > 0;
+
+  double CellsFoundZ = GetTransientProjectedCellsNeighborZ(HEGeom, ZShiftCells, CenterCells, track);
   NeighborCellsFound = GetTransientProjectedCellsNeighbors(theHBHETopology, HEGeom, NeighborCells, track, etaPlus);
   NeighborPhiCellsFound =
       GetTransientProjectedCellsNeighborsPhi(theHBHETopology, HEGeom, NeighborPhiCells, track, phiPlus);
@@ -416,6 +471,9 @@ bool HCAL::HitsPlots(
       HcalDetId* centermatch = std::find(std::begin(CenterCells), std::end(CenterCells), id);
       HcalDetId* neighbormatch = std::find(std::begin(NeighborCells), std::end(NeighborCells), id);
       HcalDetId* neighborphimatch = std::find(std::begin(NeighborPhiCells), std::end(NeighborPhiCells), id);
+      HcalDetId* xshiftmatch = std::find(std::begin(XShiftCells), std::end(XShiftCells), id);
+      HcalDetId* yshiftmatch = std::find(std::begin(YShiftCells), std::end(YShiftCells), id);
+      HcalDetId* zshiftmatch = std::find(std::begin(ZShiftCells), std::end(ZShiftCells), id);
 
       int HitiEta = id.ieta();
       if (fabs(HitiEta) < 16) {
@@ -450,6 +508,24 @@ bool HCAL::HitsPlots(
             neighborphienergies[id.depth() - 1] += hbherechit->energy();
           }
         }
+	if(xshiftmatch != std::end(XShiftCells)){
+	  if (id.depth() < 8) 
+	  { 
+	    cellXShiftsEnergy[id.depth() - 1] += hbherechit->energy();
+	  }
+	}
+	if(yshiftmatch != std::end(YShiftCells)){
+	  if (id.depth() < 8) 
+	  { 
+	    cellYShiftsEnergy[id.depth() - 1] += hbherechit->energy();
+	  }
+	}
+	if(zshiftmatch != std::end(ZShiftCells)){
+	  if (id.depth() < 8)
+	  {
+	    cellZShiftsEnergy[id.depth() - 1] += hbherechit->energy();
+	  }
+	}
       }
     }
     int hitsoverthresh = 0;
@@ -500,6 +576,7 @@ bool HCAL::FindMuonHits(
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
   double ReducedConeE = 0;
   static double Hits[4];
+  onEdge=false;
   Hits[0] = 0;
   Hits[1] = 0;
   Hits[2] = 0;
@@ -583,34 +660,62 @@ bool HCAL::FindMuonHits(
   //  GetCenterCells(theHBHETopology,CenterCells,ClosestCell,Ndepths,1);
   CellsFound = GetTransientProjectedCells(HEGeom, CenterCells, track);
   int lastDepth = -1;
-  int depthOffset=0;
-  for(int cell=0;cell<CellsFound;cell++){
-    if(cell>=Ndepths){break;}
-    GlobalPoint cellGlobalPoint = caloGeom->getGeometry(CenterCells[cell])->getPosition();
-    int thisDepth = CenterCells[cell].depth()-1;
-    if(thisDepth<7){foundDepths[thisDepth]=true;}
-    if(thisDepth==lastDepth)
-    {
-       m_crossDepths=true;
-       depthOffset++;
-       continue;
+  int depthOffset = 0;
+  for (int cell = 0; cell < CellsFound; cell++) {
+    if (cell >= (CellsPerDepth * Ndepths)) {
+      break;
     }
-    lastDepth=thisDepth;
+    GlobalPoint cellGlobalPoint = caloGeom->getGeometry(CenterCells[cell])->getPosition();
+    int thisDepth = CenterCells[cell].depth() - 1;
+    if (thisDepth < 7) {
+      foundDepths[thisDepth] = true;
+    }
+    if (thisDepth == lastDepth) {
+      m_crossDepths = true;
+      depthOffset++;
+      continue;
+    }
+    lastDepth = thisDepth;
     double etaSize = caloGeom->getGeometry(CenterCells[cell])->etaSpan();
     double phiSize = caloGeom->getGeometry(CenterCells[cell])->phiSpan();
     TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(cellGlobalPoint);
-    cellDetaByDepth[cell-depthOffset]=traj.position().eta()-cellGlobalPoint.eta();
-    cellDphiByDepth[cell-depthOffset]=traj.position().phi()-cellGlobalPoint.phi(); 
-    double etaEdge=etaSize/2.-fabs(cellDetaByDepth[cell-depthOffset]);
-    double phiEdge=phiSize/2.-fabs(cellDphiByDepth[cell-depthOffset]);
-    if(etaEdgeMin<0||etaEdge<etaEdgeMin){etaEdgeMin=etaEdge;}
-    if(phiEdgeMin<0||phiEdge<phiEdgeMin){phiEdgeMin=phiEdge;}
-    if(cellDetaByDepth[cell-depthOffset]>0){cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]-etaSize/2.;}
-    else{cellEtaEdgeDistance[cell-depthOffset]=cellDetaByDepth[cell-depthOffset]+etaSize/2.;}
-    if(cellDphiByDepth[cell-depthOffset]>0){cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]-phiSize/2.;}
-    else{cellPhiEdgeDistance[cell-depthOffset]=cellDphiByDepth[cell-depthOffset]+phiSize/2.;}
+    CaloCellGeometry::CornersVec cellCorners = caloGeom->getGeometry(CenterCells[cell])->getCorners();
+    double closestDeta = 10;
+    double closestDphi = 10;
+    for(unsigned int i(0); i!=cellCorners.size(); i++)
+    {
+       GlobalPoint shiftedGlobalPoint;
+       shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y(),traj.position().z());
+//       if(traj.position().eta()>0){shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y()+0.7,traj.position().z());}
+//       else{shiftedGlobalPoint=GlobalPoint(traj.position().x(),traj.position().y()+0.3,traj.position().z());}
+       if(fabs(shiftedGlobalPoint.eta()-cellCorners[i].eta())<fabs(closestDeta)){closestDeta=shiftedGlobalPoint.eta()-cellCorners[i].eta();}
+       if(fabs(shiftedGlobalPoint.phi()-cellCorners[i].phi())<fabs(closestDphi)){closestDphi=shiftedGlobalPoint.phi()-cellCorners[i].phi();}
+    }
+
+    cellDetaByDepth[cell - depthOffset] = traj.position().eta() - cellGlobalPoint.eta();
+    cellDphiByDepth[cell - depthOffset] = traj.position().phi() - cellGlobalPoint.phi();
+    cellEtaEdgeDistance[cell - depthOffset] = closestDeta;
+    cellPhiEdgeDistance[cell - depthOffset] = closestDphi;
+
+    double etaEdge = cellEtaEdgeDistance[cell - depthOffset];
+    double phiEdge = cellPhiEdgeDistance[cell - depthOffset];
+    if (etaEdgeMin > 10 || fabs(etaEdge) < fabs(etaEdgeMin)) {
+      etaEdgeMin = etaEdge;
+    }
+    if (phiEdgeMin > 10 || fabs(phiEdge) < fabs(phiEdgeMin)) {
+      phiEdgeMin = phiEdge;
+    }
   }
-  if(fabs(etaEdgeMin)<0.016||fabs(phiEdgeMin)<0.004){onEdge=true;}
+  bool etaEdgeCond = false;
+  if((TrackGlobalPoint.eta()<0)&(etaEdgeMin>-0.002)&(etaEdgeMin<0.016)){etaEdgeCond=true;}
+  else if((TrackGlobalPoint.eta()>0)&(etaEdgeMin<0.002)&(etaEdgeMin>-0.016)){etaEdgeCond=true;}
+  
+  bool phiEdgeCond = false;
+  if((fabs(TrackGlobalPoint.phi())>1.5)&(phiEdgeMin<0.001)&(phiEdgeMin>-0.004)){phiEdgeCond=true;}
+  else if((fabs(TrackGlobalPoint.phi())<1.5)&(phiEdgeMin>-0.001)&(phiEdgeMin<0.004)){phiEdgeCond=true;}
+  if (etaEdgeCond || phiEdgeCond) {
+    onEdge = true;
+  }
 
   Tdphi = TrackGlobalPoint.phi() - caloGeom->getGeometry(ClosestCell)->phiPos();
   Tdeta = TrackGlobalPoint.eta() - caloGeom->getGeometry(ClosestCell)->etaPos();
@@ -700,7 +805,8 @@ double HCAL::GetIsolation(
     const edm::Event& iEvent,
     const edm::EventSetup& iSetup,
     edm::EDGetTokenT<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>> HBHERecHit_Label,
-    const reco::TransientTrack track) {
+    const reco::TransientTrack track,
+    double coneSize) {
   edm::Handle<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>> hcalRecHits;
   iEvent.getByToken(HBHERecHit_Label, hcalRecHits);
   double MatchedEnergy = 0;
@@ -724,7 +830,7 @@ double HCAL::GetIsolation(
     TrajectoryStateClosestToPoint traj = track.trajectoryStateClosestToPoint(hitPos);
     math::XYZVector idPositionRoot(hitPos.x(), hitPos.y(), hitPos.z());
     math::XYZVector trajRoot(traj.position().x(), traj.position().y(), traj.position().z());
-    if (ROOT::Math::VectorUtil::DeltaR(idPositionRoot, trajRoot) < 0.4) {
+    if (ROOT::Math::VectorUtil::DeltaR(idPositionRoot, trajRoot) < coneSize) {
       MatchedEnergy += hbherechit->energy();
     }
   }
@@ -840,11 +946,177 @@ int HCAL::GetTransientProjectedCells(const CaloSubdetectorGeometry* HEGeom,
 
     GlobalPoint testGlobalPoint = GlobalPoint(testPointX, testPointY, testPointZ);
     TrajectoryStateClosestToPoint traj = muTrack.trajectoryStateClosestToPoint(testGlobalPoint);
-    HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(traj.position());
+    GlobalPoint shiftedTrajPosition;
+    shiftedTrajPosition = GlobalPoint(traj.position().x(), traj.position().y(), traj.position().z());
+
+//    if(traj.position().eta()>0){
+//	    shiftedTrajPosition = GlobalPoint(traj.position().x(), traj.position().y()+0.7, traj.position().z());
+//    }
+//    else{
+//	    shiftedTrajPosition = GlobalPoint(traj.position().x(), traj.position().y()+0.3, traj.position().z());
+//    }
+    HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(shiftedTrajPosition);
+
     if (testClosestCell != lastClosestCell) {
       lastClosestCell = testClosestCell;
+      //Check that the track is geometrically within the eta/phi of the cell
+      //if (!HEGeom->getGeometry(testClosestCell)->inside(traj.position())){continue;}
+
+      TrackAlignedCells[testClosestCell.depth()-1] = testClosestCell;
       TrackAlignedCells[j] = testClosestCell;
       j = j + 1;
+    }
+  }
+  return j;
+}
+
+int HCAL::GetTransientProjectedCellsNeighborX(const CaloSubdetectorGeometry* HEGeom,
+                                     HcalDetId* TrackAlignedCells,
+                                     reco::TransientTrack muTrack) {
+  double start, step, end;
+  start = 320;
+  step = 5;
+  end = 530;
+  int j = 0;
+  HcalDetId lastClosestCell;
+  for (int i = start; i < end; i += step) {
+    double testPointPerp = fabs(i * tan(muTrack.track().theta()));
+    double testPointX = testPointPerp * cos(muTrack.track().phi());
+    double testPointY = testPointPerp * sin(muTrack.track().phi());
+    double testPointZ;
+    if (muTrack.track().eta() > 0) {
+      testPointZ = i;
+    } else {
+      testPointZ = -i;
+    }
+
+    GlobalPoint testGlobalPoint = GlobalPoint(testPointX, testPointY, testPointZ);
+    TrajectoryStateClosestToPoint traj = muTrack.trajectoryStateClosestToPoint(testGlobalPoint);
+    HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(traj.position());
+
+    if (testClosestCell != lastClosestCell) {
+      lastClosestCell = testClosestCell;
+      //Check that the track is geometrically within the eta/phi of the cell
+      GlobalPoint cellGlobalPoint = HEGeom->getGeometry(testClosestCell)->getPosition();
+      //if (!HEGeom->getGeometry(testClosestCell)->inside(traj.position())){continue;}
+      bool xplus = true;
+      if(cellGlobalPoint.x()>traj.position().x()){xplus=false;}
+      j = j + 1;
+      for (double xoffset = 0; xoffset < 5; xoffset += 0.1) {
+	 GlobalPoint shiftedGlobalPoint;
+	 if(xplus){
+            shiftedGlobalPoint = GlobalPoint(traj.position().x()+xoffset, traj.position().y(), traj.position().z());}
+	 else{
+            shiftedGlobalPoint = GlobalPoint(traj.position().x()-xoffset, traj.position().y(), traj.position().z());}
+         HcalDetId shiftedClosestCell = (HcalDetId)HEGeom->getClosestCell(shiftedGlobalPoint);
+	 if((shiftedClosestCell!=testClosestCell)&(shiftedClosestCell.depth()<8))
+	 {
+            if(xplus){cellXShiftsByDepth[shiftedClosestCell.depth()-1] = xoffset;}
+	    else{cellXShiftsByDepth[shiftedClosestCell.depth()-1] = -xoffset;}
+	    TrackAlignedCells[j] = shiftedClosestCell;
+            break;
+	 }
+      }
+    }
+  }
+  return j;
+}
+
+int HCAL::GetTransientProjectedCellsNeighborY(const CaloSubdetectorGeometry* HEGeom,
+                                     HcalDetId* TrackAlignedCells,
+                                     reco::TransientTrack muTrack) {
+  double start, step, end;
+  start = 320;
+  step = 5;
+  end = 530;
+  int j = 0;
+  HcalDetId lastClosestCell;
+  for (int i = start; i < end; i += step) {
+    double testPointPerp = fabs(i * tan(muTrack.track().theta()));
+    double testPointX = testPointPerp * cos(muTrack.track().phi());
+    double testPointY = testPointPerp * sin(muTrack.track().phi());
+    double testPointZ;
+    if (muTrack.track().eta() > 0) {
+      testPointZ = i;
+    } else {
+      testPointZ = -i;
+    }
+
+    GlobalPoint testGlobalPoint = GlobalPoint(testPointX, testPointY, testPointZ);
+    TrajectoryStateClosestToPoint traj = muTrack.trajectoryStateClosestToPoint(testGlobalPoint);
+    HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(traj.position());
+
+    if (testClosestCell != lastClosestCell) {
+      lastClosestCell = testClosestCell;
+      //Check that the track is geometrically within the eta/phi of the cell
+      GlobalPoint cellGlobalPoint = HEGeom->getGeometry(testClosestCell)->getPosition();
+      //if (!HEGeom->getGeometry(testClosestCell)->inside(traj.position())){continue;}
+      bool yplus = true;
+      if(cellGlobalPoint.y()>traj.position().y()){yplus=false;}
+      j = j + 1;
+      for (double yoffset = 0; yoffset < 5; yoffset += 0.1) {
+	 GlobalPoint shiftedGlobalPoint;
+	 if(yplus){
+            shiftedGlobalPoint = GlobalPoint(traj.position().x(), traj.position().y()+yoffset, traj.position().z());}
+	 else{
+            shiftedGlobalPoint = GlobalPoint(traj.position().x(), traj.position().y()-yoffset, traj.position().z());}
+         HcalDetId shiftedClosestCell = (HcalDetId)HEGeom->getClosestCell(shiftedGlobalPoint);
+	 if((shiftedClosestCell!=testClosestCell)&(shiftedClosestCell.depth()<8))
+
+	 {
+            if(yplus){cellYShiftsByDepth[shiftedClosestCell.depth()-1] = yoffset;}
+	    else{cellYShiftsByDepth[shiftedClosestCell.depth()-1] = -yoffset;}
+	    TrackAlignedCells[j] = shiftedClosestCell;
+            break;
+	 }
+      }
+    }
+  }
+  return j;
+}
+
+int HCAL::GetTransientProjectedCellsNeighborZ(const CaloSubdetectorGeometry* HEGeom,
+                                     HcalDetId* TrackAlignedCells,
+				     HcalDetId* unShiftedCells,
+                                     reco::TransientTrack muTrack) {
+  double start, step, end;
+  start = 300;
+  step = 5;
+  end = 550;
+  int j = 0;
+  for (int i = start; i < end; i += step) {
+    double testPointPerp = fabs(i * tan(muTrack.track().theta()));
+    double testPointX = testPointPerp * cos(muTrack.track().phi());
+    double testPointY = testPointPerp * sin(muTrack.track().phi());
+    double testPointZ;
+    if (muTrack.track().eta() > 0) {
+      testPointZ = i;
+    } else {
+      testPointZ = -i;
+    }
+
+    GlobalPoint testGlobalPoint = GlobalPoint(testPointX, testPointY, testPointZ);
+    TrajectoryStateClosestToPoint traj = muTrack.trajectoryStateClosestToPoint(testGlobalPoint);
+    HcalDetId closestCell = (HcalDetId)HEGeom->getClosestCell(traj.position());
+    GlobalPoint cellGlobalPoint = HEGeom->getGeometry(closestCell)->getPosition();
+    bool zplus = false;
+    if(cellGlobalPoint.eta()<traj.position().eta()){zplus=true;}
+    for (double zoffset = 0; zoffset < 10; zoffset += 0.1) {
+       GlobalPoint shiftedPoint;
+       if(zplus){shiftedPoint = GlobalPoint(traj.position().x(),traj.position().y(),traj.position().z()+zoffset);}
+       else{shiftedPoint = GlobalPoint(traj.position().x(),traj.position().y(),traj.position().z()-zoffset);}
+       HcalDetId testClosestCell = (HcalDetId)HEGeom->getClosestCell(shiftedPoint);
+       if(testClosestCell.depth()<8){
+	 if(foundDepths[testClosestCell.depth()-1])
+         {
+           if((unShiftedCells[testClosestCell.depth()-1]!=testClosestCell)&(cellZShiftsByDepth[testClosestCell.depth()-1]>9)){
+                if(zplus){cellZShiftsByDepth[testClosestCell.depth()-1] = zoffset;}
+                else{cellZShiftsByDepth[testClosestCell.depth()-1] = -zoffset;}
+                TrackAlignedCells[testClosestCell.depth()-1] = testClosestCell;
+                break;
+           }
+	 }
+       }
     }
   }
   return j;

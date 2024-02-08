@@ -40,6 +40,8 @@
 #include "DataFormats/Math/interface/LorentzVector.h"
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/METReco/interface/PFMET.h"
+#include "DataFormats/METReco/interface/PFMETCollection.h"
 #include "FWCore/Utilities/interface/InputTag.h"
 #include "FWCore/Utilities/interface/EDGetToken.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
@@ -191,6 +193,7 @@ private:
   edm::EDGetTokenT<std::vector<reco::Track>> trackCollection_label;
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
   edm::EDGetToken m_genParticleToken;
+  edm::EDGetToken m_PFMETToken;
   edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label;
   //    edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
   edm::EDGetToken m_trigResultsToken;
@@ -205,7 +208,8 @@ private:
   edm::EDGetToken m_pfJetCollection_label;
   edm::EDGetToken m_caloTower_label;
   edm::EDGetToken m_caloJet_label;
-  std::vector<edm::EDGetTokenT<reco::JetTagCollection> > m_jetTagTokens;
+  edm::EDGetToken m_PFMetToken;
+  std::vector<edm::EDGetTokenT<reco::JetTagCollection>> m_jetTagTokens;
   edm::EDGetTokenT<reco::GsfElectronCollection> m_electronsToken;
   edm::EDGetToken m_PUInfoToken;
   edm::EDGetTokenT<reco::CandidateView> candToken_;
@@ -235,6 +239,8 @@ private:
   MuPXHistograms nonMuonProbe;
   MuPXHistograms noMuCR;
   MuPXHistograms genMatched;
+  MuPXHistograms nonGenMatched;
+  MuPXHistograms matchGenTau;
   MuPXHistograms looseMatch;
   MuPXHistograms partialDisappear;
   MuPXHistograms partialDisappear_largeCSCDefl;
@@ -247,7 +253,7 @@ private:
   MuPXHistograms caloJets;
   MuPXHistograms passSig;
   MuPXHistograms passSigNoGenMu;
-  MuPXHistograms passSigNoHcalIso; 
+  MuPXHistograms passSigNoHcalIso;
   MuPXHistograms passSigSameSign;
   std::vector<std::string> cutNames;
 };
@@ -279,6 +285,7 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig)
       m_theSTAMuonLabel(consumes<std::vector<reco::Track>>(iConfig.getParameter<edm::InputTag>("StandAloneTracks"))),
       m_pfJetCollection_label(consumes<reco::PFJetCollection>(iConfig.getParameter<edm::InputTag>("PFJets"))),
       m_caloJet_label(consumes<reco::CaloJetCollection>(iConfig.getParameter<edm::InputTag>("CaloJetSource"))),
+      m_PFMetToken(consumes<std::vector<reco::PFMET>>(iConfig.getParameter<edm::InputTag>("met"))),
       m_electronsToken(consumes<reco::GsfElectronCollection>(iConfig.getParameter<edm::InputTag>("electrons"))),
       m_isMC(iConfig.getUntrackedParameter<bool>("isMC", false)),
       m_xrootd(iConfig.getUntrackedParameter<bool>("xrootd", false)),
@@ -296,7 +303,9 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig)
     m_trigResultsToken = consumes<edm::TriggerResults>(iConfig.getParameter<edm::InputTag>("trigResults"));
     m_muonPathsToPass = iConfig.getParameter<std::vector<std::string>>("muonPathsToPass");
   }
-  m_jetTagTokens = edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag> >("btagAlgos"),[this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag);});
+  m_jetTagTokens =
+      edm::vector_transform(iConfig.getParameter<std::vector<edm::InputTag>>("btagAlgos"),
+                            [this](edm::InputTag const& tag) { return mayConsume<reco::JetTagCollection>(tag); });
   usesResource("TFileService");
   edm::Service<TFileService> fs;
   std::string puFilename, puUpFilename, puDownFilename, MCPuFilename;
@@ -350,6 +359,8 @@ MuPXAnalyzer::MuPXAnalyzer(const edm::ParameterSet& iConfig)
   nonMuonProbe.book(fs->mkdir("nonMuonProbe"));
   noMuCR.book(fs->mkdir("noMuonProbeCR"));
   genMatched.book(fs->mkdir("genMatched"));
+  nonGenMatched.book(fs->mkdir("nonGenMatched"), true);
+  matchGenTau.book(fs->mkdir("matchGenTau"));
   looseMatch.book(fs->mkdir("looseMatched"), true);
   partialDisappear.book(fs->mkdir("partialDisappear"));
   partialDisappear_sameSign.book(fs->mkdir("partialSameSign"));
@@ -597,8 +608,12 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if (!JetId) {
           continue;
         }
-        if(fabs(it->eta())>2.6){continue;}
-        if(it->pt()<30){continue;}
+        if (fabs(it->eta()) > 2.6) {
+          continue;
+        }
+        if (it->pt() < 30) {
+          continue;
+        }
         njets++;
         double jetDr = deltaR(selectedTrack->eta(), selectedTrack->phi(), it->eta(), it->phi());
         if (jetDr < 0.3 && it->energy() > nearJetMaxE) {
@@ -662,6 +677,27 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     } else {
       info.sigCat = 0;
     }
+    //MET Stuff
+    edm::Handle<std::vector<reco::PFMET>> pfMETCollection;
+    bool ValidPFMET = iEvent.getByToken(m_PFMetToken, pfMETCollection);
+    if (!ValidPFMET) {
+      return;
+    }
+    info.pfMet_pt = (*pfMETCollection)[0].et();
+    double met = (*pfMETCollection)[0].et();
+    double phi = (*pfMETCollection)[0].phi();
+    TLorentzVector vmet, vlep;
+    vlep.SetPxPyPzE(selectedMuon->px(), selectedMuon->py(), selectedMuon->pz(), selectedMuon->pfP4().E());
+    double metx = met * std::cos(phi);
+    double mety = met * std::sin(phi);
+    vmet.SetPxPyPzE(metx, mety, 0.0, met);
+    TLorentzVector vw = vlep + vmet;
+    info.muMetMT = std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
+    vlep.SetPxPyPzE(selectedMuon->px() + selectedTrack->px(),
+                    selectedMuon->py() + selectedTrack->py(),
+                    selectedMuon->pz() + selectedTrack->pz(),
+                    selectedMuon->pfP4().E() + selectedTrack->p());
+    info.muAndProbeMetMT = std::sqrt(2 * vlep.Et() * met * (1 - std::cos(deltaPhi(vlep.Phi(), phi))));
     //Nearby Photons
     edm::Handle<reco::PhotonCollection> phoHandle;
     iEvent.getByToken(m_recoPhotonToken, phoHandle);
@@ -803,9 +839,13 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       info.farMuDr = genInfo[1];
       info.farMuEta = genInfo[2];
       info.genTagMuDr = genInfo[3];
+      if (info.matchGenTau&&info.staMinDr>1.0){
+        matchGenTau.FillHists(info, false, m_isMC);
+      }
       if (genmatched) {
         genMatched.FillHists(info, false, m_isMC);
       }
+      else{nonGenMatched.FillHists(info, true,m_isMC,true);}
       //else if(info.adjMuonTrackMass>80&&info.adjMuonTrackMass<100)
       double genInfoTwo[8];
       std::vector<int> nearbyIDs, highPtIds;
@@ -822,7 +862,7 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
       info.highPtNonMuPdgIds = highPtIds;
       info.passLooseMatch = loosegenmatched;
       if (loosegenmatched) {
-        looseMatch.FillHists(info, m_makeSplits, m_isMC, m_makeTuples);
+        looseMatch.FillHists(info, true, m_isMC, true);
       }
       if (info.sigCat == 1) {
         if (!info.passLooseMatch && info.caloJetPt < 0) {
@@ -843,22 +883,20 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     if (myHCAL.CellsFound > 4) {
       if (staMinDr < 1.0) {
         info.sigCat = 2;
-        if(selectedMuon->charge()==selectedTrack->charge())
-        {
-           if(info.muonTrackMass>80&&info.muonTrackMass<100)
-           {
-              partialDisappear_sameSign.FillHists(info, false, m_isMC);
-              return;
-           }
-        }
-        if(info.nJets>0)
-        {
-          if(info.muonTrackMass<76||info.muonTrackMass>106)
-          {
-            partialDisappear_oneJetTTbar.FillHists(info,false,m_isMC);
-            if(info.nJets>1){partialDisappear_multiJetTTbar.FillHists(info,false,m_isMC);}
+        if (selectedMuon->charge() == selectedTrack->charge()) {
+          if (info.muonTrackMass > 80 && info.muonTrackMass < 100) {
+            partialDisappear_sameSign.FillHists(info, false, m_isMC);
+            return;
           }
-        }  
+        }
+        if (info.nJets > 0) {
+          if (info.muonTrackMass < 76 || info.muonTrackMass > 106) {
+            partialDisappear_oneJetTTbar.FillHists(info, false, m_isMC);
+            if (info.nJets > 1) {
+              partialDisappear_multiJetTTbar.FillHists(info, false, m_isMC);
+            }
+          }
+        }
         if (((info.muonTrackMass > 80 && info.muonTrackMass < 100) || m_offPeakCR) && info.caloJetPt < 0) {
           if (info.probeCharge > 0) {
             if (info.stadPhi > 0.1) {
@@ -875,25 +913,18 @@ void MuPXAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if (myCSCs.minDR > 0.05) {
           noMuCR.FillHists(info, false, m_isMC);
           if ((info.muonTrackMass > 80 && info.muonTrackMass < 100) || m_offPeakCR) {
-            if(selectedMuon->charge()==selectedTrack->charge())
-            {
-               passSigSameSign.FillHists(info,false,m_isMC);
-               return;
+            if (selectedMuon->charge() == selectedTrack->charge()) {
+              passSigSameSign.FillHists(info, false, m_isMC);
+              return;
             }
-            if (m_offPeakCR) {
-              if (info.hitsOverThresh > 1 && info.caloJetPt < 0 && info.coneEnergy < 10 && info.probeHcalIso < 20) {
+            if (info.hitsOverThresh > 1 && info.coneEnergy < 10 && info.probeHcalIso < 20) {
                 passSig.FillHists(info, false, m_isMC, m_makeTuples);
               }
-              if (info.caloJetPt < 0) {
-                passSigNoHcalIso.FillHists(info, false, m_isMC, m_makeTuples);
-              }
-            } else if (info.caloJetPt < 0) {
-              passSig.FillHists(info, false, m_isMC);
-            }
+              passSigNoHcalIso.FillHists(info, false, m_isMC, m_makeTuples);
+            } 
           }
         }
       }
-    }
 
     if (info.muonTrackMass < 70 || info.muonTrackMass > 110) {
       if (info.caloJetPt < 0) {

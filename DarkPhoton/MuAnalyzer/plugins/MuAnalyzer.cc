@@ -134,7 +134,8 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
   edm::EDGetToken m_genParticleToken;
   edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label;
-  //    edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
+  edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
+  edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken;
   edm::EDGetToken m_trigResultsToken;
   edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
   edm::EDGetToken m_PUInfoToken;
@@ -169,6 +170,7 @@ private:
   Histograms noCrossDepths;
   Histograms crossDepths;
   Histograms onEdge;
+  Histograms onEdgeLowMissingHits;
   Histograms notOnEdge;
   Histograms notOnEdgeMissingHits;
 };
@@ -190,7 +192,8 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig)
       primaryVertices_Label(
           consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
       CSCSegment_Label(consumes<CSCSegmentCollection>(iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
-      //  CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
+      CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
+      rpcRecHitToken(consumes<RPCRecHitCollection>(iConfig.getParameter<edm::InputTag>("RPCRecHitTag"))),	
       HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>>(
           iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
       reducedEndcapRecHitCollection_Label(
@@ -233,6 +236,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig)
   noCrossDepths.book(fs->mkdir("noCrossDepths"));
   crossDepths.book(fs->mkdir("crossDepths"));
   onEdge.book(fs->mkdir("onEdge"));
+  onEdgeLowMissingHits.book(fs->mkdir("onEdgeLowMissingHits"));
   notOnEdge.book(fs->mkdir("notOnEdge"));
   notOnEdgeMissingHits.book(fs->mkdir("notOnEdgeMissingHits"));
 }
@@ -357,12 +361,11 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   if (info.tagHcalIso < 0 || info.probeHcalIso < 0) {
     return;
   }
-  if (info.tagHcalIso < info.probeHcalIso) {
-    selectedTrack = myTracks.MuonMatchedTrack;
-    double temp = info.tagHcalIso;
-    info.tagHcalIso = info.probeHcalIso;
-    info.probeHcalIso = temp;
-  }
+//  if (info.tagHcalIso < info.probeHcalIso) {
+  selectedTrack = myTracks.MuonMatchedTrack;
+  double temp = info.tagHcalIso;
+  info.tagHcalIso = info.probeHcalIso;
+  info.probeHcalIso = temp;
   if (info.probeHcalIso > 20)
     return;
   myCSCs.minTotalImpactParameter = 1000;
@@ -372,16 +375,21 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   info.diMuonMass = diMuonMass;
 
   myCSCs.ExtrapolateTrackToCSC(
-      iEvent, iSetup, CSCSegment_Label, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
+      iEvent, iSetup, CSCSegment_Label, CSCRecHitToken, rpcRecHitToken, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
   if (myCSCs.minTotalImpactParameter > 10) {
     return;
   }
   info.minDR = myCSCs.minDR;
   for (int i = 0; i < 4; i++) {
     info.minDrByDepth[i] = myCSCs.minDrByDepth[i];
+    info.minRecDrByDepth[i] = myCSCs.minRecDrByDepth[i];
+    info.minRpcDrByDepth[i] = myCSCs.minRpcDrByDepth[i];
   }
   info.ProbeEta = selectedTrack->eta();
   info.ProbePhi = selectedTrack->phi();
+  info.probeCharge = selectedTrack->charge();
+  info.vertexZ = vertexPosition.z();
+
   cutProgress++;
   myHistograms.PlotTrackDisappearance(myCSCs.TrackP,
                                       myCSCs.TrackEta,
@@ -445,8 +453,10 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
     info.etaEdgeMin = myHCAL.etaEdgeMin;
     info.phiEdgeMin = myHCAL.phiEdgeMin;
     for (int depth = 0; depth < 7; depth++) {
-      info.foundDepths[depth]=myHCAL.foundDepths[depth];
-      if(!info.foundDepths[depth]){continue;}
+      info.foundDepths[depth] = myHCAL.foundDepths[depth];
+      if (!info.foundDepths[depth]) {
+        continue;
+      }
       info.expectedHits++;
       info.hitEnergies[depth] = myHCAL.m_hitEnergies[depth];
       info.neighborHitEnergies[depth] = myHCAL.m_neighborHitEnergies[depth];
@@ -455,6 +465,12 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       info.cellCenterDPhi[depth] = myHCAL.cellDphiByDepth[depth];
       info.cellEtaEdgeDistance[depth] = myHCAL.cellEtaEdgeDistance[depth];
       info.cellPhiEdgeDistance[depth] = myHCAL.cellPhiEdgeDistance[depth];
+      info.xShiftEnergies[depth] = myHCAL.cellXShiftsEnergy[depth];
+      info.yShiftEnergies[depth] = myHCAL.cellYShiftsEnergy[depth];
+      info.zShiftEnergies[depth] = myHCAL.cellZShiftsEnergy[depth];
+      info.xShifts[depth] = myHCAL.cellXShiftsByDepth[depth];
+      info.yShifts[depth] = myHCAL.cellYShiftsByDepth[depth];
+      info.zShifts[depth] = myHCAL.cellZShiftsByDepth[depth];
     }
     info.centerInCone = myHCAL.centerInCone;
     info.centerOutOfCone = myHCAL.centerOutOfCone;
@@ -466,25 +482,43 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
     info.probePt = selectedTrack->pt();
     info.probeCharge = selectedTrack->charge();
     myHistograms.PlotCSCHits(iEvent, iSetup, CSCSegment_Label);
-    myHistograms.FillHists(info);
-    int nFoundHits=0;
-    for(int depth=0;depth<7;depth++)
-    {
-       if(!info.foundDepths[depth]){continue;}
-       if(info.hitEnergies[depth]>0.2)
-       {
-          nFoundHits++;
-       }
+    int nFoundHits = 0;
+    for (int depth = 0; depth < 7; depth++) {
+      if (!info.foundDepths[depth]) {
+        continue;
+      }
+      if (info.hitEnergies[depth] > 0.2) {
+        nFoundHits++;
+      }
     }
-    if (info.hitsOverThresh > 1) {minTwoHits.FillHists(info);}
-    if(info.expectedHits-nFoundHits>2){missMultiple.FillHists(info);}
-    if(!info.crossDepths){noCrossDepths.FillHists(info);}
-    else{crossDepths.FillHists(info);}
-    if(myHCAL.onEdge){onEdge.FillHists(info);}
-    else
-    {
-       notOnEdge.FillHists(info);
-       if(info.expectedHits-nFoundHits>2){notOnEdgeMissingHits.FillHists(info);}
+    info.hitsOver0p2 = nFoundHits;
+    myHistograms.FillHists(info);
+    myHistograms.FillTree(info);
+
+    if (info.hitsOverThresh > 1) {
+      minTwoHits.FillHists(info);
+      minTwoHits.FillTree(info);
+    }
+    if (info.expectedHits - nFoundHits > 2) {
+      missMultiple.FillHists(info);
+      missMultiple.FillTree(info);
+    }
+    if (!info.crossDepths) {
+      noCrossDepths.FillHists(info);
+    } else {
+      crossDepths.FillHists(info);
+    }
+    if (myHCAL.onEdge) {
+      onEdge.FillHists(info);
+      if(info.expectedHits-nFoundHits<3)
+      {
+         onEdgeLowMissingHits.FillHists(info);
+      }
+    } else {
+      notOnEdge.FillHists(info);
+      if (info.expectedHits - nFoundHits > 2) {
+        notOnEdgeMissingHits.FillHists(info);
+      }
     }
     bool passAdjCheck = true;
     for (int i = 0; i < 7; i++) {

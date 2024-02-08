@@ -67,12 +67,12 @@ int Tracks::SelectTracks(const edm::Event& iEvent,
     TrajectoryStateClosestToPoint traj = tk.trajectoryStateClosestToPoint(tkVtx);
     double transDCA = traj.perigeeParameters().transverseImpactParameter();
     double longDCA = traj.perigeeParameters().longitudinalImpactParameter();
-    if (longDCA > 0.05)
+    if (fabs(longDCA) > 0.05)
       continue;
     if (cutProgress == 4) {
       cutProgress = 5;
     }
-    if (transDCA > 0.005)
+    if (fabs(transDCA) > 0.005)
       continue;
     if (cutProgress == 5) {
       cutProgress = 6;
@@ -368,6 +368,84 @@ int Tracks::PairTracks(const reco::Track* Track,
   }
 
   return 3;
+}
+
+int Tracks::PairTracks(const reco::TrackRef Track,
+                       const reco::TrackRef MuonTrack,
+                       edm::ESHandle<TransientTrackBuilder> transientTrackBuilder) {
+  tracksToVertex.clear();
+  tracksToVertex.push_back(transientTrackBuilder->build(*Track));
+  tracksToVertex.push_back(transientTrackBuilder->build(*MuonTrack));
+
+  // try to fit these two tracks to a common vertex
+  KalmanVertexFitter vertexFitter;
+  fittedVertex = vertexFitter.vertex(tracksToVertex);
+
+  // some poor fits will simply fail to find a common vertex
+  if (fittedVertex.isValid() && fittedVertex.totalChiSquared() >= 0. && fittedVertex.degreesOfFreedom() > 0) {
+    // others we can exclude by their poor fit
+    if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
+      // important! evaluate momentum vectors AT THE VERTEX
+      TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
+      TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
+      one_momentum = one_TSCP.momentum();
+      //if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
+      two_momentum = two_TSCP.momentum();
+
+      double total_energy = sqrt(one_momentum.mag2() + 0.106 * 0.106) + sqrt(two_momentum.mag2() + 0.106 * 0.106);
+      double total_px = one_momentum.x() + two_momentum.x();
+      double total_py = one_momentum.y() + two_momentum.y();
+      double total_pz = one_momentum.z() + two_momentum.z();
+      MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
+    } else {
+      return 1;
+    }
+    if (MuonTrackMass < 50 || MuonTrackMass > 150)
+      return 2;
+  } else {
+    return 0;
+  }
+
+  return 3;
+}
+
+bool Tracks::PairMuons(const reco::TrackRef globalMuon,
+                       const reco::TrackRef tagMuon,
+                       edm::ESHandle<TransientTrackBuilder> transientTrackBuilder) {
+  tracksToVertex.clear();
+  tracksToVertex.push_back(transientTrackBuilder->build(*globalMuon));
+  tracksToVertex.push_back(transientTrackBuilder->build(*tagMuon));
+
+  // try to fit these two tracks to a common vertex
+  KalmanVertexFitter vertexFitter;
+  fittedVertex = vertexFitter.vertex(tracksToVertex);
+
+  // some poor fits will simply fail to find a common vertex
+  if (fittedVertex.isValid() && fittedVertex.totalChiSquared() >= 0. && fittedVertex.degreesOfFreedom() > 0) {
+    // others we can exclude by their poor fit
+    if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
+      // important! evaluate momentum vectors AT THE VERTEX
+      TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
+      TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
+      one_momentum = one_TSCP.momentum();
+      //if(sqrt(pow(one_momentum.x(),2)+pow(one_momentum.y(),2))<15){return false;}
+      two_momentum = two_TSCP.momentum();
+
+      double total_energy = sqrt(one_momentum.mag2() + 0.106 * 0.106) + sqrt(two_momentum.mag2() + 0.106 * 0.106);
+      double total_px = one_momentum.x() + two_momentum.x();
+      double total_py = one_momentum.y() + two_momentum.y();
+      double total_pz = one_momentum.z() + two_momentum.z();
+      MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
+    } else {
+      return false;
+    }
+    if (MuonTrackMass < 80 || MuonTrackMass > 100)
+      return false;
+  } else {
+    return false;
+  }
+
+  return true;
 }
 
 void Tracks::PairSimTracks(const reco::Track* Track,

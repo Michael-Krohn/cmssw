@@ -22,47 +22,115 @@
 #include "TTree.h"
 #include <iostream>
 
-MCHistograms::MCHistograms() {
- cutProgress = 0; 
-}
+MCHistograms::MCHistograms() { cutProgress = 0; }
 
-void MCHistograms::book(TFileDirectory histFolder, bool MC) {
-  isMC=MC;
+void MCHistograms::book(TFileDirectory histFolder, bool MC, int type) {
+  isMC = MC;
   m_genEventCount = histFolder.make<TH1F>("genEventCount", "; ;Events", 1, 0, 1);
   m_genEventCount_EnBin = histFolder.make<TH1F>("genEventCount_EnBin", "; ;Events", 1, 0, 1);
   m_sigVariables = histFolder.make<TTree>("sigVariables", "Tree containing signal variables for bdt");
-  m_sigVariables->Branch("pt", &pt);
-  m_sigVariables->Branch("eta", &eta);
-  m_sigVariables->Branch("phi", &phi);
-  m_sigVariables->Branch("staDR", &staDR);
-  m_sigVariables->Branch("staPhi", &staPhi);
-  m_sigVariables->Branch("staE", &staE);
-  m_sigVariables->Branch("standaloneDEoverE",&staDEoverE);
-  m_sigVariables->Branch("staChi", &staChi);
-  m_sigVariables->Branch("cscDR", &cscDR);
-  m_sigVariables->Branch("probeCharge", &probeCharge);
-  m_sigVariables->Branch("ecalIso", &ecalIso);
-  m_sigVariables->Branch("cellEdgeDeta", &minCellDeta);
-  m_sigVariables->Branch("cellEdgeDphi", &minCellDphi);
-  m_sigVariables->Branch("PUupWeight", &PUupWeight);
-  m_sigVariables->Branch("PUdownWeight", &PUdownWeight);
-  m_sigVariables->Branch("IDupWeight", &IDupWeight);
-  m_sigVariables->Branch("IDdownWeight", &IDdownWeight);
-  m_sigVariables->Branch("ISOupWeight", &ISOupWeight); 
-  m_sigVariables->Branch("ISOdownWeight", &ISOdownWeight); 
-  m_sigVariables->Branch("TrigUpWeight", &TrigUpWeight);
-  m_sigVariables->Branch("TrigDownWeight", &TrigDownWeight);
-  m_sigVariables->Branch("EnBinWeight", &EnBinWeight); 
+  if(type==0){
+     m_sigVariables->Branch("pt", &pt);
+     m_sigVariables->Branch("eta", &eta);
+     m_sigVariables->Branch("phi", &phi);
+     m_sigVariables->Branch("staDR", &staDR);
+     m_sigVariables->Branch("staPhi", &staPhi);
+     m_sigVariables->Branch("staE", &staE);
+     m_sigVariables->Branch("standaloneDEoverE", &staDEoverE);
+     m_sigVariables->Branch("staChi", &staChi);
+     m_sigVariables->Branch("disStaChi2", &disStaChi2);
+     m_sigVariables->Branch("disStadPhi", &disStadPhi);
+     m_sigVariables->Branch("disStadEta", &disStadEta);
+     m_sigVariables->Branch("disStaDEoverE", &disStaDEoverE);
+     m_sigVariables->Branch("disStaE", &disStaE);
+     m_sigVariables->Branch("refitStaChi2", &refitStaChi2);
+     m_sigVariables->Branch("refitStadPhi", &refitStadPhi);
+     m_sigVariables->Branch("refitStadEta", &refitStadEta);
+     m_sigVariables->Branch("refitStaDEoverE", &refitStaDEoverE);
+     m_sigVariables->Branch("refitStaE", &refitStaE);
+     m_sigVariables->Branch("cscDR", &cscDR);
+     m_sigVariables->Branch("probeCharge", &probeCharge);
+     m_sigVariables->Branch("ecalIso", &ecalIso);
+     m_sigVariables->Branch("cellEdgeDeta", &minCellDeta);
+     m_sigVariables->Branch("cellEdgeDphi", &minCellDphi);
+     m_sigVariables->Branch("PUupWeight", &PUupWeight);
+     m_sigVariables->Branch("PUdownWeight", &PUdownWeight);
+     m_sigVariables->Branch("IDupWeight", &IDupWeight);
+     m_sigVariables->Branch("IDdownWeight", &IDdownWeight);
+     m_sigVariables->Branch("ISOupWeight", &ISOupWeight);
+     m_sigVariables->Branch("ISOdownWeight", &ISOdownWeight);
+     m_sigVariables->Branch("TrigUpWeight", &TrigUpWeight);
+     m_sigVariables->Branch("TrigDownWeight", &TrigDownWeight);
+     m_sigVariables->Branch("EnBinWeight", &EnBinWeight);
+     m_sigVariables->Branch("ZptWeight", &ZptWeight);
+     m_sigVariables->Branch("Zpt", &Zpt);
+     m_sigVariables->Branch("run", &run);
+     m_sigVariables->Branch("lumi", &lumi);
+     m_sigVariables->Branch("event", &event);
+     m_sigVariables->Branch("hcalIso", &hcalIso);
+     m_sigVariables->Branch("ecalIso", &ecalIso);
+     m_sigVariables->Branch("trackIso", &trackIso);
+     m_sigVariables->Branch("invMass", &invMass);
 
-  for (int station = 0; station < 4; station++) {
-    std::string name = "cscDRbyStation_" + std::to_string(station);
-    m_sigVariables->Branch(name.c_str(), &cscDRbyStation[station]);
+     for (int station = 0; station < 4; station++) {
+       std::string name = "cscDRbyStation_" + std::to_string(station);
+       std::string dtName = "dtDRbyStation_" + std::to_string(station);
+       m_sigVariables->Branch(name.c_str(), &cscDRbyStation[station]);
+       m_sigVariables->Branch(dtName.c_str(), &dtDRbyStation[station]);
+       m_sigVariables->Branch(("sec"+name).c_str(), &secCscDRbyStation[station]);
+       std::string closeName = "nCloseHitsStation_" + std::to_string(station);
+       m_sigVariables->Branch(closeName.c_str(), &nCloseHits[station]);
+       name = "cscDEtabyStation_" + std::to_string(station);
+       dtName = "dtDEtabyStation_" + std::to_string(station);
+       m_sigVariables->Branch(name.c_str(), &cscDEtabyStation[station]);
+       m_sigVariables->Branch(dtName.c_str(), &dtDEtabyStation[station]);
+       name = "cscDPhibyStation_" + std::to_string(station);
+       dtName = "dtDPhibyStation_" + std::to_string(station);
+       m_sigVariables->Branch(name.c_str(), &cscDPhibyStation[station]);
+       m_sigVariables->Branch(dtName.c_str(), &dtDPhibyStation[station]);
+       m_sigVariables->Branch(("sec"+name).c_str(), &secCscDPhibyStation[station]);
+       name = "cscDZbyStation_" + std::to_string(station);
+       dtName = "dtDZbyStation_" + std::to_string(station);
+       m_sigVariables->Branch(name.c_str(), &cscDZbyStation[station]);
+       m_sigVariables->Branch(dtName.c_str(), &dtDZbyStation[station]);
+     }
+     for (int i = 0; i < 7; i++) {
+       std::string name = "HEDepth_" + std::to_string(i);
+       m_sigVariables->Branch(name.c_str(), &matchedHE[i]);
+       m_sigVariables->Branch(("found_" + name).c_str(), &foundDepth[i]);
+     }
+     m_sigVariables->Branch("EventWeight", &weight);
   }
-  for (int i = 0; i < 7; i++) {
-    std::string name = "HEDepth_" + std::to_string(i);
-    m_sigVariables->Branch(name.c_str(), &matchedHE[i]);
+  else{
+     m_sigVariables->Branch("EventWeight", &weight);
+     m_sigVariables->Branch("pt", &pt);
+     m_sigVariables->Branch("eta", &eta);
+     m_sigVariables->Branch("hcalIso", &hcalIso);
+     m_sigVariables->Branch("ecalIso", &ecalIso);
+     m_sigVariables->Branch("trackIso", &trackIso);
+     m_sigVariables->Branch("invMass", &invMass);
+     m_sigVariables->Branch("PUupWeight", &PUupWeight);
+     m_sigVariables->Branch("PUdownWeight", &PUdownWeight);
+     m_sigVariables->Branch("IDupWeight", &IDupWeight);
+     m_sigVariables->Branch("IDdownWeight", &IDdownWeight);
+     m_sigVariables->Branch("ISOupWeight", &ISOupWeight);
+     m_sigVariables->Branch("ISOdownWeight", &ISOdownWeight);
+     m_sigVariables->Branch("TrigUpWeight", &TrigUpWeight);
+     m_sigVariables->Branch("TrigDownWeight", &TrigDownWeight);
+     m_sigVariables->Branch("EnBinWeight", &EnBinWeight);
+     m_sigVariables->Branch("ZptWeight",&ZptWeight);
+     m_sigVariables->Branch("Zpt",&Zpt);
+     m_sigVariables->Branch("foundZ",&foundZ);
+     m_sigVariables->Branch("run", &run);
+     m_sigVariables->Branch("lumi", &lumi);
+     m_sigVariables->Branch("event", &event);
+
+     for (int i = 0; i < 7; i++) {
+       std::string name = "HEDepth_" + std::to_string(i);
+       m_sigVariables->Branch(name.c_str(), &matchedHE[i]);
+       m_sigVariables->Branch(("found_" + name).c_str(), &foundDepth[i]);
+     }
   }
-  m_sigVariables->Branch("EventWeight", &weight);
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_eventCount_PUup = histFolder.make<TH1F>("eventCount_PUup", "; ;Events", 1, 0, 1);
   m_eventCount_PUdown = histFolder.make<TH1F>("eventCount_PUdown", "; ;Events", 1, 0, 1);
@@ -72,8 +140,21 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_eventCount_ISOdown = histFolder.make<TH1F>("eventCount_ISOdown", "; ;Events", 1, 0, 1);
   m_eventCount_Trigup = histFolder.make<TH1F>("eventCount_Trigup", "; ;Events", 1, 0, 1);
   m_eventCount_Trigdown = histFolder.make<TH1F>("eventCount_Trigdown", "; ;Events", 1, 0, 1);
-  m_eventCount_EnBin = histFolder.make<TH1F>("eventCount_EnBin", "; ;Events", 1, 0, 1);
+  m_eventCount_EnBin = histFolder.make<TH1F>("preSelEventCount_EnBin", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount = histFolder.make<TH1F>("preSelEventCount", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_PUup = histFolder.make<TH1F>("preSelEventCount_PUup", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_PUdown = histFolder.make<TH1F>("preSelEventCount_PUdown", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_IDup = histFolder.make<TH1F>("preSelEventCount_IDup", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_IDdown = histFolder.make<TH1F>("preSelEventCount_IDdown", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_ISOup = histFolder.make<TH1F>("preSelEventCount_ISOup", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_ISOdown = histFolder.make<TH1F>("preSelEventCount_ISOdown", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_Trigup = histFolder.make<TH1F>("preSelEventCount_Trigup", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_Trigdown = histFolder.make<TH1F>("preSelEventCount_Trigdown", "; ;Events", 1, 0, 1);
+  m_BaseSelEventCount_EnBin = histFolder.make<TH1F>("preSelEventCount_EnBin", "; ;Events", 1, 0, 1);
+
   m_dbremWeight = histFolder.make<TH1F>("dbremWeight", ";Dark Brem Weight; Events", 200, 1, 20);
+  m_ZptWeight = histFolder.make<TH1F>("ZptWeight",";Z pt Weight; Events",50,0,1.5);
+  m_Zpt = histFolder.make<TH1F>("Gen Z pt",";Z pt (GeV); Events",200,0,650);
   m_muRocWeight = histFolder.make<TH1F>("MuRocWeight", ";Muon Rochester Correction Weight; Events", 100, 0.9, 1.1);
   m_IDSF = histFolder.make<TH1F>("IDSF", ";Tight muon ID scale factor; Events", 100, 0.9, 1.1);
   m_IDSFup = histFolder.make<TH1F>("IDSFup", ";Tight muon ID scale factor up; Events", 100, 0.9, 1.1);
@@ -84,36 +165,39 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_TrigSF = histFolder.make<TH1F>("TrigSF", ";Tight muon Trigger scale factor; Events", 100, 0.9, 1.1);
   m_TrigSFup = histFolder.make<TH1F>("TrigSFup", ";Tight muon Trigger scale factor up; Events", 100, 0.9, 1.1);
   m_TrigSFdown = histFolder.make<TH1F>("TrigSFdown", ";Tight muon Trigger scale factor down; Events", 100, 0.9, 1.1);
-
+  for (int i = 0; i < 7; i++) {
+     std::string name = "HEDepth_" + std::to_string(i);
+     m_HEDepthEnergy[i] = histFolder.make<TH1F>(name.c_str(),";HCAL Energy, Depth ;Events",50,0,10);
+  }
+  m_HELastDepth = histFolder.make<TH1F>("LastHEDepthE",";HE Energy in Last Depth (GeV);Events",100,0,20);
+  m_HESecLastDepth = histFolder.make<TH1F>("SecLastHEDepth",";HE Energy in Depth Before Last (GeV); Events",100,0,20);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 40, -.5, 39.5);
-  std::vector<std::string> cutLabels = {"AllGenEvents",
-                                        "Has A'(If needed)",
-					"Passes MET Filters",
-                                        "Tight ID Muon",
-                                        "Tight ISO Muon",
-                                        "Muon Pt/Eta Req.",
-                                        "Tag is global muon",
-                                        "High Pt Track",
-                                        "Track in Endcap",
-                                        "High Purity Track",
-                                        "Track Belongs to PV",
-                                        "Track Long DCA",
-                                        "Track Trans DCA",
-                                        "Tag/Probe Opposite Charge",
-                                        "Tag/Probe Fit Vtx",
-                                        "Tag/Probe Vtx Chi",
-                                        "Tag/Probe Inv Mass",
-                                        "Probe Tracker Iso",
-                                        "Probe Ecal Iso",
-                                        "Probe HCAL Iso",
-                                        "Tag Passed Trigger",
-                                        "No Other Probes Pair",
-                                        "HCAL Location Ok",
-                                        "Found >3 HE Cells",
-                                        "HE matched E",
-                                        "Inv Mass <100,>80",
-                                        "CSC Min DR",
-                                        "STA min DR"};
+  std::vector<std::string> cutLabels;
+  if (type == 0) {
+    cutLabels = {"AllGenEvents",        "Has A'(If needed)",
+                 "Passes MET Filters",  "Tight ID Muon",
+                 "Tight ISO Muon",      "Muon Pt/Eta Req.",
+                 "Tag is global muon",  "High Pt Track",
+                 "Track in Endcap",     "High Purity Track",
+                 "Track Belongs to PV", "Track Long DCA",
+                 "Track Trans DCA",     "Tag/Probe Opposite Charge",
+                 "Tag/Probe Fit Vtx",   "Tag/Probe Vtx Chi",
+                 "Tag/Probe Inv Mass",  "Probe Tracker Iso",
+                 "Probe Ecal Iso",      "Probe HCAL Iso",
+                 "Tag Passed Trigger",  "No Other Probes Pair",
+                 "No Other Muons Pair", "HCAL Location Ok",
+                 "Found >3 HE Cells",   "HE matched E",
+                 "Inv Mass <100,>80",   "CSC Min DR",
+                 "STA min DR"};
+  } else {
+    cutLabels = {"BaseEventSelection",
+                 "Pass Invariant Mass",
+                 "No nearby standalone muon",
+                 "No nearby CSC hits",
+                 "At least two HCAL hits",
+                 "<15 GeV along probe track",
+                 "Probe track not on HE cell edge"};
+  }
   for (uint8_t i = 0; i < cutLabels.size(); i++) {
     m_cutProgress->GetXaxis()->SetBinLabel(i + 1, cutLabels[i].c_str());
   }
@@ -123,6 +207,7 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_signalCategory->GetXaxis()->SetBinLabel(3, "Medium Category");
   m_signalCategory->GetXaxis()->SetBinLabel(4, "Tight Category");
   m_DiMuonMass = histFolder.make<TH1F>("DiMuonInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 50, 150);
+  m_altInvMass = histFolder.make<TH1F>("altInvariantMass", "; Dimuon Invariant Mass (GeV); Events", 100, 50, 150);
   m_TagMuonEta = histFolder.make<TH1F>("TaggingMuonEta", "; Tagging Muon #eta; Events", 100, -2.6, 2.6);
   m_TagMuonPt = histFolder.make<TH1F>("TaggingMuonPt", "; Tagging Muon pt (GeV); Events", 200, 0, 120);
   m_nSelectedMuons = histFolder.make<TH1F>("NumberOfSelectedMuons", "; # of Selected Muons; Events", 20, -0.5, 19.5);
@@ -153,8 +238,10 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
       histFolder.make<TH1F>("NMatchNHitConeEnergy", "; Energy in Matched Hits (GeV); Events", 200, 0, 20);
   m_NMatchNHitLocation = histFolder.make<TH2F>("NMatchNHitLocation", ";Z;#rho;Events", 150, 0, 600, 150, 0, 600);
   m_ProbeTrackPt = histFolder.make<TH1F>("ProbeTrackPt", ";#Pt (GeV); Events", 200, 0, 100);
-  m_ProbeTrackP = histFolder.make<TH1F>("ProbeTrackP",";Momentum (GeV); Events", 200,0,400);
+  m_ProbeTrackP = histFolder.make<TH1F>("ProbeTrackP", ";Momentum (GeV); Events", 200, 0, 400);
   m_ProbeTrackEta = histFolder.make<TH1F>("ProbeTrackEta", ";#eta; Events", 200, -4, 4);
+  m_ProbeTrackPhi = histFolder.make<TH1F>("ProbeTrackPhi", ";#phi; Events", 200, -3.14, 3.14);
+  m_ProbeTrackModPhi = histFolder.make<TH1F>("ProbTrackModPhi", ";#phi mod 20; Events", 50,0,0.315);
   m_ProbeTrackPtEta = histFolder.make<TH2F>("ProbeTrackPtEta", ";#Pt (GeV);#eta; Events", 50, 20, 70, 80, -4, 4);
   m_ProbeTrackEtaPhi = histFolder.make<TH2F>("ProbeTrackEtaPhi", ";#eta;#phi;Events", 100, -2.6, 2.6, 100, -3.15, 3.15);
   m_DBremLocation = histFolder.make<TH2F>("DarkBremLocation", ";Z;#rho;Events", 150, 0, 600, 150, 0, 600);
@@ -179,6 +266,8 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
     std::string histName = "dRtoNearestCSC_Station" + std::to_string(station);
     m_CSCMinStationDr[station] =
         histFolder.make<TH1F>(histName.c_str(), ";#DeltaR to Nearest CSC Hit; Total Weight", 140, 0, 3);
+    std::string dtHistName = "dRtoNearestDT_Station" + std::to_string(station);
+    m_DTMinStationDr[station] = histFolder.make<TH1F>(dtHistName.c_str(), ";#DeltaR to Nearest DT Hit; Total Weight", 210, -1, 3);
     histName = histName + "missing";
     m_CSCMissingStationDr[station] = histFolder.make<TH2F>(
         histName.c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
@@ -202,6 +291,7 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_MuonMotherdR = histFolder.make<TH1F>("MuonMotherdR", "; #Delta R; Events", 200, 0, 4);
   m_minGenMuDr = histFolder.make<TH1F>("minGenMuDr", "; #Delta R; Events", 200, 0, 4);
   m_minGenMuDE = histFolder.make<TH1F>("minGenMuDE", "; #Delta E over E; Events", 200, -1, 1);
+  m_probePDGIds = histFolder.make<TH1I>("probePDGIds", "; PDG Id; Events", 500,0,500);
   m_CSCHitChiSq = histFolder.make<TH1F>("CSCChiSquared", "; #Chi^2; Events", 200, 0, 10);
   m_CSCHitAngleChange = histFolder.make<TH1F>("CSCDeflection", "; #Theta; Events", 200, 0, 3.15);
   m_StandaloneMuonE = histFolder.make<TH1F>("StandaloneMuonE", "; Energy (GeV); Events", 200, 0, 200);
@@ -238,16 +328,21 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_ProbePFJetE = histFolder.make<TH1F>("ProbePFJetE", ";Energy of Nearest PF Jet to Probe (GeV); Events", 100, 0, 100);
   m_ProbePFJetMaxE =
       histFolder.make<TH1F>("ProbePFJetMaxE", ";Energy of Largest PF Jet Nearby Probe (GeV); Events", 100, 0, 100);
-  m_NJets = histFolder.make<TH1F>("Njets","; NJets; Events", 10,-0.5,9.5);
-  m_nLooseBTagJets = histFolder.make<TH1F>("nLooseBTagJets","; Loose B Tagged Jets; Events", 10,-0.5,9.5);
-  m_nMedBTagJets = histFolder.make<TH1F>("nMedBTagJets","; Medium B Tagged Jets; Events", 10,-0.5,9.5);
-  m_nTightBTagJets = histFolder.make<TH1F>("nTightBTagjets","; Tight B Tagged Jets; Events", 10,-0.5,9.5);
+  m_NJets = histFolder.make<TH1F>("Njets", "; NJets; Events", 10, -0.5, 9.5);
+  m_nLooseBTagJets = histFolder.make<TH1F>("nLooseBTagJets", "; Loose B Tagged Jets; Events", 10, -0.5, 9.5);
+  m_nMedBTagJets = histFolder.make<TH1F>("nMedBTagJets", "; Medium B Tagged Jets; Events", 10, -0.5, 9.5);
+  m_nTightBTagJets = histFolder.make<TH1F>("nTightBTagjets", "; Tight B Tagged Jets; Events", 10, -0.5, 9.5);
 
   m_CaloJetMinDr = histFolder.make<TH1F>("MinCaloJetDr", ";#Delta R from Probe to Nearest Calo Jet; Events", 140, 0, 7);
+  m_CaloJetPt = histFolder.make<TH1F>("CaloJetPt",";Pt of nearby Calo Jet; Events", 140, 0, 100);
+  m_CaloJetPt_CaloConeEnergy = histFolder.make<TH2F>("CaloJetPt_CaloConeEnergy",";Pt of nearby Calo Jet; HCAL energy in cone; Events", 32, -2, 30, 30, 0, 30);
   m_CaloJetEcalE = histFolder.make<TH1F>("CaloJetEcalE", ";Calo Jet Ecal E (GeV); Events", 100, 0, 100);
   m_CaloJetHcalE = histFolder.make<TH1F>("CaloJetHcalE", ";Calo Jet Ecal E (GeV); Events", 100, 0, 100);
   m_CaloJetTotalE = histFolder.make<TH1F>("CaloJetTotalE", ";Calo Jet Total E (GeV); Events", 100, 0, 100);
   m_CaloConeEnergy = histFolder.make<TH1F>("CaloConeEnergy", ";Calo Cone Total E (geV); Events", 100, 0, 100);
+  m_hcalIso0p3 = histFolder.make<TH1F>("hcalIso0p3", ";Calo Cone Total E (geV); Events", 100, 0, 100);
+  m_hcalIso0p4 = histFolder.make<TH1F>("hcalIso0p4",";Calo Cone Total E (geV); Events", 100, 0, 100);
+
   m_CaloConeHits = histFolder.make<TH1F>("CaloConeHits", ";Calo Cone Hits; Events", 20, -0.5, 19.5);
 
   m_HECellsFound = histFolder.make<TH1F>("NHECellsFound", "; Cells found in HE; Number of Events", 30, 0, 30);
@@ -336,9 +431,45 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC) {
   m_PUmean = histFolder.make<TH1F>("NPUMean", ";MC N Pileup Mean; Events", 100, 0, 100);
   m_energyBinSFs = histFolder.make<TH1F>("energyBinSF", ";SF from Energy Binning; Events", 50, 0.5, 1.5);
   m_usedEnergyBin = histFolder.make<TH1F>("energyBin", ";Energy used for DBrem scaling (GeV); Events", 1000, 0, 1000);
-  m_totalMET = histFolder.make<TH1F>("totalMET",";MET (GeV); Events", 200,0,200);
-  m_muMetMT = histFolder.make<TH1F>("muMetMT",";Tag muon/MET MT (GeV); Events", 200,0,200);
-  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT",";Tag muon + probe/MET MT (GeV); Events", 200,0,200);
+  m_totalMET = histFolder.make<TH1F>("totalMET", ";MET (GeV); Events", 200, 0, 200);
+  m_muMetMT = histFolder.make<TH1F>("muMetMT", ";Tag muon/MET MT (GeV); Events", 200, 0, 200);
+  m_muAndProbeMetMT = histFolder.make<TH1F>("muAndProbeMetMT", ";Tag muon + probe/MET MT (GeV); Events", 200, 0, 200);
+  m_depthsFound = histFolder.make<TH1F>("depthsFound", ";Number of depths found; Events", 8, 0, 8);
+}
+
+void MCHistograms::FillTotalDisappTree(SigEventInfo info)
+{
+	hcalIso = info.hcalIso0p3;
+        pt = info.probeTrackPt;
+        eta = info.probeTrackEta;
+	ecalIso = info.probeEcalIso;
+	trackIso = info.probeTrackIso;
+	invMass = info.diMuonMass;
+	weight = info.eventWeight;
+        lumi = info.lumi;
+        event = info.event;
+        run = info.run;
+
+	if (isMC) {
+	   ZptWeight = info.ZptWeight;
+           Zpt = info.Zpt;
+           foundZ = info.foundZ;
+           PUupWeight = info.eventWeight * info.PuUpDownWeights[0] / info.pileupWeight;
+           PUdownWeight = info.eventWeight * info.PuUpDownWeights[1] / info.pileupWeight;
+           IDupWeight = info.eventWeight * info.muIdWeights[1] / info.muIdWeights[0];
+           IDdownWeight = info.eventWeight * info.muIdWeights[2] / info.muIdWeights[0];
+           ISOupWeight = info.eventWeight * info.muIsoWeights[1] / info.muIsoWeights[0];
+           ISOdownWeight = info.eventWeight * info.muIsoWeights[2] / info.muIsoWeights[0];
+           TrigUpWeight = info.eventWeight * info.muTrigWeights[1] / info.muTrigWeights[0];
+           TrigDownWeight = info.eventWeight * info.muTrigWeights[2] / info.muTrigWeights[0];
+           EnBinWeight = info.eventWeight * info.energyBinSF;
+        }
+	for(int depth=0;depth<7;depth++)
+	{
+           matchedHE[depth] = info.hitEnergies[depth];
+           foundDepth[depth] = info.foundDepths[depth];
+        }
+        m_sigVariables->Fill();
 
 }
 
@@ -346,25 +477,53 @@ void MCHistograms::FillTree(SigEventInfo info) {
   pt = info.probeTrackPt;
   eta = info.probeTrackEta;
   phi = info.probeTrackPhi;
+  hcalIso = info.hcalIso0p3;
+  ecalIso = info.probeEcalIso;
+  trackIso = info.probeTrackIso;
+  invMass = info.diMuonMass;
   staDR = info.staMinDr;
   staE = info.standaloneE;
   staDEoverE = info.standaloneDEoverE;
   staChi = info.staChi2;
   staPhi = info.stadPhi;
   cscDR = info.cscMinDR;
+  disStaE = info.disStaE;
+  disStaDEoverE = info.disStaDEoverE;
+  disStadEta = info.disStadEta;
+  disStadPhi = info.disStadPhi;
+  disStaChi2 = info.disStaChi2;
+  refitStaE = info.refitStaE;
+  refitStaDEoverE = info.refitStaDEoverE;
+  refitStadEta = info.refitStadEta;
+  refitStadPhi = info.refitStadPhi;
+  refitStaChi2 = info.refitStaChi2;
   for (int station = 0; station < 4; station++) {
+    nCloseHits[station] = info.nCloseCSCHits[station];
     cscDRbyStation[station] = info.minDrByStation[station];
+    secCscDRbyStation[station] = info.secMinDrByStation[station];
+    dtDRbyStation[station] = info.minDtDrByStation[station];
+    cscDEtabyStation[station] = info.minDEtaByStation[station];
+    dtDEtabyStation[station] = info.minDtDEtaByStation[station];
+    cscDPhibyStation[station] = info.minDPhiByStation[station];
+    secCscDPhibyStation[station] = info.secMinDPhiByStation[station];
+    dtDPhibyStation[station] = info.minDtDPhiByStation[station];
+    cscDZbyStation[station] = info.minDZByStation[station];
+    dtDZbyStation[station] = info.minDtDZByStation[station];
   }
   weight = info.eventWeight;
   probeCharge = info.probeCharge;
   ecalIso = info.probeEcalIso;
   for (int i = 0; i < 7; i++) {
     matchedHE[i] = info.hitEnergies[i];
+    foundDepth[i] = info.foundDepths[i];
   }
-  minCellDeta=info.cellCenterDEta;
-  minCellDphi=info.cellCenterDPhi;
-  if(isMC)
-  {
+  minCellDeta = info.cellCenterDEta;
+  minCellDphi = info.cellCenterDPhi;
+  lumi = info.lumi;
+  event = info.event;
+  run = info.run;
+  if (isMC) {
+    ZptWeight = info.ZptWeight;
     PUupWeight = info.eventWeight * info.PuUpDownWeights[0] / info.pileupWeight;
     PUdownWeight = info.eventWeight * info.PuUpDownWeights[1] / info.pileupWeight;
     IDupWeight = info.eventWeight * info.muIdWeights[1] / info.muIdWeights[0];
@@ -376,6 +535,35 @@ void MCHistograms::FillTree(SigEventInfo info) {
     EnBinWeight = info.eventWeight * info.energyBinSF;
   }
   m_sigVariables->Fill();
+}
+
+void MCHistograms::FillBaseEvents(SigEventInfo info) {
+  double eventWeightPUup, eventWeightPUdown, eventWeightIDup, eventWeightIDdown, eventWeightISOup, eventWeightISOdown,
+      eventWeightTrigup, eventWeightTrigdown, eventWeightEnBin;
+  if (info.filledWeights) {
+    eventWeightPUup = info.eventWeight * info.PuUpDownWeights[0] / info.pileupWeight;
+    eventWeightPUdown = info.eventWeight * info.PuUpDownWeights[1] / info.pileupWeight;
+    eventWeightIDup = info.eventWeight * info.muIdWeights[1] / info.muIdWeights[0];
+    eventWeightIDdown = info.eventWeight * info.muIdWeights[2] / info.muIdWeights[0];
+    eventWeightISOup = info.eventWeight * info.muIsoWeights[1] / info.muIsoWeights[0];
+    eventWeightISOdown = info.eventWeight * info.muIsoWeights[2] / info.muIsoWeights[0];
+    eventWeightTrigup = info.eventWeight * info.muTrigWeights[1] / info.muTrigWeights[0];
+    eventWeightTrigdown = info.eventWeight * info.muTrigWeights[2] / info.muTrigWeights[0];
+    eventWeightEnBin = info.eventWeight * info.energyBinSF;
+  }
+  if (isMC) {
+    m_BaseSelEventCount->Fill(0.5, info.eventWeight);
+    m_BaseSelEventCount_PUup->Fill(0.5, eventWeightPUup);
+    m_BaseSelEventCount_PUdown->Fill(0.5, eventWeightPUdown);
+    m_BaseSelEventCount_IDup->Fill(0.5, eventWeightIDup);
+    m_BaseSelEventCount_IDdown->Fill(0.5, eventWeightIDdown);
+    m_BaseSelEventCount_ISOup->Fill(0.5, eventWeightISOup);
+    m_BaseSelEventCount_ISOdown->Fill(0.5, eventWeightISOdown);
+    m_BaseSelEventCount_Trigup->Fill(0.5, eventWeightTrigup);
+    m_BaseSelEventCount_Trigdown->Fill(0.5, eventWeightTrigdown);
+    m_BaseSelEventCount_EnBin->Fill(0.5, eventWeightEnBin);
+  }
+  return;
 }
 
 void MCHistograms::FillHists(SigEventInfo info) {
@@ -391,11 +579,11 @@ void MCHistograms::FillHists(SigEventInfo info) {
     eventWeightTrigup = info.eventWeight * info.muTrigWeights[1] / info.muTrigWeights[0];
     eventWeightTrigdown = info.eventWeight * info.muTrigWeights[2] / info.muTrigWeights[0];
     eventWeightEnBin = info.eventWeight * info.energyBinSF;
-
   }
-  if(isMC)
-  {
+  if (isMC) {
     m_dbremWeight->Fill(info.dbremWeight);
+    m_ZptWeight->Fill(info.ZptWeight);
+    m_Zpt->Fill(info.Zpt,info.eventWeight);
     m_PileupWeights->Fill(info.pileupWeight);
     m_genEventCount->Fill(0.5, info.genEventWeight);
     m_genEventCount_EnBin->Fill(0.5, info.genEventWeight * info.energyBinSF);
@@ -426,8 +614,7 @@ void MCHistograms::FillHists(SigEventInfo info) {
   }
   m_EventWeights->Fill(info.eventWeight);
   m_signalCategory->Fill(info.sigCat, info.eventWeight);
-  if(isMC)
-  {
+  if (isMC) {
     m_DBremLocation->Fill(info.vtxZ, info.vtxPerp, info.eventWeight);
     m_DBremR->Fill(info.bremR, info.eventWeight);
     m_DBremScalingDistance->Fill(info.dbremInitialE / info.usedBin, info.eventWeight);
@@ -441,8 +628,8 @@ void MCHistograms::FillHists(SigEventInfo info) {
   m_ProbeDCA->Fill(info.dca, info.eventWeight);
   m_ProbeLongDCA->Fill(info.dcal, info.eventWeight);
   m_ProbeDCAphi->Fill(info.dca, info.probeTrackPhi, info.eventWeight);
-  m_totalMET->Fill(info.pfMet_pt,info.eventWeight);
-  m_muMetMT->Fill(info.muMetMT,info.eventWeight);
+  m_totalMET->Fill(info.pfMet_pt, info.eventWeight);
+  m_muMetMT->Fill(info.muMetMT, info.eventWeight);
   if (info.isLoose) {
     m_TrackQuality->Fill(0.1, info.eventWeight);
   }
@@ -463,23 +650,36 @@ void MCHistograms::FillHists(SigEventInfo info) {
   m_ProbeTrackPt->Fill(info.probeTrackPt, info.eventWeight);
   m_ProbeTrackP->Fill(info.probeTrackP, info.eventWeight);
   m_ProbeTrackEta->Fill(info.probeTrackEta, info.eventWeight);
+  m_ProbeTrackPhi->Fill(info.probeTrackPhi, info.eventWeight);
+
+  double probeTrackModPhi = info.probeTrackPhi;
+  while(probeTrackModPhi<0){probeTrackModPhi+=0.3142;}
+  while(probeTrackModPhi>0.3142){probeTrackModPhi-=0.3142;}
+  m_ProbeTrackModPhi->Fill(probeTrackModPhi, info.eventWeight);
   m_ProbeTrackPtEta->Fill(info.probeTrackPt, info.probeTrackEta, info.eventWeight);
   m_ProbeTrackEtaPhi->Fill(info.probeTrackEta, info.probeTrackPhi, info.eventWeight);
   m_DiMuonMass->Fill(info.diMuonMass, info.eventWeight);
+  m_altInvMass->Fill(info.altInvMass, info.eventWeight);
   m_DeflectingAngle->Fill(info.deflectingAngle, info.eventWeight);
-  if(isMC)
-  {
+  if (isMC) {
     m_FractionalELost->Fill(info.finalMuE / info.dbremInitialE, info.eventWeight);
     m_initialMuE->Fill(info.dbremInitialE, info.eventWeight);
     m_initialMuE_noWeight->Fill(info.dbremInitialE, info.dbremWeight);
-    m_initialMuEt->Fill(info.dbremInitialEt,info.dbremWeight);
+    m_initialMuEt->Fill(info.dbremInitialEt, info.dbremWeight);
     m_finalMuE->Fill(info.finalMuE, info.eventWeight);
   }
+  int ndepthsFound = 0;
+  for (int depth = 0; depth < 7; depth++) {
+    if (info.foundDepths[depth])
+      ndepthsFound++;
+  }
+  m_depthsFound->Fill(ndepthsFound, info.eventWeight);
   m_MinCSCImpactParameter->Fill(info.minCSCImpactParameter, info.eventWeight);
   m_CSC_dR->Fill(info.cscMinDR, info.eventWeight);
   int nGoodStations = 0;
   for (int station = 0; station < 4; station++) {
     m_CSCMinStationDr[station]->Fill(info.minDrByStation[station], info.eventWeight);
+    m_DTMinStationDr[station]->Fill(info.minDtDrByStation[station], info.eventWeight);
     if (info.minDrByStation[station] > 0.05 || info.minDrByStation[station] < 0) {
       m_CSCMissingStationDr[station]->Fill(info.probeTrackEta, info.probeTrackPhi, info.eventWeight);
     } else {
@@ -488,12 +688,15 @@ void MCHistograms::FillHists(SigEventInfo info) {
     }
   }
   m_nRECOCSCHits->Fill(nGoodStations, info.eventWeight);
-  if(isMC)
-  {
+  if (isMC) {
     m_nSimCSCHits->Fill(info.nSimCSCHits, info.eventWeight);
     m_minSimCSCDr->Fill(info.minSimCSCDr, info.eventWeight);
     m_minGenMuDr->Fill(info.minGenMuDr, info.eventWeight);
     m_minGenMuDE->Fill(info.minGenDE, info.eventWeight);
+    for(auto id : info.pdgIds)
+    {
+	    m_probePDGIds->Fill(abs(id), info.eventWeight);
+    }
   }
   if (nGoodStations == 1) {
     for (int station = 0; station < 4; station++) {
@@ -590,12 +793,32 @@ void MCHistograms::FillHists(SigEventInfo info) {
   m_nLooseBTagJets->Fill(info.nLooseBTagJets, info.eventWeight);
   m_nMedBTagJets->Fill(info.nMedBTagJets, info.eventWeight);
   m_nTightBTagJets->Fill(info.nTightBTagJets, info.eventWeight);
+  m_CaloJetPt->Fill(info.caloJetPt, info.eventWeight);
+  m_CaloJetPt_CaloConeEnergy->Fill(info.caloJetPt, info.hcalIso0p3);
   m_CaloJetMinDr->Fill(info.minCaloJetDr, info.eventWeight);
   m_CaloJetEcalE->Fill(info.caloJetEcalE, info.eventWeight);
   m_CaloJetHcalE->Fill(info.caloJetHcalE, info.eventWeight);
   m_CaloJetTotalE->Fill(info.caloJetTotalE, info.eventWeight);
   m_CaloConeEnergy->Fill(info.caloConeE, info.eventWeight);
+  m_hcalIso0p3->Fill(info.hcalIso0p3, info.eventWeight);
+  m_hcalIso0p4->Fill(info.hcalIso0p4, info.eventWeight);
   m_CaloConeHits->Fill(info.caloConeHits, info.eventWeight);
+  double lastE=-1;
+  double secLastE=-1;
+  for(int depth=0; depth<7;depth++)
+  {
+    if(info.foundDepths[depth])
+    {
+	    m_HEDepthEnergy[depth]->Fill(info.hitEnergies[depth],info.eventWeight);
+	    lastE=info.hitEnergies[depth];
+	    if(info.hitEnergies[depth]>0.2)
+	    {
+              secLastE = info.hitEnergies[depth];
+	    }
+    }
+  }
+  m_HELastDepth->Fill(lastE,info.eventWeight);
+  m_HESecLastDepth->Fill(secLastE,info.eventWeight);
   m_TrackMotherdR->Fill(info.genProbeMatchdR, info.eventWeight);
   m_TrackMotherdE->Fill(info.genProbeMatchdE, info.eventWeight);
   m_BremDepth->Fill(info.bremDepth, info.eventWeight);

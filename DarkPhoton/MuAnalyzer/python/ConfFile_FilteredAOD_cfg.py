@@ -53,7 +53,7 @@ if(options.runLocally):
 	if(options.isMC):
 	   mylist = FileUtils.loadListFromFile ('samplemc.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/highHCAL_2018.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/highHcalData.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -76,6 +76,7 @@ process.demo = cms.EDAnalyzer('MuAnalyzer',
     edmPileupInfo = cms.InputTag("mixData"),
     CSCSegmentLabel = cms.InputTag("cscSegments"),
     CSCRecHitTag = cms.InputTag("csc2DRecHits"),
+    RPCRecHitTag = cms.InputTag("rpcRecHits"),
     trigResults = cms.InputTag("TriggerResults","","HLT"),
     muonPathsToPass = cms.vstring("HLT_IsoMu24_v","HLT_IsoMu27_v"),
     HBHERecHits = cms.InputTag("hbhereco"),

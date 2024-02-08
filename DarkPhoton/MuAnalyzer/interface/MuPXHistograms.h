@@ -112,7 +112,7 @@ public:
   TH1F* m_TagHcalIso;
   TH1F* m_TagEcalIso;
   TH1F* m_NJets;
-  TH1F* m_nLooseBTagJets; 
+  TH1F* m_nLooseBTagJets;
   TH1F* m_nMedBTagJets;
   TH1F* m_nTightBTagJets;
   TH2F* m_CaloSumJetE;

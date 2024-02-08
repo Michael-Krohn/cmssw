@@ -181,6 +181,10 @@ int Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken
   iEvent.getByToken(m_recoMuonToken, recoMuons);
 
   for (std::vector<reco::Muon>::const_iterator iMuon = recoMuons->begin(); iMuon != recoMuons->end(); iMuon++) {
+    //Fill list of all global muons
+    if (iMuon->passed(reco::Muon::CutBasedIdLoose)) {
+      globalMuons.push_back(&(*iMuon));
+    }
     //Tight ID
     if (!iMuon->isPFMuon())
       continue;

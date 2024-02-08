@@ -19,6 +19,7 @@
 #include "Geometry/CaloGeometry/interface/CaloSubdetectorGeometry.h"
 #include "Geometry/CaloGeometry/interface/CaloGeometry.h"
 #include "TH2F.h"
+#include "TTree.h"
 #include <iostream>
 
 Histograms::Histograms() {}
@@ -27,19 +28,56 @@ void Histograms::book(TFileDirectory histFolder) {
   m_eventCount = histFolder.make<TH1F>("eventCount", "; ;Events", 1, 0, 1);
   m_cutProgress = histFolder.make<TH1F>("cutProgress", ";# Cut Progress; Events passing cut level", 10, -.5, 9.5);
   m_MuonTrackMass = histFolder.make<TH1F>("MuonsTrackMass", "; MuonTrackMass (GeV);Events", 100, 50, 150);
-
+  m_treeVariables = histFolder.make<TTree>("treeVariables", "Tree containing cell edge variables");
+  m_treeVariables->Branch("charge",&charge);
+  m_treeVariables->Branch("hitsOverThresh", &hitsOverThresh);
+  m_treeVariables->Branch("vertexZ", &vertexZ);
+  m_treeVariables->Branch("depthsFound", &depthsFound);
+  m_treeVariables->Branch("iEta", &iEta);
+  m_treeVariables->Branch("eta", &eta);
+  m_treeVariables->Branch("phi", &phi);
+  m_treeVariables->Branch("pt", &pt);
+  for(int i=0;i<7;i++){
+    std::string etaName = "cellDetaDepth_" + std::to_string(i);
+    std::string phiName = "cellDphiDepth_" + std::to_string(i);
+    m_treeVariables->Branch(etaName.c_str(), &cellDetaDepth[i]);
+    m_treeVariables->Branch(phiName.c_str(), &cellDphiDepth[i]);
+    std::string hitName = "hitEnergiesDepth" + std::to_string(i);
+    m_treeVariables->Branch(hitName.c_str(), &hitEnergies[i]);
+    m_treeVariables->Branch(("neighborEta"+hitName).c_str(), &neighborHitEnergies[i]);
+    m_treeVariables->Branch(("neighborPHi"+hitName).c_str(), &neighborHitEnergiesPhi[i]);
+    std::string shiftName = "depth_"+std::to_string(i);
+    m_treeVariables->Branch(("xShiftEnergy"+shiftName).c_str(), &xShiftEnergies[i]);
+    m_treeVariables->Branch(("yShiftEnergy"+shiftName).c_str(), &yShiftEnergies[i]);
+    m_treeVariables->Branch(("zShiftEnergy"+shiftName).c_str(), &zShiftEnergies[i]);
+    m_treeVariables->Branch(("xShifts"+shiftName).c_str(), &xShifts[i]);
+    m_treeVariables->Branch(("yShifts"+shiftName).c_str(), &yShifts[i]);
+    m_treeVariables->Branch(("zShifts"+shiftName).c_str(), &zShifts[i]);
+  }
   m_failHEEnergy = histFolder.make<TH1F>("failHEEnergy", ";HE Energy (GeV);Events", 200, 0, 200);
   m_histogram_TrackerTack_P = histFolder.make<TH1F>("TrackerTrack_P", "", 100, 0, 1000);
-  m_probePt = histFolder.make<TH1F>("probePt",";Probe Track Pt (GeV);Events",100,0,100);
+  m_probePt = histFolder.make<TH1F>("probePt", ";Probe Track Pt (GeV);Events", 100, 0, 100);
   m_CSCMinDR = histFolder.make<TH1F>("CSCMinDR", "", 140, 0, 3);
   for (int i = 0; i < 4; i++) {
     std::string histName = "CSCMinDR_Depth" + std::to_string(i);
     m_CSCMinDepthDr[i] = histFolder.make<TH1F>(histName.c_str(), ";#DeltaR to Nearest CSC Hit;Total Weight", 140, 0, 3);
+    m_CSCRecMinDepthDr[i] = histFolder.make<TH1F>((histName+"rec").c_str(), ";#DeltaR to Nearest CSC Hit;Total Weight", 140, 0, 3);
+    m_RpcMinDepthDr[i] = histFolder.make<TH1F>((histName+"rpc").c_str(), ";#DeltaR to Nearest CSC Hit;Total Weight", 140, 0, 3);
+
     histName = histName + "missing";
     m_CSCMissingDepthDr[i] = histFolder.make<TH2F>(
         histName.c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
     m_CSCGoodDepthDr[i] = histFolder.make<TH2F>(
         (histName + "good").c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
+    m_CSCRecMissingDepthDr[i] = histFolder.make<TH2F>(
+        (histName+"rec").c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
+    m_CSCRecGoodDepthDr[i] = histFolder.make<TH2F>(
+        (histName + "recgood").c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
+    m_RpcMissingDepthDr[i] = histFolder.make<TH2F>(
+        (histName+"rpc").c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
+    m_RpcGoodDepthDr[i] = histFolder.make<TH2F>(
+        (histName + "rpcgood").c_str(), ";Tag Muon #eta; Tag Muon #phi; Total Weight", 100, -2.6, 2.6, 100, -3.15, 3.15);
+
     histName = "CSCMinDr_Depth" + std::to_string(i) + "_otherDepthsGood";
     m_CSCOtherStationsGood[i] =
         histFolder.make<TH1F>(histName.c_str(), ";#DeltaR to Nearest CSC Hit;Total Weight", 140, 0, 3);
@@ -135,7 +173,7 @@ void Histograms::book(TFileDirectory histFolder) {
   m_RandomConeHits = histFolder.make<TH1F>("RandomConeHits", "; Hits in Cone; Events", 50, -0.5, 49.5);
   m_RandomConeEnergy = histFolder.make<TH1F>("RandomConeEnergy", "; Energy in Cone (GeV); Events", 200, 0, 20);
   m_HitsOverThresh = histFolder.make<TH1F>("HitsOverThresh", "; Hits Over Threshold; Events", 8, -0.5, 7.5);
-  m_MissingHits = histFolder.make<TH1F>("MissingHits","; Missing Hits; Events", 8, -0.5, 7.5);
+  m_MissingHits = histFolder.make<TH1F>("MissingHits", "; Missing Hits; Events", 8, -0.5, 7.5);
   m_HEConeEnergy =
       histFolder.make<TH1F>("HEConeEnergy", ";HCAL Energy in 0.4 #Delta R Cone (GeV); Events", 100, 0, 100);
   m_tagHcalIso = histFolder.make<TH1F>("tagHcalIso", ";HCAL Energy in 0.4 #Delta R Cone (GeV); Events", 100, 0, 100);
@@ -145,23 +183,25 @@ void Histograms::book(TFileDirectory histFolder) {
 
   for (int i = 0; i < 7; i++) {
     std::string name = "Layer" + std::to_string(i + 1) + "Spectra";
-    std::string plusname = name+"PlusNeighbor";
+    std::string plusname = name + "PlusNeighbor";
     std::string rname = "R" + name;
     std::string pairname = "DepthPairSpectra_" + std::to_string(i + 1) + std::to_string(i + 2);
     std::string rpairname = "R" + pairname;
     std::string pairaxis = "; Depth " + std::to_string(i + 1) + " Hit Energy (GeV); Depth " + std::to_string(i + 2) +
                            " Hit Energy (GeV); Events";
     m_Layer_Spectra[i] = histFolder.make<TH1F>(name.c_str(), "; Hit Energy (GeV); Events", 400, 0, 10);
-    m_Layer_PlusNeighbor_Spectra[i] = histFolder.make<TH1F>(plusname.c_str(),"; Energy (GeV); Events", 200, 0, 10);
+    m_Layer_PlusNeighbor_Spectra[i] = histFolder.make<TH1F>(plusname.c_str(), "; Energy (GeV); Events", 200, 0, 10);
     m_RLayer_Spectra[i] = histFolder.make<TH1F>(rname.c_str(), "; Hit Energy (GeV); Events", 400, 0, 10);
     if (i < 6) {
       m_DepthPairSpectra[i] = histFolder.make<TH2F>(pairname.c_str(), pairaxis.c_str(), 100, 0, 10, 100, 0, 10);
       m_RDepthPairSpectra[i] = histFolder.make<TH2F>(rpairname.c_str(), pairaxis.c_str(), 100, 0, 10, 100, 0, 10);
     }
-    std::string twoDname = "Depth"+std::to_string(i+1)+"HcalMissing";
-    m_HcalMissing[i] = histFolder.make<TH2F>(twoDname.c_str(),";Tag Muon #eta;Tag Muon #phi; Events",100, -2.6, 2.6, 100, -3.15, 3.15);
-    std::string goodName = "Depth"+std::to_string(i+1)+"HcalGood";
-    m_HcalGood[i]= histFolder.make<TH2F>(goodName.c_str(),";Tag Muon #eta;Tag Muon #phi; Events",100, -2.6, 2.6, 100, -3.15, 3.15);
+    std::string twoDname = "Depth" + std::to_string(i + 1) + "HcalMissing";
+    m_HcalMissing[i] = histFolder.make<TH2F>(
+        twoDname.c_str(), ";Tag Muon #eta;Tag Muon #phi; Events", 100, -2.6, 2.6, 100, -3.15, 3.15);
+    std::string goodName = "Depth" + std::to_string(i + 1) + "HcalGood";
+    m_HcalGood[i] = histFolder.make<TH2F>(
+        goodName.c_str(), ";Tag Muon #eta;Tag Muon #phi; Events", 100, -2.6, 2.6, 100, -3.15, 3.15);
   }
   for (int i = 0; i < 7; i++) {
     std::string name = "Layer" + std::to_string(i + 1) + "Eta";
@@ -172,55 +212,113 @@ void Histograms::book(TFileDirectory histFolder) {
         histFolder.make<TH2F>(rname.c_str(), "; Hit Energy (GeV); #eta ; Events", 150, 0, 10, 50, -2.6, 2.6);
   }
   m_ValidIDs = histFolder.make<TH1F>("ValidCellIds", "; Valid Cell Ids; Events", 101, -0.5, 100.5);
-  for(int depth=0;depth<7;depth++){
-    std::string histName = "CellCenterDistanceDepth"+std::to_string(depth);
-    std::string edgeName = "CellEdgeDistanceDepth"+std::to_string(depth);
+  for (int depth = 0; depth < 7; depth++) {
+    std::string histName = "CellCenterDistanceDepth" + std::to_string(depth);
+    std::string edgeName = "CellEdgeDistanceDepth" + std::to_string(depth);
     m_HEBigCellDEtaDPhi[depth] = histFolder.make<TH2F>(
-        ("BigEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("BigEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
     m_HECellEdgeDistance[depth] = histFolder.make<TH2F>(
-        ("BigEta"+edgeName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.1, 0.1, 50, -0.1, 0.1);
+        ("BigEta" + edgeName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.1, 0.1, 50, -0.1, 0.1);
     m_HESmallCellEdgeDistance[depth] = histFolder.make<TH2F>(
-        ("SmallEta"+edgeName).c_str(), "; #Delta#eta; #Delta#phi; Events", 70, -0.07, 0.07, 70, -0.07, 0.07);
+        ("SmallEta" + edgeName).c_str(), "; #Delta#eta; #Delta#phi; Events", 70, -0.07, 0.07, 70, -0.07, 0.07);
     m_HESmallCellDEtaDPhi[depth] = histFolder.make<TH2F>(
-        ("SmallEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("SmallEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
     m_HEBigCellDEtaDPhiPosQ[depth] = histFolder.make<TH2F>(
-        ("PosQBigEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("PosQBigEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
     m_HESmallCellDEtaDPhiPosQ[depth] = histFolder.make<TH2F>(
-        ("PosQSmallEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("PosQSmallEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
     m_HEBigCellDEtaDPhiNegQ[depth] = histFolder.make<TH2F>(
-        ("NegQBigEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("NegQBigEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
     m_HESmallCellDEtaDPhiNegQ[depth] = histFolder.make<TH2F>(
-        ("NegQSmallEta"+histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
+        ("NegQSmallEta" + histName).c_str(), "; #Delta#eta; #Delta#phi; Events", 50, -0.2, 0.2, 50, -0.2, 0.2);
   }
   m_etaPhiEdgeMin = histFolder.make<TH2F>(
-        "EtaPhiEdgeMin", "; Min #Delta#eta to Cell Edge; Min #Delta#phi to Cell Edge; Events", 50, 0, 0.1, 50, 0, 0.1);
-  m_smallEtaPhiEdgeMin = histFolder.make<TH2F>(
-        "SmallCellEtaPhiEdgeMin","; Min #Delta#eta to Cell Edge; Min #Delta#phi to Cell Edge; Events", 50, 0, 0.1, 50, 0, 0.1);
+      "EtaPhiEdgeMin", "; Min #Delta#eta to Cell Edge; Min #Delta#phi to Cell Edge; Events", 50, 0, 0.1, 50, 0, 0.1);
+  m_smallEtaPhiEdgeMin = histFolder.make<TH2F>("SmallCellEtaPhiEdgeMin",
+                                               "; Min #Delta#eta to Cell Edge; Min #Delta#phi to Cell Edge; Events",
+                                               50,
+                                               0,
+                                               0.1,
+                                               50,
+                                               0,
+                                               0.1);
+}
+
+void Histograms::FillTree(EventInfo info) {
+  pt = info.probePt;
+  hitsOverThresh = info.hitsOver0p2;
+  depthsFound = info.expectedHits;
+  iEta = info.probeiEta;
+  eta = info.ProbeEta;
+  phi = info.ProbePhi;
+  charge = info.probeCharge;
+  vertexZ = info.vertexZ;
+  for(int i=0;i<7;i++){
+    if(info.foundDepths[i])
+    {
+      cellDetaDepth[i] = info.cellEtaEdgeDistance[i];
+      cellDphiDepth[i] = info.cellPhiEdgeDistance[i];
+      hitEnergies[i] = info.hitEnergies[i];
+      neighborHitEnergies[i] = info.neighborHitEnergies[i];
+      neighborHitEnergiesPhi[i] = info.neighborHitEnergiesPhi[i];
+      xShifts[i] = info.xShifts[i];
+      yShifts[i] = info.yShifts[i];
+      zShifts[i] = info.zShifts[i];
+      xShiftEnergies[i] = info.xShiftEnergies[i];
+      yShiftEnergies[i] = info.yShiftEnergies[i];
+      zShiftEnergies[i] = info.zShiftEnergies[i];
+    }
+    else
+    {
+      cellDetaDepth[i] = -1;
+      cellDphiDepth[i] = -1;
+      hitEnergies[i] = -1;
+      neighborHitEnergies[i] = -1;
+      neighborHitEnergiesPhi[i] = -1;
+      xShifts[i] = 10;
+      yShifts[i] = 10;
+      xShiftEnergies[i] = -1;
+      yShiftEnergies[i] = -1;
+    }
+  }
+  m_treeVariables->Fill();
 }
 
 void Histograms::FillHists(EventInfo info) {
   m_eventCount->Fill(0.5, info.eventWeight);
   m_MuonTrackMass->Fill(info.diMuonMass, info.eventWeight);
-  m_probePt->Fill(info.probePt,info.eventWeight);
+  m_probePt->Fill(info.probePt, info.eventWeight);
   m_CSCMinDR->Fill(info.minDR, info.eventWeight);
   bool depthGood[4];
   for (int i = 0; i < 4; i++) {
     m_CSCMinDepthDr[i]->Fill(info.minDrByDepth[i], info.eventWeight);
-    if (info.minDrByDepth[i] > 0.05) {
+    m_CSCRecMinDepthDr[i]->Fill(info.minRecDrByDepth[i], info.eventWeight);
+    m_RpcMinDepthDr[i]->Fill(info.minRpcDrByDepth[i], info.eventWeight);
+    if (fabs(info.minDrByDepth[i]) > 0.05) {
       m_CSCMissingDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
       depthGood[i] = false;
     } else {
       m_CSCGoodDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
       depthGood[i] = true;
     }
-  }
-  for(int depth = 0; depth<7; depth++)
-  {
-    if(info.hitEnergies[depth]<0.2)
-    {
-      m_HcalMissing[depth]->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);   
+    if (fabs(info.minRecDrByDepth[i]) > 0.05) {
+      m_CSCRecMissingDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
+    } else {
+      m_CSCRecGoodDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
     }
-    else{m_HcalGood[depth]->Fill(info.ProbeEta,info.ProbePhi,info.eventWeight);}
+    if (fabs(info.minRpcDrByDepth[i]) > 0.05) {
+      m_RpcMissingDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
+    } else {
+      m_RpcGoodDepthDr[i]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
+    }
+
+  }
+  for (int depth = 0; depth < 7; depth++) {
+    if (info.hitEnergies[depth] < 0.2) {
+      m_HcalMissing[depth]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
+    } else {
+      m_HcalGood[depth]->Fill(info.ProbeEta, info.ProbePhi, info.eventWeight);
+    }
   }
   for (int i = 0; i < 4; i++) {
     bool goodForChecking = true;
@@ -258,7 +356,8 @@ void Histograms::FillHists(EventInfo info) {
       continue;
     }
     m_Layer_Spectra[i]->Fill(info.hitEnergies[i], info.eventWeight);
-    m_Layer_PlusNeighbor_Spectra[i]->Fill(info.hitEnergies[i]+info.neighborHitEnergies[i]+info.neighborHitEnergiesPhi[i], info.eventWeight);
+    m_Layer_PlusNeighbor_Spectra[i]->Fill(
+        info.hitEnergies[i] + info.neighborHitEnergies[i] + info.neighborHitEnergiesPhi[i], info.eventWeight);
     m_RLayer_Spectra[i]->Fill(info.randHitEnergies[i], info.eventWeight);
     m_Layer_Eta[i]->Fill(info.hitEnergies[i], info.ProbeEta, info.eventWeight);
     //      m_RLayer_Eta[i]->Fill(info.randHitEnergies[i],info.ProbeEta,info.eventWeight);
@@ -267,26 +366,38 @@ void Histograms::FillHists(EventInfo info) {
       m_RDepthPairSpectra[i]->Fill(info.randHitEnergies[i], info.randHitEnergies[i + 1], info.eventWeight);
     }
   }
-  m_MissingHits->Fill(info.expectedHits-info.hitsOverThresh,info.eventWeight);
+  m_MissingHits->Fill(info.expectedHits - info.hitsOverThresh, info.eventWeight);
   m_ValidIDs->Fill(info.cellsFound, info.eventWeight);
-  if(fabs(info.probeiEta)>20){m_etaPhiEdgeMin->Fill(info.etaEdgeMin,info.phiEdgeMin,info.eventWeight);}
-  else{m_smallEtaPhiEdgeMin->Fill(info.etaEdgeMin,info.phiEdgeMin,info.eventWeight);}
-  for(int depth=0;depth<7;depth++){
-    if(!info.foundDepths[depth]){continue;}
+  if (fabs(info.probeiEta) > 20) {
+    m_etaPhiEdgeMin->Fill(info.etaEdgeMin, info.phiEdgeMin, info.eventWeight);
+  } else {
+    m_smallEtaPhiEdgeMin->Fill(info.etaEdgeMin, info.phiEdgeMin, info.eventWeight);
+  }
+  for (int depth = 0; depth < 7; depth++) {
+    if (!info.foundDepths[depth]) {
+      continue;
+    }
     if (fabs(info.probeiEta) > 20) {
       m_HEBigCellDEtaDPhi[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
-      m_HECellEdgeDistance[depth]->Fill(info.cellEtaEdgeDistance[depth], info.cellPhiEdgeDistance[depth],info.eventWeight);
-      if(info.probeCharge>0){
+      m_HECellEdgeDistance[depth]->Fill(
+          info.cellEtaEdgeDistance[depth], info.cellPhiEdgeDistance[depth], info.eventWeight);
+      if (info.probeCharge > 0) {
         m_HEBigCellDEtaDPhiPosQ[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
+      } else {
+        m_HEBigCellDEtaDPhiNegQ[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
       }
-      else{m_HEBigCellDEtaDPhiNegQ[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);}
     } else {
       m_HESmallCellDEtaDPhi[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
-      m_HESmallCellEdgeDistance[depth]->Fill(info.cellEtaEdgeDistance[depth], info.cellPhiEdgeDistance[depth],info.eventWeight);
+      m_HESmallCellEdgeDistance[depth]->Fill(
+          info.cellEtaEdgeDistance[depth], info.cellPhiEdgeDistance[depth], info.eventWeight);
 
-      if(info.probeCharge>0){
-        m_HESmallCellDEtaDPhiPosQ[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);}
-      else{m_HESmallCellDEtaDPhiNegQ[depth]->Fill(info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);}
+      if (info.probeCharge > 0) {
+        m_HESmallCellDEtaDPhiPosQ[depth]->Fill(
+            info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
+      } else {
+        m_HESmallCellDEtaDPhiNegQ[depth]->Fill(
+            info.cellCenterDEta[depth], info.cellCenterDPhi[depth], info.eventWeight);
+      }
     }
   }
 }

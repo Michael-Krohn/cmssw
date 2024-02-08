@@ -40,6 +40,13 @@ public:
   int PairTracks(const reco::Track* Track,
                  const reco::TrackRef MuonTrack,
                  edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
+  int PairTracks(const reco::TrackRef Track,
+                 const reco::TrackRef MuonTrack,
+                 edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
+
+  bool PairMuons(const reco::TrackRef globalMuon,
+                 const reco::TrackRef tagMuon,
+                 edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
   void PairSimTracks(const reco::Track* Track,
                      const reco::TrackRef MuonTrack,
                      edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
