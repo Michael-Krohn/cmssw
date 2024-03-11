@@ -50,6 +50,7 @@ LutXml::Config::_Config() {
   targetfirmware = "default_revision";
   generalizedindex = -1;
   weight = -1;
+  vetothreshold = -1;
 }
 
 LutXml::LutXml() : XMLDOMBlock("CFGBrickSet", 1) { init(); }
@@ -113,6 +114,7 @@ void LutXml::addLut(LutXml::Config &_config, XMLDOMBlock *checksums_xml) {
     addParameter("SLB", "int", _config.fiber);
     addParameter("SLBCHAN", "int", _config.fiberchan);
     addParameter("WEIGHT", "int", _config.weight);
+    addParameter("PREFIRE_VETO_THRESHOLD", "int", _config.vetothreshold);
     addData(to_string(_config.lut.size()), "hex", _config.lut);
   } else if (_config.lut_type == 5) {  // channel masks
     addParameter("MASK_TYPE", "string", "TRIGGERCHANMASK");

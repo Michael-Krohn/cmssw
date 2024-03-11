@@ -36,6 +36,7 @@ public:
     std::string targetfirmware;
     int generalizedindex;
     int weight;
+    int vetothreshold;
     std::vector<unsigned int> lut;
     std::vector<uint64_t> mask;
   } Config;

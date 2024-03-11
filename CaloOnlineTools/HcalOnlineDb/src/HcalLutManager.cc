@@ -979,8 +979,11 @@ std::map<int, std::shared_ptr<LutXml>> HcalLutManager::getCompressionLutXmlFromC
 
     _cfg.lut = _coder.getCompressionLUT(_detid);
     auto pWeight = conditions->getHcalTPChannelParameter(_detid, false);
-    if (pWeight)
+    if (pWeight){
       _cfg.weight = pWeight->getauxi1();
+      //_cfg.vetothreshold = pWeight->getauxi2(); //Will use this once veto threshold is stored in CondDB
+      _cfg.vetothreshold = 88;//Veto threshold value of 5 GeV
+    }
 
     int crot = 100 * row->crate + row->slot;
     unsigned int size = _cfg.lut.size();
