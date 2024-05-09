@@ -64,7 +64,8 @@ ZmumuCandidates = cms.EDProducer("CandViewShallowCloneCombiner",
 
 ZmumuCandidatesFilter = cms.EDFilter("CandViewCountFilter",
     src = cms.InputTag("ZmumuCandidates"),
-    minNumber = cms.uint32(1),
+    minNumber = cms.uint32(1)
+    # filter = cms.bool(True)
 )
 
 selectedMuonsForEmbedding = cms.EDProducer("MuMuForEmbeddingSelector",
@@ -72,10 +73,10 @@ selectedMuonsForEmbedding = cms.EDProducer("MuMuForEmbeddingSelector",
 )
 
 makePatMuonsZmumuSelection = cms.Sequence(
-    doubleMuonHLTTrigger
-    + patMuonsAfterKinCuts
-    + patMuonsAfterID
-    + ZmumuCandidates
-    + ZmumuCandidatesFilter
-    + selectedMuonsForEmbedding
+#    doubleMuonHLTTrigger
+#    + patMuonsAfterKinCuts
+#    + patMuonsAfterID
+#    + ZmumuCandidates
+#    + ZmumuCandidatesFilter
+#    + selectedMuonsForEmbedding
 )
