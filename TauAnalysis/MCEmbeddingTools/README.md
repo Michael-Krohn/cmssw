@@ -7,15 +7,38 @@ Creating injecting leptons occurs in 5 steps:
 2. Create a skim of the RAW events selected
 3. For each event selected, create an LHE event of the lepton to be injected using the jet direction and PV coordinates from 1.
 4. Process the LHE file and RAW skim through RECO
-5. Merge the collections of the LHE lepton and the original RAW event
+5. Merge the RECO collections of the LHE lepton and the original RAW event and run them through MINIAOD
 
-## Detailed instructions
+## Detailed instructions of each step
 
-1. This step was done outside of this code framework. It can be done in any analysis structure. An output txt file with the following information per line should be created:
+1. This step is done outside of this code framework. It can be done in any analysis structure. An output txt file with the following information per line should be created:
    runNum lumiSec evtNum jet0_pt jet0_eta jet0_phi pvx pvy pvz
-2.
-3. Run over ttbar/data events and select events with a semi-leptonic decay. You want to create a list of the events (runNum, lumiSec, evtNum) along with the eta, phi direction of the lead AK8 jet (hadronically decaying jet) and the PV coordinates2.	You need to create a skim of the RAW events that were selected.
-4.	Create LHE events for the individual lepton, use the jet direction and the PV information (txt file hardcoded in EmbeddingLHEProducer.cc)
-5.	Run the LHE files through RECO
-6.	Merge the individual lepton events with the original ttbar/data events
+
+2. Skim the RAW events that were selected and also run the RECO over them. Create the config with the proper cmsDriver command for the era of data/MC you are running over and add:
+   --customise TauAnalysis/MCEmbeddingTools/customisers.customiseSelecting_Reselect
+
+   An example config that was used on 2016 data can be found here:
+   
+3.	The RECO step has to be run again, but this time add the following option to the cmsDriver command:
+   
+   --customise TauAnalysis/MCEmbeddingTools/customisers.customiseLHEandCleaning_Reselect
+
+   This uses the plugin EmbeddingLHEProducer.cc, which is very hacky. It reads in the local file created in step 1, but the file is hardcoded here (feel free to change this!):
+
+   An example config that was used on 2016 data can be found here:
+
+4. To process the LHE file, use the same cmsDriver RECO command but add:
+   
+   cmsDriver TauAnalysis/MCEmbeddingTools/python/EmbeddingPythia8Hadronizer_cfi.py \
+   ...\
+   --customise TauAnalysis/MCEmbeddingTools/customisers.customiseGenerator_Reselect
+
+   An example config that was used on 2016 data can be found here:
+
+5. Use the standard cmsDriver MiniAOD comand for the era and MC/data that you are processing, but add the following option:
+
+   --customise TauAnalysis/MCEmbeddingTools/customisers.customiseMerging_Reselect
+
+   An example config that was used on 2016 data can be found here:
+
 
