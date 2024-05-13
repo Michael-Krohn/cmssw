@@ -17,15 +17,15 @@ Creating injecting leptons occurs in 5 steps:
 2. Skim the RAW events that were selected and also run the RECO over them. Create the config with the proper cmsDriver command for the era of data/MC you are running over and add:
    --customise TauAnalysis/MCEmbeddingTools/customisers.customiseSelecting_Reselect
 
-   An example config that was used on 2016 data can be found here:
+   An example config that was used on 2016 data can be found here: TauAnalysis/MCEmbeddingTools/python/selection.py
    
 3.	The RECO step has to be run again, but this time add the following option to the cmsDriver command:
    
    --customise TauAnalysis/MCEmbeddingTools/customisers.customiseLHEandCleaning_Reselect
 
-   This uses the plugin EmbeddingLHEProducer.cc, which is very hacky. It reads in the local file created in step 1, but the file is hardcoded here (feel free to change this!):
+   This uses the plugin EmbeddingLHEProducer.cc, which is very hacky. It reads in the local file created in step 1, but the file is hardcoded here (feel free to change this!): https://github.com/Michael-Krohn/cmssw/blob/lepton-injection/TauAnalysis/MCEmbeddingTools/plugins/EmbeddingLHEProducer.cc#L184
 
-   An example config that was used on 2016 data can be found here:
+   An example config that was used on 2016 data can be found here: TauAnalysis/MCEmbeddingTools/python/lheprodandcleaning.py
 
 4. To process the LHE file, use the same cmsDriver RECO command but add:
    
@@ -33,12 +33,12 @@ Creating injecting leptons occurs in 5 steps:
    ...\
    --customise TauAnalysis/MCEmbeddingTools/customisers.customiseGenerator_Reselect
 
-   An example config that was used on 2016 data can be found here:
+   An example config that was used on 2016 data can be found here: TauAnalysis/MCEmbeddingTools/python/generator.py
 
 5. Use the standard cmsDriver MiniAOD comand for the era and MC/data that you are processing, but add the following option:
 
    --customise TauAnalysis/MCEmbeddingTools/customisers.customiseMerging_Reselect
 
-   An example config that was used on 2016 data can be found here:
+   An example config that was used on 2016 data can be found here: TauAnalysis/MCEmbeddingTools/python/merging.py
 
 
