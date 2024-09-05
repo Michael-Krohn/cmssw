@@ -1,0 +1,79 @@
+#include "FWCore/Framework/interface/one/EDAnalyzer.h"
+
+#include "DarkPhoton/MuAnalyzer/interface/MuPXEventInfo.h"
+#include <iostream>
+
+MuPXEventInfo::MuPXEventInfo() {
+  run = -1;
+  lumi = -1;
+  event = -1;
+  eventWeight = 1;
+  genEventWeight = 1;
+  muRocWeight = 1;
+  cutProgress = 0;
+  paired = false;
+  muonTrackMass = -1;
+  iEta = 0;
+  cellCenterDEta = -10;
+  cellCenterDPhi = -10;
+  sigCat = -1;
+  probeTrack = NULL;
+  tagMuon = NULL;
+  nPassingProbe = 0;
+  nPassingTag = 0;
+  tagProbeVtxChi = -1;
+  probeTrackIso = -1;
+  probeHcalIso = -1;
+  probeEcalIso = -1;
+  probeEcalIso0p2 = -1;
+  probeEcalIso0p1 = -1;
+  probeEcalIso0p05 = -1;
+  probeDCA = -1;
+  probeLongDCA = -1;
+  smallestCone = -1;
+  averageDr = -1;
+  tagTrackIso = -1;
+  tagHcalIso = -1;
+  tagEcalIso = -1;
+  nJets = 0;
+  nearestJetE = -1;
+  minProbeCaloJetDr = -1;
+  nearestJetDr = -1;
+  nearJetMaxE = -1;
+  caloJetPt = -1;
+  probeCaloJetE = -1;
+  tagCaloJetE = -1;
+  pfMet_pt = 0;
+  muMetMT = 0;
+  muAndProbeMetMT = 0;
+  probeCaloJetEcal = -1;
+  probeCaloJetHcal = -1;
+  staMinDr = 10;
+  for (int i = 0; i < 3; i++) {
+    muIdWeights.push_back(1);
+    muIsoWeights.push_back(1);
+    muTrigWeights.push_back(1);
+    pileupWeights.push_back(1);
+  }
+  standaloneE = -1;
+  cscMinDR = -1;
+  stadPhi = -10;
+  probeCharge = 0;
+  standaloneDEoverE = -10;
+  farMuE = 0;
+  farMuDr = 0;
+  farMuEta = 0;
+  genTagMuDr = 0;
+  genPdgId = 0;
+  tagPdgId = 0;
+  passLooseMatch = false;
+  nLooseMuons = 0;
+  nEle = 0;
+  nExtraEle = 0;
+  nExtraMuon = 0;
+  extraMuProbeDr = -1;
+  extraMuTagDr = -1;
+  extraMuPt = -1;
+  matchGenTau = false;
+  matchGenEle = false;
+}

@@ -1,0 +1,261 @@
+ #!/usr/bin/env python
+
+import ROOT
+
+class histfile:
+   def __init__(self, mcfile, name, fillcolor):
+      self.mcfile=mcfile
+      self.label=name
+      self.color=fillcolor
+
+class stackInfo:
+   def __init__(self, mc):
+      self.mcFiles=mc
+   def plotAll(self,basedir,tag,outDir):
+      #Histogram name, X-axis label, Log Scale, Title, Rebin
+      self.stack(basedir+"/ConeHits","Hits along probe trajectory in HE",False,tag,outDir)
+      self.stack(basedir+"/ConeEnergy","Energy of cells along probe trajectory in HE",True,tag,outDir,False,False)
+      self.stack(basedir+"/dRtoNearestCSC","#Delta R from probe to nearest CSC hit",True,tag,outDir)
+      self.stack(basedir+"/StandaloneMuondEoverE","(Standalone muon P - Probe P)/Probe P",True,tag,outDir,True)
+      self.stack(basedir+"/DrtoNearestStandalone","#Delta R to Nearest Standalone Mion",True,tag,outDir)
+      self.stack(basedir+"/signalCategory","Signal Category",True,tag,outDir)
+      self.stack(basedir+"/CaloConeEnergy","Energy in HE Cone (GeV)",True,tag,outDir)
+      self.stack(basedir+"/Dark Brem R","R of Dark Brem Location",True,tag,outDir)
+      self.stack(basedir+"/NHECellsFound","N HE Cells Found",True,tag,outDir)
+      self.twoDshow(basedir+"/HEEStandDEOverE","Energy in HE Hits GeV","(Standalone P - Probe P)/Probe P)", False,tag,outDir,1)
+      self.twoDshow(basedir+"/FailLocation","Probe i#eta","Probe i#phi", False, tag, outDir,1)
+      self.stack("allEvents/ProbeTrackEta","Probe #eta",True,tag,outDir)
+      self.stack("allEvents/cutProgress","Cut Progress",True,tag,outDir,False,True)
+      self.stack("allEvents/ProbeEcalIsolation","Ecal Energy in 0.4 #Delta R  Cone", True, tag, outDir,False,False,35)
+      self.stack("allEvents/TrackIsolation","Relative Track Isolation (Track pt / #Sigma pt in 0.3 #Delta R)", True, tag, outDir,False,False,0.3)
+      self.stack("allEvents/MinCaloJetDr","#Delta R from Probe to Nearest Calo Jet", False, tag, outDir,False,False,3)
+      self.stack("allEvents/ProbePFJetDr","#Delta R from Probe to Nearest PF Jet", True, tag, outDir)
+      self.stack("allEvents/ProbeTrackDCA","Transverse Impact Paramter", True, tag,outDir)
+      self.stack("allEvents/ProbeTrackLongDCA","Longitudinal Impact Parameter", True, tag,outDir)
+      self.stack("allEvents/nExtraElectrons","Extra Electrons in Event", True, tag, outDir)
+      self.stack("allEvents/nExtraMuons","Extra Muons in Event", True, tag, outDir)
+      self.stack("allEvents/standaloneChi2","#chi^2 of Largest Nearby Standalone Muon", True, tag, outDir)
+      self.stack("allEvents/standaloneNHits","Number of hits in largest nearby standalone muon", True, tag, outDir)
+      self.stack("allEvents/standaloneTDCA","Transverse DCA of standalone muon", True, tag, outDir)
+      self.stack("allEvents/standaloneLongDCA","Longitudinal DCA of standalone muon", True, tag, outDir)
+      self.stack("allEvents/GenStandaloneMuondEoverE","Final Muon P - Standalone P / Final Muon P", True, tag, outDir)
+      self.stack("allEvents/DisGenStandaloneMuondEoverE","Final Muon P - Displaced Standalone P / final Muon P", True, tag, outDir)
+      self.stack("allEvents/HitsOverThresh","Hits along probe trajectory",True,tag,outDir)
+      self.stack("allEvents/MuInitialE","#mu Energy Before Dark Bremsstrahlung (GeV)",True,tag,outDir,True,SigOnly=True)
+      self.stack("allEvents/MuFinalE","#mu Energy After Dark Bremsstrahlung (GeV)",True,tag,outDir,True,SigOnly=True)
+      self.stack("allEvents/DeflectingAngle","#mu Deflection angle (rad)",True,tag,outDir,xmax=1.4,SigOnly=True)
+      self.stack("allEvents/DrtoNearestStandalone","#Delta R from Probe track to Standalone Muon",True,tag,outDir,xmax=4)
+      self.stack("allEvents/StandalonedPhiPosQ","#Delta #phi from Probe track to Standalone Muon",True,tag,outDir, lab_x0=0.2, lab_y0=0.7, y_max=0.5)
+      self.stack("allEvents/StandalonedPhiNegQ","#Delta #phi from Probe track to Standalone Muon",True,tag,outDir, lab_x0=0.6, y_max=0.5)
+      self.cutFlowText(outDir)
+
+   def stack(self, name, xtitle, log, tag, outDir,rebin=False, scale=False, xmax=-1,SigOnly=False,lab_x0=0.55,lab_y0=0.7,y_min=-1,y_max=-1):
+      leg = ROOT.TLegend(lab_x0,lab_y0,lab_x0+0.3,lab_y0+0.1)
+      leg.SetBorderSize(0)
+      hists = []
+      NtotalEvents=0
+      #nextname = name[:-1]+str(int(name[-1])+1)
+      #print nextname
+      for mcFile in self.mcFiles:
+         if SigOnly:
+            if "SM" in mcFile.label:
+               continue
+         hist=(mcFile.mcfile.Get("demo/"+name).Clone())
+         if scale:
+            hist.Scale(1./hist.GetBinContent(2))
+         else:
+            if(hist.Integral()>0):
+               hist.Scale(1./hist.Integral())
+         hist.SetLineWidth(2)
+         hist.SetLineColor(mcFile.color)
+         hist.SetDirectory(0)
+         hist.SetStats(0)
+         if(rebin):
+            hist=hist.Rebin(8)
+         hists.append(hist)
+         leg.AddEntry(hist, mcFile.label,"l")
+
+      plot= ROOT.TCanvas("plot","plot",2)
+      ROOT.gStyle.SetTextFont(43)
+      pad1 = ROOT.TPad("pad1","pad1",0,0,1,1)
+      pad1.SetTopMargin(0.05)
+      pad1.SetBottomMargin(0.1)
+      pad1.SetRightMargin(0.03)
+      pad1.SetLeftMargin(0.13)
+      pad1.Draw()
+      pad1.cd()
+  
+      for hist in hists:
+         hist.Draw("histsame")
+      if(log):
+         pad1.SetLogy()
+         ROOT.gPad.SetLogy()
+ 
+      leg.Draw()
+      
+      label = ROOT.TPaveText(0.4,0.96,0.99,0.99,"brNDC")
+      label.SetTextSize(20)
+      label.AddText(tag)
+      label.SetFillColor(0)
+      label.SetBorderSize(0)
+      #label.Draw()
+      
+      hists[0].GetYaxis().SetTitle("Normalized Yield")
+      hists[0].GetYaxis().CenterTitle()
+      hists[0].GetYaxis().SetTitleSize(20)
+      hists[0].GetYaxis().SetTitleFont(43)
+      hists[0].GetYaxis().SetTitleOffset(1.35)
+      hists[0].GetYaxis().SetLabelFont(43)
+      hists[0].GetYaxis().SetLabelSize(15)
+      hists[0].GetXaxis().SetLabelFont(43)
+      hists[0].GetXaxis().SetLabelSize(15)
+      hists[0].GetXaxis().SetTickSize(0.07)
+      if(y_min>0):
+         hists[0].SetMinimum(y_min)
+      if(y_max>0):
+         hists[0].SetMaximum(y_max)
+      if xmax>0:
+         hists[0].GetXaxis().SetRangeUser(0,xmax)
+      xlabel = ROOT.TPaveText(0.2,0.0,0.99,0.06,"brNDC")
+      xlabel.SetTextSize(20)
+      xlabel.AddText(xtitle)
+      xlabel.SetFillColor(0)
+      xlabel.SetBorderSize(0)
+      xlabel.Draw()
+      
+      cms_lab_x0 = lab_x0+0.03
+      cms_lab_y0 = lab_y0+0.11
+      tag1 = ROOT.TLatex(cms_lab_x0,cms_lab_y0,"CMS")
+      tag1.SetNDC()
+      tag1.SetTextFont(62)
+      tag2 = ROOT.TLatex(cms_lab_x0+0.085, cms_lab_y0, "Internal")
+      tag2.SetNDC()
+      tag2.SetTextFont(52)
+      tag1.SetTextSize(0.04)
+      tag2.SetTextSize(0.03)
+      tag1.Draw()
+      tag2.Draw()
+      
+      img = ROOT.TImage.Create()
+      img.FromPad(plot)
+      img.WriteImage(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.png")
+      plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.pdf")
+      #plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.C")
+
+   def twoDshow(self, name, xtitle, ytitle, log, tag, outDir, index):
+      mcFile=self.mcFiles[index]
+      hist=(mcFile.mcfile.Get("demo/"+name).Clone())
+      if(hist.Integral()>0):
+         hist.Scale(1./hist.Integral())
+ 
+      hist.SetStats(0)
+      plot= ROOT.TCanvas("plot","plot",2)
+      ROOT.gStyle.SetTextFont(43)
+      pad1 = ROOT.TPad("pad1","pad1",0,0,1,1)
+      pad1.SetTopMargin(0.05)
+      pad1.SetBottomMargin(0.1)
+      pad1.SetRightMargin(0.03)
+      pad1.SetLeftMargin(0.13)
+      pad1.Draw()
+      pad1.cd()
+  
+      hist.Draw("colz")
+      if(log):
+         pad1.SetLogy()
+         ROOT.gPad.SetLogy()
+ 
+      label = ROOT.TPaveText(0.4,0.96,0.99,0.99,"brNDC")
+      label.SetTextSize(20)
+      label.AddText(tag)
+      label.SetFillColor(0)
+      label.SetBorderSize(0)
+      label.Draw()
+      
+      hist.GetYaxis().SetTitle(ytitle)
+      hist.GetYaxis().CenterTitle()
+      hist.GetYaxis().SetTitleSize(20)
+      hist.GetYaxis().SetTitleFont(43)
+      hist.GetYaxis().SetTitleOffset(1.35)
+      hist.GetYaxis().SetLabelFont(43)
+      hist.GetYaxis().SetLabelSize(15)
+      hist.GetXaxis().SetLabelFont(43)
+      hist.GetXaxis().SetLabelSize(15)
+      hist.GetXaxis().SetTickSize(0.07)
+      xlabel = ROOT.TPaveText(0.2,0.0,0.99,0.06,"brNDC")
+      xlabel.SetTextSize(20)
+      xlabel.AddText(xtitle)
+      xlabel.SetFillColor(0)
+      xlabel.SetBorderSize(0)
+      xlabel.Draw()
+      
+      lab_x0 = 0.20
+      lab_y0 = 0.96
+      tag1 = ROOT.TLatex(lab_x0,lab_y0,"CMS")
+      tag1.SetNDC()
+      tag1.SetTextFont(62)
+      tag2 = ROOT.TLatex(lab_x0+0.085, lab_y0, "Internal")
+      tag2.SetNDC()
+      tag2.SetTextFont(52)
+      tag1.SetTextSize(0.04)
+      tag2.SetTextSize(0.03)
+      tag1.Draw()
+      tag2.Draw()
+      
+      img = ROOT.TImage.Create()
+      img.FromPad(plot)
+      img.WriteImage(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.png")
+      plot.Print(outDir+"/"+name.split("/")[0]+name.split("/")[1]+"_stack.pdf")
+ 
+   def cutFlowText(self, outDir):
+      outfile = open(outDir+"/CutProgress.txt","w")
+      cutList = [ 'AllEvents',
+                  'Tight ID muon',
+                  'Tight PF Iso muon',
+                  'Muon pt > 26 GeV and |eta|<2.',
+                  'Muon is global',
+                  'Track With >20 GeV pt >0.2 dR from muon',
+                  'Track |eta|>1.45 and <2.4',
+                  'Track is high purity',
+                  'Track Belongs to Primary Vertex',
+                  'Probe Longitudinal Impact Parameter <0.05',
+                  'Probe Transverse Impact Parameter < 0.005',
+                  'Tag and Probe have opposite charge',
+                  'Fitted tag/probe vertex is valid',
+                  'Fitted tag/probe vertex has chi^2/ndof<3',
+                  'Invariant mass of pair between 50 and 150 GeV',
+                  'Probe track isolation <0.05',
+                  'Probe ecal isolation <10 GeV',
+                  'No calo jet within DR of 1.0',
+                  'No other probes more than 0.3 DR from selected probe pair with tag',
+                  'Closest HE cell to probe trajectory between 18 and 28',
+                  '>2 hits along trajectory in HE >0.1 GeV',
+                  '<10 GeV in HE hits along trajectory',
+                  'DR to nearest CSC hit >0.05',
+                  'DR to nearest Standalone muon >0.5']
+
+
+      for mcFile in self.mcFiles:
+         hist=(mcFile.mcfile.Get("demo/allEvents/cutProgress").Clone())
+         outfile.write("\n")
+         for n in range(1,len(cutList)+1):
+             if(hist.GetBinContent(n)>0):
+                 outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
+      hist=self.mcFiles[2].mcfile.Get("demo/genAccepted/cutProgress").Clone()
+      outfile.write("\n")
+      for n in range(1,len(cutList)+1):
+          if(hist.GetBinContent(n)>0):
+              outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
+
+      hist=self.mcFiles[0].mcfile.Get("demo/genAccepted/cutProgress").Clone()
+      outfile.write("\n")
+      for n in range(1,len(cutList)+1):
+          if(hist.GetBinContent(n)>0):
+              outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
+
+      hist=self.mcFiles[1].mcfile.Get("demo/genAccepted/cutProgress").Clone()
+      outfile.write("\n")
+      for n in range(1,len(cutList)+1):
+          if(hist.GetBinContent(n)>0):
+              outfile.write(cutList[n-1]+","+str(hist.GetBinContent(n))+"\n")
+
+      outfile.close()          

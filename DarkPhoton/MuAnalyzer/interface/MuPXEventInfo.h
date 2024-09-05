@@ -1,0 +1,113 @@
+#ifndef MuPXEventInfo_h
+#define MuPXEventInfo_h
+
+#include <vector>
+#include <map>
+
+#include "FWCore/Framework/interface/Frameworkfwd.h"
+#include "FWCore/ParameterSet/interface/ParameterSet.h"
+#include "FWCore/ServiceRegistry/interface/Service.h"
+#include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "TH1F.h"
+
+class MuPXEventInfo {
+public:
+  MuPXEventInfo();
+  double eventWeight;
+  double genEventWeight;
+  int lumi;
+  int run;
+  int event;
+  int cutProgress;
+  int sigCat;
+  bool paired;
+  double muonTrackMass;
+  double adjMuonTrackMass;
+  const reco::Track* probeTrack;
+  const reco::Muon* tagMuon;
+  int nPassingProbe;
+  int nPassingTag;
+  double tagProbeVtxChi;
+  double probeTrackIso;
+  double probeHcalIso;
+  double probeEcalIso;
+  double probeEcalIso0p1;
+  double probeEcalIso0p2;
+  double probeEcalIso0p05;
+  //HCAL stuff
+  int iEta;
+  double cellCenterDEta;
+  double cellCenterDPhi;
+  int nCellsFound;
+  int hitsOverThresh;
+  int coneHits;
+  double coneEnergy;
+  //Multiple Paired Track Hists
+  double smallestCone;
+  double averageDr;
+  double tagTrackIso;
+  double tagHcalIso;
+  double tagEcalIso;
+  double probeDCA;
+  double probeLongDCA;
+  int nJets;
+  int nLooseBTagJets;
+  int nMedBTagJets;
+  int nTightBTagJets;
+  double nearestJetE;
+  double nearestJetDr;
+  double nearJetMaxE;
+  //met
+  double pfMet_pt;
+  double muMetMT;
+  double muAndProbeMetMT;
+  //Calo Jets
+  double caloJetPt;
+  double minProbeCaloJetDr;
+  double probeCaloJetE;
+  double tagCaloJetE;
+  double probeCaloJetEcal;
+  double probeCaloJetHcal;
+  //vtx stuff
+  int probeVtx;
+  int tagVtx;
+  int nVtx;
+  double vtxd0;
+  double vtxdz;
+  //Muon Scale Factors
+  double muRocWeight;
+  std::vector<double> muIdWeights;
+  std::vector<double> muIsoWeights;
+  std::vector<double> muTrigWeights;
+  //Pileup Weights
+  std::vector<double> pileupWeights;
+  double nPUmean;
+  double farMuE;
+  double farMuDr;
+  double farMuEta;
+  double genTagMuDr;
+  double genPdgId;
+  bool passLooseMatch;
+  std::vector<int> nearbyNonMuPdgIds;
+  std::vector<int> highPtNonMuPdgIds;
+  int nLooseMuons;
+  double tagPdgId;
+  double cscMinDR;
+  double staMinDr;
+  double standaloneE;
+  int nEle;
+  int nExtraEle;
+  int nExtraMuon;
+  double extraMuProbeDr;
+  double extraMuTagDr;
+  double extraMuPt;
+  double standaloneDEoverE;
+  double stadPhi;
+  int probeCharge;
+  //Gen Matching
+  bool matchGenTau;
+  bool matchGenEle;
+};
+#endif
