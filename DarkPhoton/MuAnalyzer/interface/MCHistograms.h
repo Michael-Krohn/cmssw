@@ -69,6 +69,7 @@ public:
   double weight;
   double probeCharge;
   double invMass;
+  double pairVtxChi;
   double ecalIso;
   double hcalIso;
   double trackIso;
@@ -166,6 +167,7 @@ public:
   TH1F* m_CSCMinStationDZ[4];
   TH1F* m_DTMinStationDZ[4];
   TH1F* m_HEDepthEnergy[7];
+  TH1F* m_HEDepthEnergy_Shift[7];
   TH1F* m_HELastDepth;
   TH1F* m_HESecLastDepth;
   TH2F* m_CSCMissingStationDr[4];
@@ -196,6 +198,7 @@ public:
   TH1F* m_BremDepth;
   TH1F* m_CSC_dR;
   TH1F* m_CSC_recHitdR;
+  TH1F* m_shiftCSC_recHitdR;
   TH1F* m_MuonMotherdE;
   TH1F* m_MuonMotherdR;
   TH1F* m_CSCHitChiSq;

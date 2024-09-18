@@ -171,6 +171,10 @@ private:
       edm::Handle<reco::VertexCollection> vtxHandle,
       edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label,
       edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
+  bool PairMuons(const reco::Muon* Tag,
+			   Muons myMuons,
+			   Tracks myTracks,
+                           edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
   std::vector<double> GetPuWeight(edm::Handle<std::vector<PileupSummaryInfo>> hPileupInfoProduct);
 
   bool passesMetFilters(const edm::Event& iEvent);
@@ -180,7 +184,7 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
   edm::EDGetToken m_genParticleToken;
   edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label;
-  edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHit_Label;
+  //edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHit_Label;
   edm::EDGetTokenT<DTRecSegment4DCollection> DTSegment_Label;
   edm::EDGetToken m_cscSimHits;
   //    edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
@@ -197,8 +201,11 @@ private:
   edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
   std::vector<std::string> m_muonPathsToPass;
   const reco::Track* selectedTrack;
+  const reco::Track* lastSelectedTrack;
+  reco::Track lastSelObj;
   const reco::Track* selectedTagTrack;
   const reco::Muon* selectedMuon;
+  const reco::Muon* selectedGlobalMuon;
   const reco::Muon* matchedMuon;
   double hcalIso;
   double hcalIso0p3;
@@ -224,6 +231,7 @@ private:
   bool m_missingCSCFilter;
   bool m_highHcalCR;
   bool m_tagAligned;
+  bool m_doubleMuon;
   bool m_studyBarrel;
   double m_scaleFactor;
   std::string m_binSFsfname;
@@ -236,6 +244,10 @@ private:
   double diMuonMass;
   double probeTIP;
   double probeLIP;
+  double doubleMuIdWeight_;
+  double doubleMuIsoWeight_;
+  double doubleMuTrigWeight_;
+  double doubleMuRocWeight_;
   std::map<int, std::vector<int>> metFailingEvents;
   //DBrem binning scale factors
   std::map<int, TH1F*> binningSFs;
@@ -258,6 +270,7 @@ private:
   MCHistograms lowHits;
   MCHistograms failSig;
   MCHistograms totalDisappear;
+  MCHistograms failLast;
   MCHistograms totalDisappearLowEcal;
   MCHistograms totalDisappearNoHcalIso;
   MCHistograms passSigNearbyCSC;
@@ -283,7 +296,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       primaryVertices_Label(
           consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
       CSCSegment_Label(consumes<CSCSegmentCollection>(iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
-      CSCRecHit_Label(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitsLabel"))),
+      //CSCRecHit_Label(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitsLabel"))),
       DTSegment_Label(consumes<DTRecSegment4DCollection>(iConfig.getParameter<edm::InputTag>("DTSegmentLabel"))),
       //  CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
       rpcRecHitToken(consumes<RPCRecHitCollection>(iConfig.getParameter<edm::InputTag>("RPCRecHitTag"))),
@@ -311,6 +324,7 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
       m_missingCSCFilter(iConfig.getUntrackedParameter<bool>("missingCSC", false)),
       m_highHcalCR(iConfig.getUntrackedParameter<bool>("highHcalCr", false)),
       m_tagAligned(iConfig.getUntrackedParameter<bool>("tagAlignedCr", false)),
+      m_doubleMuon(iConfig.getUntrackedParameter<bool>("doubleMuonCr", false)),
       m_studyBarrel(iConfig.getUntrackedParameter<bool>("studyBarrelMuons", false)),
       m_scaleFactor(iConfig.getUntrackedParameter<double>("scaleFactor", 2000)),
       m_binSFsfname(iConfig.getUntrackedParameter<std::string>("binSFsfname", "")),
@@ -385,6 +399,8 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
   }
 
   noBrem=false;
+  lastSelectedTrack=NULL;
+
   std::string metFname = iConfig.getUntrackedParameter<std::string>("metFailName", "");
   if (metFname != "") {
     TFile* metFailingFile = TFile::Open(iConfig.getUntrackedParameter<std::string>("metFailName", "").c_str());
@@ -410,9 +426,10 @@ SigAnalyzer::SigAnalyzer(const edm::ParameterSet& iConfig)
   failSig.book(fs->mkdir("failSig"), m_isMC);
   lowHits.book(fs->mkdir("lowHits"), m_isMC);
   totalDisappear.book(fs->mkdir("totalDisappear"), m_isMC, 1);
+  failLast.book(fs->mkdir("failLastHE"), m_isMC, 1);
   totalDisappearLowEcal.book(fs->mkdir("totalDisappearLowEcal"), m_isMC);
   totalDisappearNoHcalIso.book(fs->mkdir("totalDisappearNoHcalIso"), m_isMC);
-  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"), m_isMC);
+  passSigNearbyCSC.book(fs->mkdir("totalDisappearSigNearbyCSC"), m_isMC, 1);
   partialDisappear.book(fs->mkdir("partialDisappear"), m_isMC);
   partialDisappearLowEcal.book(fs->mkdir("oartialDisappearLowEcal"), m_isMC);
   partialDisappear_largeCSCDefl.book(fs->mkdir("partialDisappear_largeCSCDefl"), m_isMC);
@@ -450,6 +467,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
   noBremEvents.ResetCutFlow();
   genAccepted.ResetCutFlow();
   totalDisappear.ResetCutFlow();
+  passSigNearbyCSC.ResetCutFlow();
   edm::Handle<float> dbremweight, dbremInitialE, dbremFinalE, dbremAngle, dbremX, dbremY, dbremZ;
   bool genAccept = false;
   if (m_isMC) {
@@ -477,6 +495,22 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         info.dbremInitialEt = et;
         info.dbremFinalE = *dbremFinalE;
         info.dbremInitialE = *dbremInitialE;
+	TLorentzVector initialMu;
+	double initialP = sqrt(info.dbremInitialE*info.dbremInitialE-0.01);
+	TVector3 initialDir(*dbremX,*dbremY,*dbremZ);
+	initialMu.SetPxPyPzE(0,0,initialP,info.dbremInitialE);
+	//initialMu.RotateUz(initialDir.Unit());
+	//info.dbremInitialPt = initialMu.Pt();
+	//info.dbremInitialEta = initialMu.Eta();
+	TLorentzVector finalMu;
+	double randPhi = rand()*2.*3.141;
+	double dbremP = 0;
+	if(info.dbremFinalE>0.1){dbremP = sqrt(info.dbremFinalE*info.dbremFinalE-0.01);}
+
+	finalMu.SetPxPyPzE(dbremP*std::sin(*dbremAngle)*std::cos(randPhi),dbremP*std::sin(*dbremAngle)*std::sin(randPhi),dbremP*std::cos(*dbremAngle),info.dbremFinalE);
+	//finalMu.RotateUz(initialDir.Unit());
+	//info.dbremFinalPt = finalMu.Pt();
+	//info.dbremFinalEta = finalMu.Eta();
         GlobalPoint vtx(*dbremX / 10., *dbremY / 10., *dbremZ / 10.);
         info.vtxZ = fabs(vtx.z());
         info.vtxPerp = vtx.perp();
@@ -667,9 +701,34 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       }
     }
   }
+  bool pairedMuons_ = false;
+  if (m_doubleMuon){
+    for (std::vector<const reco::Muon*>::const_iterator muon = myMuons.selectedMuons.begin();
+         muon != myMuons.selectedMuons.end();
+         muon++) {
+      if (pairedMuons_) {
+        continue;
+      }
+      pairedMuons_ = PairMuons(*muon,myMuons,myTracks,transientTrackBuilder);
+      if (pairedMuons_){
+        if (m_isMC) {
+          edm::Handle<reco::GenParticleCollection> genParticles;
+          iEvent.getByToken(m_genParticleToken, genParticles);
+          doubleMuRocWeight_ = myMuons.MuonRoccorWeight((*muon), genParticles);
+          doubleMuIdWeight_ = myMuons.MuonTightIDWeight((*muon)->pt(), (*muon)->eta())[0];
+          doubleMuIsoWeight_ = myMuons.MuonTightIsoWeight((*muon)->pt(), (*muon)->eta())[0];
+          doubleMuTrigWeight_ = myMuons.MuonTrigWeight((*muon)->pt(), (*muon)->eta())[0];
+        }
+      }
+    }
+  }
   if (m_isMC) {
-    info.eventWeight =
+    if (m_doubleMuon){
+      info.eventWeight = info.eventWeight * doubleMuRocWeight_ * doubleMuIdWeight_ * doubleMuIsoWeight_ * doubleMuTrigWeight_;
+    }else{
+      info.eventWeight =
         info.eventWeight * info.muIdWeights[0] * info.muIsoWeights[0] * info.muTrigWeights[0] * info.muRocWeight;
+    }
   }
   if (maxTrackProgress == 13) {
     SiblingMatched = true;
@@ -780,6 +839,13 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
                           trackCollection_label,
                           info)){return;}
        selectedTrack = selectedTagTrack;
+    }else if(m_doubleMuon)
+    {
+       if(!MatchMotherToTrack(iEvent,
+                          selectedGlobalMuon,
+                          trackCollection_label,
+                          info)){return;}
+       selectedTrack = selectedTagTrack;
     }
     info.probeTrackIso =
         myTracks.GetIsolation(iEvent, trackCollection_label, 0.3, vtxHandle, selectedTrack) / selectedTrack->pt();
@@ -825,14 +891,16 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.dsz = selectedTrack->dsz();
     info.diMuonMass = diMuonMass;
     GlobalPoint FillerPoint;
-    myCSCs.ExtrapolateTrackToCSC(iEvent,
+    myCSCs.ExtrapolateTrackToCSC(
+         iEvent, iSetup, CSCSegment_Label, selectedTrack, transientTrackBuilder->build(selectedTrack), FillerPoint);
+/*    myCSCs.ExtrapolateTrackToCSC(iEvent,
                                  iSetup,
                                  CSCSegment_Label,
 				 CSCRecHit_Label,
                                  rpcRecHitToken,
                                  selectedTrack,
                                  transientTrackBuilder->build(selectedTrack),
-                                 FillerPoint);
+                                 FillerPoint);*/
     myCSCs.ExtrapolateTrackToDTs(iEvent,
 			                 iSetup,
 			                 DTSegment_Label,
@@ -844,6 +912,12 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.cscRpcHitMinDR = myCSCs.rpcMinDR;
     info.CSCdEta = myCSCs.CSCdEta;
     info.CSCdPhi = myCSCs.CSCdPhi;
+    int nCloseHits = 0;
+/*    for(auto closeDr : *myCSCs.m_closeDrs)
+    {
+        info.closeDrs->push_back(closeDr);
+	nCloseHits++;
+    }*/
     //Find number of good depths for 1 depth -> 0 depths MC correction
     int nGoodDepths = 0;
     int goodDepth = 0;
@@ -882,7 +956,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (FmuE == 0) {
       FmuE = selectedTrack->p();
     }
-    bool MuonMatched = MatchTrackToMuon(iEvent, mother, myMuons, info, FmuE, myCSCs.minDR);
+    bool MuonMatched = MatchTrackToMuon(iEvent, mother, myMuons, info, FmuE, info.cscMinDR);
     double staMinDr = 7.;
     if (MuonMatched) {
       info.cscChiSq = myCSCs.CSCChiSq;
@@ -1092,6 +1166,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       info.hitEnergies[k] = myHCAL.m_hitEnergies[k];
       info.neighborHitEnergies[k] = myHCAL.m_neighborHitEnergies[k];
     }
+    bool onEdge = myHCAL.onEdge;
     info.bremDepth = myHCAL.m_bremDepth;
     info.minCaloJetDr = minProbeDr;
     info.caloJetPt = caloJetPt;
@@ -1121,6 +1196,48 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
     info.lumi = iEvent.id().luminosityBlock();
     info.event = iEvent.id().event();
 
+    if(lastSelectedTrack!=NULL)
+    {
+        CSC shiftCSCs(m_missingCSCFilter);
+        HCAL shiftHCAL;
+
+    	GlobalPoint LastTrackGlobalPoint =
+    	    GlobalPoint(GlobalPoint::Polar(lastSelectedTrack->theta(), lastSelectedTrack->phi(), 525));
+
+    	if (shiftHCAL.FindMuonHits(iEvent,
+    	                         iSetup,
+    	                         HBHERecHit_Label,
+    	                         LastTrackGlobalPoint,
+    	                         lastSelectedTrack->charge(),
+    	                         transientTrackBuilder->build(lastSelectedTrack))) 
+    	{
+    	   shiftCSCs.ExtrapolateTrackToCSC(iEvent,
+                                 iSetup,
+                                 CSCSegment_Label,
+                                 lastSelectedTrack,
+                                 transientTrackBuilder->build(lastSelectedTrack),
+                                 FillerPoint);
+    	   info.shiftRPCDr = shiftCSCs.rpcMinDR;
+	   info.shiftRecDr = shiftCSCs.recMinDR;
+	   info.shiftCSCDr = shiftCSCs.minDR;
+
+	   double shiftLastE = -1;
+	   if(!shiftHCAL.onEdge)
+	   {
+		 for(int depth=0;depth<7;depth++)
+		 {
+		    if(shiftHCAL.foundDepths[depth])
+		    {
+		       shiftLastE = shiftHCAL.m_hitEnergies[depth];
+		       info.shiftHE[depth] = shiftHCAL.m_hitEnergies[depth];
+		    }
+		 }
+	   }
+	   info.shiftLastE = shiftLastE;
+	}
+    } 
+    lastSelObj = *selectedTrack;
+    lastSelectedTrack = &lastSelObj;
     //Check nearby leptons
     for (const auto& iEle : iEvent.get(m_electronsToken)) {
       if (iEle.pt() < 15)
@@ -1178,7 +1295,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
         if (genAccept) {
           genAccepted.IncCutFlow(info.eventWeight);
         }
-        if (myCSCs.minDR > 0.05 && info.cscRecHitMinDR > 0.1) {
+        if (info.cscMinDR > 0.05 && info.cscRecHitMinDR > 0.1) {
           allEvents.IncCutFlow(info.eventWeight);
           if (genAccept) {
             genAccepted.IncCutFlow(info.eventWeight);
@@ -1204,8 +1321,7 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       if (staMinDr > 1.0) {
         totalDisappear.IncCutFlow(info.eventWeight);
         //if ((myCSCs.minDR > 0.05 || (m_missingCSCFilter && nGoodDepths == 1)) && info.cscRecHitMinDR > 0.1 && passSecCSCDrs) 
-        if ((myCSCs.minDR > 0.05 && info.cscRecHitMinDR>0.1) || (m_missingCSCFilter && nGoodDepths == 1)) 
-//        if ((myCSCs.minDR > 0.05 || (m_missingCSCFilter && nGoodDepths == 1))) 
+        if ((info.cscMinDR > 0.05 && info.cscRpcHitMinDR > 0.05 && nCloseHits<3) || (m_missingCSCFilter && nGoodDepths == 1)) 
 	{
           if(m_missingCSCFilter&&nGoodDepths==1){info.eventWeight = info.eventWeight * (1 - cscScaleFactor);}
 
@@ -1214,15 +1330,27 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
             totalDisappear.IncCutFlow(info.eventWeight);
             if (info.hcalIso0p3<15 || m_highHcalCR) {
 	      totalDisappear.IncCutFlow(info.eventWeight);
-	      if(!myHCAL.onEdge){
-                 totalDisappear.IncCutFlow(info.eventWeight);
-                 info.sigCat = 3;
-                 //passSigCuts = true;
-                 totalDisappear.FillHists(info);
-	         totalDisappear.FillTotalDisappTree(info);
-                 if (info.probeEcalIso < 5) {
-                   totalDisappearLowEcal.FillHists(info);
-                 }
+	      if(!onEdge){
+		 double lastE = 10;
+		 for(int depth=0;depth<7;depth++)
+		 {
+		    if(info.foundDepths[depth]){lastE = info.hitEnergies[depth];}
+		 }
+		 if(lastE<0.1)
+		 {
+                    totalDisappear.IncCutFlow(info.eventWeight);
+                    info.sigCat = 3;
+        	         //passSigCuts = true;
+                    totalDisappear.FillHists(info);
+		    totalDisappear.FillTotalDisappTree(info);
+        	    if (info.probeEcalIso < 5) {
+                       totalDisappearLowEcal.FillHists(info);
+                    }
+		 }
+		 else{
+                    failLast.FillHists(info);
+		    failLast.FillTotalDisappTree(info);
+		 }
 	      }
             }
 	    totalDisappearNoHcalIso.FillHists(info);
@@ -1231,19 +1359,19 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
 	else
 	{
           passSigNearbyCSC.IncCutFlow(info.eventWeight);
-          if (myCSCs.minDR < 0.05 && info.cscRpcHitMinDR>0.1) {
+          if (true) {
 	    bool steelBrem = true;
 	    passSigNearbyCSC.IncCutFlow(info.eventWeight);
 	    for(int cscStation = 1; cscStation<4; cscStation++){
 	      if(fabs(info.minDrByStation[cscStation])<0.05){steelBrem=false;}
 	      if(steelBrem){passSigNearbyCSC.IncCutFlow(info.eventWeight);}
 	    }
-            if (info.hitsOverThresh > 1 && steelBrem) {
+            if (info.hitsOverThresh > 1) {
 	      passSigNearbyCSC.IncCutFlow(info.eventWeight);
               if (info.hcalIso0p3<15 || m_highHcalCR) {
 	        passSigNearbyCSC.IncCutFlow(info.eventWeight);
                 passSigNearbyCSC.FillHists(info);
-                passSigNearbyCSC.FillTree(info);
+                passSigNearbyCSC.FillTotalDisappTree(info);
 	      }
             }
 	  }
@@ -1286,8 +1414,9 @@ void SigAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetu
       lowHits.FillHists(info);
     }
     allEvents.FillHists(info);
-    if(!myHCAL.onEdge){allEvents.FillTotalDisappTree(info);}
+    if(!onEdge){allEvents.FillTotalDisappTree(info);}
     if(m_tagAligned){allEvents.FillTree(info);}
+    if(m_doubleMuon){allEvents.FillTree(info);}
 
     if (genAccept) {
       genAccepted.FillHists(info);
@@ -1425,6 +1554,44 @@ int SigAnalyzer::PairTagAndProbe(
   }
   return cutpro;
 }
+
+bool SigAnalyzer::PairMuons(const reco::Muon* Tag,
+			   Muons myMuons,
+			   Tracks myTracks,
+                           edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
+  bool paired = false;
+  for (std::vector<const reco::Muon*>::const_iterator muon = myMuons.globalMuons.begin();
+       muon != myMuons.globalMuons.end();
+       muon++) {
+    if (paired)
+      continue;
+    if (fabs((*muon)->eta()) > 2.4 || fabs((*muon)->eta()) < 1.45)
+      continue;
+    if (!(*muon)->isGlobalMuon())
+      continue;
+    if (deltaR((*muon)->eta(), (*muon)->phi(), Tag->eta(), Tag->phi()) < 0.2)
+      continue;
+    if ((*muon)->pt() < 20)
+      continue;
+    if (Tag->charge() == (*muon)->charge())
+      continue;
+    int pairingResult = myTracks.PairTracks((*muon)->globalTrack(), Tag->globalTrack(), transientTrackBuilder);
+    if (pairingResult == 3) {
+      if (myTracks.MuonTrackMass < 80 || myTracks.MuonTrackMass > 100){
+	continue;
+      }else{ 
+	paired = true;
+	selectedGlobalMuon = (*muon);
+        selectedMuon = Tag;
+        diMuonMass = myTracks.MuonTrackMass;
+        pairVtxChi = myTracks.pairvertexchi;
+      }
+    }
+  }
+  return paired;
+}
+
+
 
 std::vector<int> SigAnalyzer::GetGenParticlesInCone(const edm::Event& iEvent,
 						    const reco::Track* selTrack,

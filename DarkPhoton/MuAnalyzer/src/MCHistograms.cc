@@ -70,6 +70,7 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC, int type) {
      m_sigVariables->Branch("hcalIso", &hcalIso);
      m_sigVariables->Branch("ecalIso", &ecalIso);
      m_sigVariables->Branch("trackIso", &trackIso);
+     m_sigVariables->Branch("pairVtxChi", &pairVtxChi);
      m_sigVariables->Branch("invMass", &invMass);
 
      for (int station = 0; station < 4; station++) {
@@ -167,7 +168,9 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC, int type) {
   m_TrigSFdown = histFolder.make<TH1F>("TrigSFdown", ";Tight muon Trigger scale factor down; Events", 100, 0.9, 1.1);
   for (int i = 0; i < 7; i++) {
      std::string name = "HEDepth_" + std::to_string(i);
+     std::string name_shift = "Shift_HEDepth_" + std::to_string(i);
      m_HEDepthEnergy[i] = histFolder.make<TH1F>(name.c_str(),";HCAL Energy, Depth ;Events",50,0,10);
+     m_HEDepthEnergy_Shift[i] = histFolder.make<TH1F>(name_shift.c_str(),";HCAL Energy shifted position, Depth ;Events",50,0,10);
   }
   m_HELastDepth = histFolder.make<TH1F>("LastHEDepthE",";HE Energy in Last Depth (GeV);Events",100,0,20);
   m_HESecLastDepth = histFolder.make<TH1F>("SecLastHEDepth",";HE Energy in Depth Before Last (GeV); Events",100,0,20);
@@ -287,6 +290,8 @@ void MCHistograms::book(TFileDirectory histFolder, bool MC, int type) {
       histFolder.make<TH1F>("nRecoCSCHits", ";Number of Nearby RECO CSC Segments; Total Weight", 5, -0.5, 4.5);
   m_CSC_recHitdR = histFolder.make<TH1F>(
       "dRtoNearestCSCRecHit", "; dR from Projected Track to Nearest CSC rec hit; Events", 200, 0, 4);
+  m_shiftCSC_recHitdR = histFolder.make<TH1F>(
+      "dRtoNearestCSCRecHit_Shifted", "; dR from Shifted Projected Track to Nearest CSC rec hit; Events", 200, 0, 4);
   m_MuonMotherdE = histFolder.make<TH1F>("MuonMotherdE", "; #Delta E / E; Events", 100, 0, 1);
   m_MuonMotherdR = histFolder.make<TH1F>("MuonMotherdR", "; #Delta R; Events", 200, 0, 4);
   m_minGenMuDr = histFolder.make<TH1F>("minGenMuDr", "; #Delta R; Events", 200, 0, 4);
@@ -481,6 +486,7 @@ void MCHistograms::FillTree(SigEventInfo info) {
   ecalIso = info.probeEcalIso;
   trackIso = info.probeTrackIso;
   invMass = info.diMuonMass;
+  pairVtxChi = info.pairVtxChi;
   staDR = info.staMinDr;
   staE = info.standaloneE;
   staDEoverE = info.standaloneDEoverE;
@@ -706,6 +712,7 @@ void MCHistograms::FillHists(SigEventInfo info) {
     }
   }
   m_CSC_recHitdR->Fill(info.cscRecHitMinDR, info.eventWeight);
+  m_shiftCSC_recHitdR->Fill(info.shiftRecDr, info.eventWeight);
   m_CSCHitChiSq->Fill(info.cscChiSq, info.eventWeight);
   m_nEle->Fill(info.nEle, info.eventWeight);
   m_nExtraEle->Fill(info.nExtraEle, info.eventWeight);
@@ -807,6 +814,9 @@ void MCHistograms::FillHists(SigEventInfo info) {
   double secLastE=-1;
   for(int depth=0; depth<7;depth++)
   {
+    if (info.shiftHE[depth] > 0.1) {
+      m_HEDepthEnergy_Shift[depth]->Fill(info.shiftHE[depth],info.eventWeight);
+    }
     if(info.foundDepths[depth])
     {
 	    m_HEDepthEnergy[depth]->Fill(info.hitEnergies[depth],info.eventWeight);

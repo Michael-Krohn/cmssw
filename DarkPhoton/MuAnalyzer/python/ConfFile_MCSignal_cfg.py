@@ -39,6 +39,12 @@ options.register( 'tagAlignedCr',
                                   VarParsing.varType.bool,
                                   "Use tag track instead of probe")
 
+options.register( 'doubleMuonCr',
+                                  False,
+                                  VarParsing.multiplicity.singleton,
+                                  VarParsing.varType.bool,
+                                  "Use 2nd global muon track instead of probe")
+
 options.register( 'ttbarCR',
                                   False,
                                   VarParsing.multiplicity.singleton,
@@ -122,19 +128,20 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 	import FWCore.Utilities.FileUtils as FileUtils
         #mylist = FileUtils.loadListFromFile ('file_temp_RECO.txt')
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco_temp.txt')
 	#mylist = FileUtils.loadListFromFile ('file_temp.txt')
         #mylist = FileUtils.loadListFromFile ('Filtered_Files_DY_2017.txt')
 	if(options.isMC):
-	   mylist = FileUtils.loadListFromFile ('datafiles/ZmmSim_EndcapMuFilter_part12.txt')
+	   mylist = FileUtils.loadListFromFile ('datafiles/ZmmSim_EndcapMuFilter_part2.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/DYJets_PrivateProduction_mumuFilter.txt')
            #mylist = FileUtils.loadListFromFile ('datafiles/testfiles.txt')
            #mylist = FileUtils.loadListFromFile ('filetest.txt')
         else:
-	   mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/highHCAL_2018.txt')
+	   #mylist = FileUtils.loadListFromFile('datafiles/Filtered_Files_Doublemuon.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(
@@ -193,6 +200,7 @@ process.demo = cms.EDAnalyzer('SigAnalyzer',
     highHcalCr = cms.untracked.bool(options.highHcalCr),
     studyBarrelMuons = cms.untracked.bool(options.studyBarrel),
     tagAlignedCr = cms.untracked.bool(options.tagAlignedCr),
+    doubleMuonCr = cms.untracked.bool(options.doubleMuonCr),
     scaleFactor = cms.untracked.double(options.scaleFactor),
     binSFsfname = cms.untracked.string(options.binSFsfname),
     metFailName = cms.untracked.string(options.metFailName),

@@ -44,7 +44,7 @@ process.MessageLogger.cerr.INFO = cms.untracked.PSet(
 )
 
 if(options.runLocally):
-	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+	process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 	import FWCore.Utilities.FileUtils as FileUtils
         #mylist = FileUtils.loadListFromFile ('file_temp_RECO.txt')
 	#mylist = FileUtils.loadListFromFile ('Filtered_Files_SingleMuon2017E-PromptReco_temp.txt')
@@ -53,7 +53,7 @@ if(options.runLocally):
 	if(options.isMC):
 	   mylist = FileUtils.loadListFromFile ('samplemc.txt')
 	else:
-	   mylist = FileUtils.loadListFromFile('datafiles/highHcalData.txt')
+	   mylist = FileUtils.loadListFromFile('datafiles/highHCAL_2018.txt')
 	readFiles = cms.untracked.vstring( *mylist)
 
 process.options = cms.untracked.PSet(

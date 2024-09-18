@@ -384,7 +384,8 @@ int Tracks::PairTracks(const reco::TrackRef Track,
   // some poor fits will simply fail to find a common vertex
   if (fittedVertex.isValid() && fittedVertex.totalChiSquared() >= 0. && fittedVertex.degreesOfFreedom() > 0) {
     // others we can exclude by their poor fit
-    if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
+    if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 100.) {
+    //if (fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom() < 3.) {
       // important! evaluate momentum vectors AT THE VERTEX
       TrajectoryStateClosestToPoint one_TSCP = tracksToVertex[0].trajectoryStateClosestToPoint(fittedVertex.position());
       TrajectoryStateClosestToPoint two_TSCP = tracksToVertex[1].trajectoryStateClosestToPoint(fittedVertex.position());
@@ -396,6 +397,7 @@ int Tracks::PairTracks(const reco::TrackRef Track,
       double total_px = one_momentum.x() + two_momentum.x();
       double total_py = one_momentum.y() + two_momentum.y();
       double total_pz = one_momentum.z() + two_momentum.z();
+      pairvertexchi = fittedVertex.totalChiSquared() / fittedVertex.degreesOfFreedom();
       MuonTrackMass = sqrt(pow(total_energy, 2) - pow(total_px, 2) - pow(total_py, 2) - pow(total_pz, 2));
     } else {
       return 1;

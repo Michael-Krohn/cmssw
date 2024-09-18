@@ -7,6 +7,7 @@
 
 SigEventInfo::SigEventInfo() {
   eventWeight = 1;
+  doubleMuEventWeight = 1;
   genEventWeight = 1;
   muRocWeight = 1;
   ZptWeight = 1;
@@ -47,6 +48,9 @@ SigEventInfo::SigEventInfo() {
   cscMinDR = -1;
   cscRecHitMinDR = -1;
   cscChiSq = -1;
+  shiftRPCDr = -1;
+  shiftRecDr = -1;
+  shiftCSCDr = -1;
   cscHitAngleChange = 100;
   closestApproach = -1;
   standaloneE = -1;
@@ -60,9 +64,11 @@ SigEventInfo::SigEventInfo() {
   cellCenterDEta = -1;
   cellCenterDPhi = -1;
   coneEnergy = -1;
+  shiftLastE = -1;
   for (int i = 0; i < 7; i++) {
     hitEnergies[i] = -1;
     neighborHitEnergies[i] = -1;
+    shiftHE[i] = -1;
   }
   hitsOverThresh = -1;
   vtxZ = -1;

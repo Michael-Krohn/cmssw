@@ -26,6 +26,7 @@ public:
   bool goodPrimaryVertex(const edm::Event& iEvent, edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label);
   bool matchTagAndTrigger(const reco::Muon* selectedMuon);
   double eventWeight;
+  double doubleMuEventWeight;
   double dbremWeight;
   double genEventWeight;
   bool filledWeights;
@@ -88,6 +89,9 @@ public:
   double minDtDZByStation[4];
   double cscRecHitMinDR;
   double cscRpcHitMinDR;
+  double shiftRPCDr;
+  double shiftRecDr;
+  double shiftCSCDr;
   double cscChiSq;
   double cscHitAngleChange;
   //Transient Track Studies
@@ -106,7 +110,9 @@ public:
   double cellCenterDPhi;
   double coneEnergy;
   int coneHits;
+  double shiftLastE;
   double hitEnergies[7];
+  double shiftHE[7];
   bool foundDepths[7];
   double neighborHitEnergies[7];
   int hitsOverThresh;

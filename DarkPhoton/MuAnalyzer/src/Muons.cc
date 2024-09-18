@@ -11,7 +11,7 @@
 Muons::Muons(bool xrootd) {
   highmuonpt = 0;
   secondhighmuonpt = 0;
-  rc.init(edm::FileInPath("DarkPhoton/MuAnalyzer/text/RoccoR2018UL.txt").fullPath());
+  rc.init(edm::FileInPath("DarkPhoton/MuAnalyzer/roccor/roccor/RoccoR2018UL.txt").fullPath());
   randEng = TRandom3();
   std::string iMuon_ID_eff, iMuon_ISO_eff, iMuon_Trig_eff;
   if (xrootd) {
@@ -245,3 +245,4 @@ int Muons::SelectMuons(const edm::Event& iEvent, edm::EDGetToken m_recoMuonToken
   }
   return cutPro;
 }
+

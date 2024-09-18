@@ -127,6 +127,10 @@ private:
                       edm::Handle<reco::VertexCollection> vtxHandle,
                       edm::EDGetTokenT<EcalRecHitCollection> reducedEndcapRecHitCollection_Label,
                       edm::EDGetTokenT<EcalRecHitCollection> reducedBarrelRecHitCollection_Label);
+  bool PairMuons(const reco::Muon* Tag,
+			   Muons myMuons,
+			   Tracks myTracks,
+                           edm::ESHandle<TransientTrackBuilder> transientTrackBuilder);
   double GetPuWeight(edm::Handle<std::vector<PileupSummaryInfo>> hPileupInfoProduct);
 
   edm::EDGetToken m_recoMuonToken;
@@ -134,7 +138,7 @@ private:
   edm::EDGetTokenT<std::vector<reco::Vertex>> primaryVertices_Label;
   edm::EDGetToken m_genParticleToken;
   edm::EDGetTokenT<CSCSegmentCollection> CSCSegment_Label;
-  edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
+//  edm::EDGetTokenT<CSCRecHit2DCollection> CSCRecHitToken;
   edm::EDGetTokenT<RPCRecHitCollection> rpcRecHitToken;
   edm::EDGetToken m_trigResultsToken;
   edm::EDGetTokenT<GenEventInfoProduct> m_genInfoToken;
@@ -151,14 +155,20 @@ private:
   bool m_isMC;
   bool m_runRandomTrackEfficiency;
   double weight_;
+  double doubleMuWeight_;
   double nPUmean_;
   double muIdWeight_;
   double muIsoWeight_;
   double muTrigWeight_;
   double muRocWeight_;
+  double doubleMuIdWeight_;
+  double doubleMuIsoWeight_;
+  double doubleMuTrigWeight_;
+  double doubleMuRocWeight_;
   GlobalPoint vertexPosition;
   double diMuonMass;
   bool paired_;
+  bool pairedMuons_;
   TH1F* fPUDataHist_;
   TH1F* fPUMCHist_;
   TH1F* puWeightHist_;
@@ -173,6 +183,7 @@ private:
   Histograms onEdgeLowMissingHits;
   Histograms notOnEdge;
   Histograms notOnEdgeMissingHits;
+  Histograms doubleMuon;
 };
 
 //
@@ -192,7 +203,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig)
       primaryVertices_Label(
           consumes<std::vector<reco::Vertex>>(iConfig.getParameter<edm::InputTag>("primaryVertices"))),
       CSCSegment_Label(consumes<CSCSegmentCollection>(iConfig.getParameter<edm::InputTag>("CSCSegmentLabel"))),
-      CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
+//      CSCRecHitToken(consumes<CSCRecHit2DCollection>(iConfig.getParameter<edm::InputTag>("CSCRecHitTag"))),
       rpcRecHitToken(consumes<RPCRecHitCollection>(iConfig.getParameter<edm::InputTag>("RPCRecHitTag"))),	
       HBHERecHit_Label(consumes<edm::SortedCollection<HBHERecHit, edm::StrictWeakOrdering<HBHERecHit>>>(
           iConfig.getParameter<edm::InputTag>("HBHERecHits"))),
@@ -239,6 +250,7 @@ MuAnalyzer::MuAnalyzer(const edm::ParameterSet& iConfig)
   onEdgeLowMissingHits.book(fs->mkdir("onEdgeLowMissingHits"));
   notOnEdge.book(fs->mkdir("notOnEdge"));
   notOnEdgeMissingHits.book(fs->mkdir("notOnEdgeMissingHits"));
+  doubleMuon.book(fs->mkdir("doubleMuon"));
 }
 
 MuAnalyzer::~MuAnalyzer() {
@@ -332,8 +344,28 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
       }
     }
   }
+  bool pairedMuons_ = false;
+  for (std::vector<const reco::Muon*>::const_iterator muon = myMuons.selectedMuons.begin();
+       muon != myMuons.selectedMuons.end();
+       muon++) {
+    if (pairedMuons_) {
+      continue;
+    }
+    pairedMuons_ = PairMuons(*muon,myMuons,myTracks,transientTrackBuilder);
+    if (pairedMuons_){
+      if (m_isMC) {
+        edm::Handle<reco::GenParticleCollection> genParticles;
+        iEvent.getByToken(m_genParticleToken, genParticles);
+        doubleMuRocWeight_ = myMuons.MuonRoccorWeight((*muon), genParticles);
+        doubleMuIdWeight_ = myMuons.MuonTightIDWeight((*muon)->pt(), (*muon)->eta())[0];
+        doubleMuIsoWeight_ = myMuons.MuonTightIsoWeight((*muon)->pt(), (*muon)->eta())[0];
+        doubleMuTrigWeight_ = myMuons.MuonTrigWeight((*muon)->pt(), (*muon)->eta())[0];
+      }
+    }
+  }
   if (m_isMC) {
     weight_ = weight_ * muRocWeight_ * muIdWeight_ * muIsoWeight_ * muTrigWeight_;
+    doubleMuWeight_ = weight_ * doubleMuRocWeight_ * doubleMuIdWeight_ * doubleMuIsoWeight_ * doubleMuTrigWeight_;
   }
   myHistograms.IncCutFlow(weight_, maxTrackPairProgress);
   if (!paired_) {
@@ -373,9 +405,12 @@ void MuAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
   myCSCs.minTotalImpactParameter_Muon = 1000;
   myCSCs.minDR_Muon = 1000;
   info.diMuonMass = diMuonMass;
+  GlobalPoint FillerPoint;
 
   myCSCs.ExtrapolateTrackToCSC(
-      iEvent, iSetup, CSCSegment_Label, CSCRecHitToken, rpcRecHitToken, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
+      iEvent, iSetup, CSCSegment_Label, selectedTrack, transientTrackBuilder->build(selectedTrack), FillerPoint);
+//  myCSCs.ExtrapolateTrackToCSC(
+//      iEvent, iSetup, CSCSegment_Label, CSCRecHitToken, rpcRecHitToken, selectedTrack, transientTrackBuilder->build(selectedTrack), vertexPosition);
   if (myCSCs.minTotalImpactParameter > 10) {
     return;
   }
@@ -601,6 +636,35 @@ int MuAnalyzer::PairTagAndProbe(const edm::Event& iEvent,
     }
   }
   return cutpro;
+}
+
+bool MuAnalyzer::PairMuons(const reco::Muon* Tag,
+			   Muons myMuons,
+			   Tracks myTracks,
+                           edm::ESHandle<TransientTrackBuilder> transientTrackBuilder){
+
+  bool paired = false;
+  for (std::vector<const reco::Muon*>::const_iterator muon = myMuons.globalMuons.begin();
+       muon != myMuons.globalMuons.end();
+       muon++) {
+    if (paired)
+      continue;
+    if (fabs((*muon)->eta()) > 2.4 || fabs((*muon)->eta()) < 1.45)
+      continue;
+    if (deltaR((*muon)->eta(), (*muon)->phi(), Tag->eta(), Tag->phi()) < 0.2)
+      continue;
+    if ((*muon)->pt() < 20)
+      continue;
+    if (Tag->charge() == (*muon)->charge())
+      continue;
+    int pairingResult = myTracks.PairTracks((*muon)->globalTrack(), Tag->globalTrack(), transientTrackBuilder);
+    if (pairingResult == 3) {
+      if (myTracks.MuonTrackMass < 80 || myTracks.MuonTrackMass > 100)
+	continue;
+      else paired = true;
+    }
+  }
+  return paired;
 }
 
 bool MuAnalyzer::isTrackMatchedToMuon(const edm::Event& iEvent,
